@@ -21,6 +21,10 @@ class NeoFeederConnection extends Model
         'metadata',
     ];
 
+    protected $hidden = [
+        'encrypted_password',
+    ];
+
     protected $casts = [
         'last_token_refreshed_at' => 'datetime',
         'last_checked_at' => 'datetime',

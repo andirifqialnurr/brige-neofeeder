@@ -11,7 +11,7 @@
 - [x] Buat environment template `.env.example`.
 - [x] Buat modul auth dasar.
 - [x] Buat modul tenant kampus.
-- [ ] Buat penyimpanan credential Neo Feeder terenkripsi.
+- [x] Buat penyimpanan credential Neo Feeder terenkripsi.
 - [x] Buat Neo Feeder HTTP client dasar.
 - [ ] Implement `GetToken` dan test connection.
 - [x] Definisikan response parser `error_code`, `error_desc`, `data`.
