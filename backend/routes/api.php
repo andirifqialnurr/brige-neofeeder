@@ -15,6 +15,7 @@ Route::middleware('api.token')->group(function (): void {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     Route::apiResource('tenants', TenantController::class)->only(['index', 'store', 'show', 'update']);
+    Route::post('neofeeder-connections/{neofeederConnection}/test', [NeoFeederConnectionController::class, 'test']);
     Route::apiResource('neofeeder-connections', NeoFeederConnectionController::class)
         ->parameters(['neofeeder-connections' => 'neofeederConnection'])
         ->only(['index', 'store', 'show', 'update']);

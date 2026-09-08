@@ -3,16 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\NeoFeederConnection;
 use App\Models\User;
+use App\Services\NeoFeeder\NeoFeederClient;
 use App\Services\NeoFeeder\NeoFeederCredentialVault;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Throwable;
 
 class NeoFeederConnectionController extends Controller
 {
     public function __construct(
         private readonly NeoFeederCredentialVault $credentialVault,
+        private readonly NeoFeederClient $neoFeederClient,
     ) {
     }
 
@@ -104,12 +109,144 @@ class NeoFeederConnectionController extends Controller
         ]);
     }
 
+    public function test(Request $request, NeoFeederConnection $neofeederConnection): JsonResponse
+    {
+        if (! $this->canManageTenant($request, $neofeederConnection->tenant_id)) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        if ($neofeederConnection->username === null || $neofeederConnection->encrypted_password === null) {
+            return response()->json([
+                'message' => 'Username dan password Neo Feeder wajib diisi sebelum test koneksi.',
+            ], 422);
+        }
+
+        try {
+            $password = $this->credentialVault->decryptPassword($neofeederConnection->encrypted_password);
+
+            if ($password === null) {
+                return response()->json(['message' => 'Password Neo Feeder belum dikonfigurasi.'], 422);
+            }
+
+            $startedAt = microtime(true);
+            $response = $this->neoFeederClient->getToken(
+                $neofeederConnection->base_url,
+                $neofeederConnection->username,
+                $password,
+            );
+
+            $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+            $tokenReceived = $this->extractToken($response->data) !== null;
+            $connected = $response->successful() && $tokenReceived;
+
+            $neofeederConnection->forceFill([
+                'status' => $connected ? 'active' : 'error',
+                'last_checked_at' => now(),
+                'last_token_refreshed_at' => $connected ? now() : $neofeederConnection->last_token_refreshed_at,
+                'metadata' => [
+                    ...($neofeederConnection->metadata ?? []),
+                    'last_test' => [
+                        'ok' => $connected,
+                        'duration_ms' => $durationMs,
+                        'error_code' => $response->errorCode,
+                        'error_desc' => $response->errorDesc,
+                        'token_received' => $tokenReceived,
+                    ],
+                ],
+            ])->save();
+
+            $this->writeAuditLog($request, $neofeederConnection, 'neofeeder_connection.tested', [
+                'ok' => $connected,
+                'duration_ms' => $durationMs,
+                'error_code' => $response->errorCode,
+                'token_received' => $tokenReceived,
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'ok' => $connected,
+                    'error_code' => $response->errorCode,
+                    'error_desc' => $response->errorDesc,
+                    'token_received' => $tokenReceived,
+                    'connection' => $this->serializeConnection($neofeederConnection->refresh()),
+                ],
+            ], $connected ? 200 : 422);
+        } catch (RequestException $exception) {
+            return $this->failedConnectionTest($request, $neofeederConnection, 'http_error', $exception->getMessage());
+        } catch (Throwable $exception) {
+            return $this->failedConnectionTest($request, $neofeederConnection, 'runtime_error', $exception->getMessage());
+        }
+    }
+
     private function canManageTenant(Request $request, ?string $tenantId): bool
     {
         /** @var User $user */
         $user = $request->user();
 
         return $user->isAdmin() || ($tenantId !== null && $user->tenant_id === $tenantId);
+    }
+
+    private function failedConnectionTest(
+        Request $request,
+        NeoFeederConnection $connection,
+        string $errorCode,
+        string $errorDesc,
+    ): JsonResponse {
+        $connection->forceFill([
+            'status' => 'error',
+            'last_checked_at' => now(),
+            'metadata' => [
+                ...($connection->metadata ?? []),
+                'last_test' => [
+                    'ok' => false,
+                    'error_code' => $errorCode,
+                    'error_desc' => $errorDesc,
+                    'token_received' => false,
+                ],
+            ],
+        ])->save();
+
+        $this->writeAuditLog($request, $connection, 'neofeeder_connection.test_failed', [
+            'error_code' => $errorCode,
+        ]);
+
+        return response()->json([
+            'data' => [
+                'ok' => false,
+                'error_code' => $errorCode,
+                'error_desc' => $errorDesc,
+                'token_received' => false,
+                'connection' => $this->serializeConnection($connection->refresh()),
+            ],
+        ], 422);
+    }
+
+    private function extractToken(mixed $data): ?string
+    {
+        if (! is_array($data)) {
+            return null;
+        }
+
+        $token = $data['token'] ?? null;
+
+        return is_string($token) && $token !== '' ? $token : null;
+    }
+
+    private function writeAuditLog(Request $request, NeoFeederConnection $connection, string $event, array $metadata): void
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        AuditLog::query()->create([
+            'tenant_id' => $connection->tenant_id,
+            'actor_id' => $user->id,
+            'event' => $event,
+            'subject_type' => NeoFeederConnection::class,
+            'subject_id' => $connection->id,
+            'metadata' => $metadata,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
     }
 
     private function serializeConnection(NeoFeederConnection $connection): array

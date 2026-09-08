@@ -13,7 +13,7 @@
 - [x] Buat modul tenant kampus.
 - [x] Buat penyimpanan credential Neo Feeder terenkripsi.
 - [x] Buat Neo Feeder HTTP client dasar.
-- [ ] Implement `GetToken` dan test connection.
+- [x] Implement `GetToken` dan test connection.
 - [x] Definisikan response parser `error_code`, `error_desc`, `data`.
 - [x] Buat audit log dasar.
 
