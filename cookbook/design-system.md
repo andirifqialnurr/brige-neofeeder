@@ -1,136 +1,378 @@
 # Design System - Bridge Neo Feeder
 
-## 1. Prinsip Desain
+## 1. Arah Visual
 
-Aplikasi ini adalah alat operasional untuk data akademik dan integrasi Neo Feeder. UI harus terasa tenang, padat, mudah dipindai, dan mendukung pekerjaan berulang.
+Referensi visual utama: dashboard Talent pada `https://talent.univeral.ac.id/apps/`.
 
-Prinsip:
+Arah desain Bridge Neo Feeder:
 
-- Prioritaskan data, status, dan aksi.
-- Hindari gaya landing page atau hero marketing.
-- Jangan menyembunyikan error di modal panjang.
-- Buat operator bisa memahami masalah per sheet, baris, dan field.
-- Semua aksi berisiko seperti post, retry, delete, dan credential update harus eksplisit.
-- Status sinkronisasi harus mudah dibaca tanpa membuka detail satu per satu.
+- Lucu, modern, dan terstruktur.
+- Dashboard-first, bukan landing page.
+- Base warna biru, dengan aksen status hijau, kuning, merah, cyan, dan ungu secukupnya.
+- Mendukung light mode dan dark mode sejak awal.
+- Kartu besar, rounded, icon-rich, dan punya micro-interaction halus.
+- Tetap operasional: data, validasi, batch, dan error harus lebih penting daripada dekorasi.
 
-## 2. Struktur Navigasi
+Karakter UI:
 
-Navigasi utama:
+- Friendly seperti aplikasi kampus modern.
+- Rapi seperti admin dashboard.
+- Tidak kaku seperti sistem pelaporan lama.
+- Tidak terlalu ramai sampai mengganggu pekerjaan import/sync data.
+
+## 2. Prinsip Desain
+
+- First screen langsung dashboard operasional.
+- Sidebar permanen untuk desktop.
+- Header atas fixed dengan search, command shortcut, theme toggle, notification, dan user menu.
+- Kartu ringkasan memakai icon tile, angka besar, dan status kecil.
+- Gunakan rounded besar pada panel utama, tetapi tabel dan form tetap padat.
+- Gunakan efek glass/blur secara terbatas pada sidebar/header.
+- Hindari dekorasi orb/bokeh terpisah. Efek visual cukup dari surface, border, shadow, dan gradient halus di panel.
+- Semua proses berisiko seperti `Start Sync`, `Retry`, credential update, dan delete harus eksplisit.
+- Error validasi harus terlihat per sheet, row, dan field.
+
+## 3. Layout Shell
+
+Desktop layout:
+
+```text
+Fixed sidebar 256px
+Fixed topbar 72-80px
+Main content container
+Dashboard cards and work panels
+Right drawer for detail
+```
+
+Sidebar:
+
+- Width: 256px.
+- Background: translucent surface dengan backdrop blur.
+- Border kanan dashed/subtle.
+- Brand area berisi logo app, nama app, dan badge environment.
+- Menu dikelompokkan dengan label kecil.
+- Active menu memakai blue tinted background dan icon biru.
+- Disabled/coming soon menu memakai opacity 50%.
+
+Topbar:
+
+- Fixed di atas.
+- Background translucent dan backdrop blur.
+- Search command button di kiri.
+- Action cluster di kanan: queue status, notification, theme toggle, user menu.
+- Tinggi 72-80px.
+
+Main content:
+
+- Desktop padding: 24-32px.
+- Mobile padding: 16px.
+- Ada jarak atas mengikuti fixed topbar.
+- Content width boleh lebar untuk tabel dan monitoring.
+
+## 4. Navigasi
+
+Menu utama:
 
 - Dashboard
-- Kampus/Tenant
+- Kampus
 - Neo Feeder
 - Referensi
 - Template Excel
 - Import Batch
 - Validasi
-- Sync
-- Automation
+- Sinkronisasi
 - Mapping
+- Otomatisasi
 - Audit Log
-- Settings
+- Pengaturan
 
-Untuk Phase 1, menu `Automation` dan `Mapping` boleh tampil disabled atau hidden sampai siap.
-
-## 3. Layout
-
-### App Shell
-
-- Sidebar kiri untuk navigasi modul.
-- Header atas untuk tenant switcher, periode aktif, user menu, dan status koneksi.
-- Konten utama memakai layout full-width dengan max readable width pada form.
-- Tabel data memakai full-width.
-
-### Page Pattern
-
-Setiap halaman operasional memakai pola:
+Kelompok sidebar:
 
 ```text
-Page title + primary action
-Filter/status bar
-Main table or workspace
-Right drawer/detail panel when needed
+Menu Utama
+  Dashboard
+  Kampus
+
+Neo Feeder
+  Koneksi
+  Referensi
+  Contract
+
+Import Excel
+  Template
+  Import Batch
+  Validasi
+  Sinkronisasi
+
+Otomatisasi
+  Source SIAKAD
+  Mapping Profile
+  Jadwal Sync
+
+Aplikasi
+  Audit Log
+  Pengaturan
 ```
 
-Jangan memakai cards bertumpuk untuk data utama. Cards hanya untuk ringkasan metrik, item berulang, modal, atau detail kecil.
+## 5. Color System
 
-## 4. Warna
+Base brand wajib biru.
 
-Palet harus netral dan fungsional.
-
-Token warna:
+### Light Mode
 
 ```text
-background: #f7f8fa
+app-bg: #f8fafc
 surface: #ffffff
-surface-muted: #f1f3f5
-border: #d9dee5
-text-primary: #1f2933
-text-secondary: #5b6776
-text-muted: #8792a2
-primary: #2563eb
-primary-hover: #1d4ed8
-success: #16803c
-warning: #b7791f
-danger: #c2410c
-info: #0f766e
-purple-accent: #7c3aed
+surface-soft: #f1f5f9
+surface-glass: rgba(255, 255, 255, 0.72)
+border: #e2e8f0
+border-soft: rgba(226, 232, 240, 0.72)
+text-primary: #0f172a
+text-secondary: #475569
+text-muted: #94a3b8
+
+primary-50: #eff6ff
+primary-100: #dbeafe
+primary-500: #3b82f6
+primary-600: #2563eb
+primary-700: #1d4ed8
+primary-800: #1e40af
+
+info-500: #06b6d4
+success-500: #22c55e
+warning-500: #f59e0b
+danger-500: #ef4444
+purple-500: #8b5cf6
 ```
 
-Gunakan warna status secara terbatas. Jangan membuat UI dominan satu warna.
+### Dark Mode
 
-## 5. Typography
+```text
+app-bg: #0b1220
+surface: #111827
+surface-soft: #1f2937
+surface-glass: rgba(17, 24, 39, 0.72)
+border: #334155
+border-soft: rgba(51, 65, 85, 0.72)
+text-primary: #f8fafc
+text-secondary: #cbd5e1
+text-muted: #64748b
+
+primary-50: rgba(59, 130, 246, 0.12)
+primary-100: rgba(59, 130, 246, 0.18)
+primary-500: #60a5fa
+primary-600: #3b82f6
+primary-700: #2563eb
+primary-800: #1d4ed8
+
+info-500: #22d3ee
+success-500: #4ade80
+warning-500: #fbbf24
+danger-500: #f87171
+purple-500: #a78bfa
+```
+
+### Usage Rules
+
+- Primary action selalu biru.
+- Active navigation selalu biru.
+- Status memakai warna semantik, bukan biru semua.
+- Chart boleh memakai blue line sebagai default, lalu cyan/green/orange untuk seri pembanding.
+- Gradient boleh dipakai pada highlight card, progress, dan virtual-card style panel.
+- Jangan membuat seluruh dashboard hanya biru. Biru adalah base, bukan satu-satunya warna.
+
+## 6. Typography
 
 Font:
 
-- System UI stack.
-- Monospace untuk payload, field name, endpoint, UUID, dan kode.
+- Gunakan `Inter` jika tersedia.
+- Fallback: system UI stack.
+- Monospace untuk field Neo Feeder, UUID, endpoint, payload JSON, dan kode referensi.
 
 Skala:
 
 ```text
-page-title: 24px / 32px / 600
-section-title: 18px / 28px / 600
-subsection-title: 15px / 24px / 600
+display-title: 32-36px / 40px / 800-900
+page-title: 24-28px / 34px / 800
+section-title: 20px / 30px / 800
+card-title: 16px / 24px / 700
 body: 14px / 22px / 400
 table: 13px / 20px / 400
-caption: 12px / 18px / 400
-code: 12px / 18px / 400
+caption: 12px / 18px / 500
+badge: 11px / 16px / 700
+code: 12px / 18px / 500
 ```
 
-Letter spacing: 0.
+Rules:
 
-## 6. Komponen Utama
+- Judul dashboard boleh bold dan playful.
+- Label tabel dan form harus ringkas.
+- Letter spacing tetap 0 untuk body.
+- Badge boleh uppercase dengan spacing kecil, maksimal `0.04em`.
 
-### Button
+## 7. Shape, Border, Shadow
 
-Jenis:
+Radius:
 
-- Primary: aksi utama seperti `Upload`, `Generate Template`, `Start Sync`.
-- Secondary: aksi biasa seperti `Refresh`, `Download`, `Preview`.
-- Danger: aksi berisiko seperti `Delete`, `Reset Batch`.
-- Ghost/Icon: aksi tabel seperti view detail, retry, copy, download.
+```text
+button: 12px
+input: 12px
+small-card: 16px
+metric-card: 24px
+hero-dashboard-panel: 28-32px
+modal/drawer: 20-24px
+table-container: 16px
+icon-tile: 12-16px
+avatar: 999px
+```
 
-Gunakan icon dari lucide jika tersedia:
+Border:
 
-- upload,
-- download,
-- refresh,
-- play,
-- pause,
-- rotate-ccw,
-- eye,
-- settings,
-- key,
-- database,
-- file-spreadsheet,
-- check,
-- alert-triangle,
-- x-circle.
+- Light: `1px solid #e2e8f0`.
+- Dark: `1px solid #334155`.
+- Header/sidebar boleh memakai border dashed/subtle.
+
+Shadow:
+
+```text
+sm: 0 1px 3px rgba(15, 23, 42, 0.08)
+md: 0 8px 24px rgba(15, 23, 42, 0.10)
+lg: 0 16px 40px rgba(15, 23, 42, 0.14)
+blue-glow: 0 10px 24px rgba(37, 99, 235, 0.22)
+```
+
+Hover:
+
+- Card hover boleh naik `translateY(-2px)`.
+- Shadow naik satu level.
+- Border berubah ke primary soft.
+- Icon tile boleh scale kecil `1.04`, jangan berlebihan.
+
+## 8. Komponen Utama
+
+### App Sidebar
+
+Isi:
+
+- logo,
+- app name,
+- environment badge seperti `BETA`, `TRIAL`, atau `PROD`,
+- grouped menu,
+- collapsed toggle desktop.
+
+Menu item:
+
+```text
+height: 40px
+radius: 12px
+icon: 18px
+gap: 12px
+font: 14px / 600
+```
+
+State:
+
+- default: text muted,
+- hover: blue text dan soft background,
+- active: blue text, blue soft background, icon filled/tinted,
+- disabled: opacity 50%, pointer disabled.
+
+### Topbar
+
+Komponen:
+
+- command search button: `Cari data, batch, kanal...`
+- shortcut pill: `CTRL K`
+- sync/queue indicator,
+- notification icon,
+- theme toggle,
+- user avatar.
+
+Search button:
+
+```text
+height: 44px
+min-width desktop: 260px
+radius: 14px
+background: transparent/soft surface
+border: transparent, visible on hover
+```
+
+### Dashboard Welcome Panel
+
+Panel pembuka dashboard mengikuti pola referensi Talent:
+
+- rounded 28-32px,
+- surface card,
+- border subtle,
+- shadow small,
+- breadcrumb kecil di atas,
+- title besar dan ramah,
+- subtitle pendek,
+- right-side compact status card.
+
+Untuk Bridge Neo Feeder:
+
+```text
+Breadcrumb: Dashboard | 08 Sep 2026
+Title: Halo, Operator
+Subtitle: Pantau import, validasi, dan sinkronisasi Neo Feeder hari ini.
+Right status card: Koneksi Neo Feeder / Online / Trial
+```
+
+### Metric Card
+
+Dipakai untuk:
+
+- Import valid,
+- Error validasi,
+- Queue aktif,
+- Record terkirim,
+- Referensi terakhir sync,
+- SIAKAD source aktif.
+
+Anatomi:
+
+```text
+icon tile
+small uppercase label
+large value
+small helper/status
+optional progress bar
+```
+
+Style:
+
+- radius 24px,
+- padding 20-24px,
+- icon tile 48-56px,
+- hover shadow,
+- border neutral,
+- accent color per metric.
+
+### Work Panel
+
+Dipakai untuk chart, table, wizard, mapping, dan validation workspace.
+
+Style:
+
+- radius 24px atau 28px,
+- padding 20-24px,
+- background surface,
+- border subtle,
+- no nested card unless item berulang.
+
+Header panel:
+
+```text
+title + small badge
+subtitle
+right action
+```
 
 ### Status Badge
 
-Status batch:
+Batch status:
 
 ```text
 draft
@@ -148,7 +390,7 @@ failed
 cancelled
 ```
 
-Status row:
+Row status:
 
 ```text
 pending
@@ -163,119 +405,166 @@ skipped
 ambiguous
 ```
 
+Badge style:
+
+```text
+height: 22-24px
+padding: 0 8px
+radius: 999px
+font: 11px / 700
+```
+
+Color:
+
+- success: green,
+- warning: amber,
+- danger: red,
+- info: cyan,
+- primary/active: blue,
+- neutral: slate.
+
+### Button
+
+Jenis:
+
+- Primary: `Upload Excel`, `Generate Template`, `Start Sync`.
+- Secondary: `Refresh`, `Download`, `Preview`.
+- Soft: aksi non-dominan dengan background blue-soft.
+- Danger: `Delete`, `Cancel Batch`.
+- Icon button: notification, theme, retry, copy, view detail.
+
+Rules:
+
+- Pakai icon lucide jika tersedia.
+- Button utama punya icon kiri.
+- Icon-only wajib tooltip dan aria-label.
+- Disabled tetap jelas dan tidak terlihat clickable.
+
 ### Data Table
+
+Tabel tetap padat walaupun visual dashboard playful.
 
 Wajib:
 
 - sticky header,
-- density compact,
-- column resize jika memungkinkan,
-- filter per status,
-- search,
-- pagination,
-- row detail drawer,
-- export current view.
-
-Kolom umum:
-
-- status,
-- sheet/channel,
+- status column,
 - row number,
 - natural key,
 - operation,
-- errors,
-- warnings,
-- last attempt,
-- Neo Feeder ID,
-- action.
+- validation count,
+- sync status,
+- last response,
+- action column icon-only,
+- horizontal scroll jelas.
+
+Style:
+
+```text
+container radius: 16px
+row height: 40-44px
+header background: surface-soft
+hover row: primary-50/light or primary alpha/dark
+font: 13px
+```
 
 ### Validation Panel
 
-Tampilan harus mendukung:
+Tampilan:
 
-- group by sheet,
 - group by severity,
+- group by sheet,
 - group by field,
+- quick filter `Error`, `Warning`, `Info`,
 - jump to row,
-- copy error,
-- filter blocking errors only.
+- copy error.
 
-Error format:
+Error card kecil:
 
 ```text
-Sheet mahasiswa_biodata, row 12, field nik:
-NIK wajib 16 digit.
+icon severity
+Sheet + row
+field name monospace
+message
+suggested fix jika tersedia
 ```
-
-### Payload Viewer
-
-Untuk dry-run dan sync detail:
-
-- split view request/response,
-- syntax highlight JSON,
-- copy button,
-- sensitive masking default,
-- toggle reveal untuk role terbatas.
 
 ### Upload Wizard
 
 Step:
 
-1. pilih tenant/prodi/periode,
-2. upload file,
-3. parse,
-4. validasi,
-5. dry-run,
-6. approve sync,
-7. hasil.
+1. Pilih tenant/prodi/periode.
+2. Upload Excel.
+3. Parse workbook.
+4. Validasi.
+5. Dry-run.
+6. Approve sync.
+7. Hasil.
 
-Step indicator harus menunjukkan error count per tahap.
+Visual:
+
+- stepper horizontal desktop,
+- stepper vertical mobile,
+- current step biru,
+- completed step hijau,
+- failed step merah,
+- warning count amber.
+
+### Payload Viewer
+
+Untuk dry-run dan sync attempts.
+
+Rules:
+
+- JSON split view request/response.
+- Dark code block default, tetap tersedia di light mode.
+- Masking default untuk credential/token/NIK/NPWP/phone.
+- Toggle reveal hanya untuk role teknis.
+- Copy button icon-only.
 
 ### Mapping Workspace Phase 2
 
-Komponen:
+Pola layout:
 
-- source table selector,
-- source field list,
-- target contract field list,
-- mapping grid,
-- transform rule editor,
-- sample preview,
-- validation result,
-- unresolved references panel.
+```text
+Left: source schema/table/field list
+Center: mapping grid
+Right: target Neo Feeder contract and validation preview
+Bottom drawer: sample rows and transformed output
+```
 
-UI mapping harus memperlihatkan:
+Visual:
 
-- required target fields yang belum terisi,
-- source sample values,
-- hasil transform,
-- reference match confidence.
+- source fields sebagai pill/list item,
+- required target fields diberi dot merah jika belum mapped,
+- resolved reference diberi check hijau,
+- ambiguous match diberi warning amber,
+- transform rule tampil sebagai chips.
 
-## 7. Page Inventory
+## 9. Page Inventory
 
-## 7.1 Dashboard
-
-Isi:
-
-- status koneksi Neo Feeder,
-- referensi terakhir refresh,
-- batch import terbaru,
-- sync success/failure rate,
-- queue status,
-- error terbaru.
-
-## 7.2 Tenant Detail
+### Dashboard
 
 Isi:
 
-- profil kampus,
-- URL Neo Feeder,
-- status credential,
-- prodi aktif,
-- user/operator tenant,
-- audit ringkas.
+- welcome panel,
+- metric cards,
+- chart sync/import trend,
+- queue health,
+- recent import batches,
+- reference freshness,
+- Neo Feeder connection status.
 
-## 7.3 Neo Feeder Connection
+### Kampus
+
+Isi:
+
+- tenant list,
+- tenant status,
+- prodi count,
+- connection status,
+- user/operator count.
+
+### Neo Feeder Connection
 
 Isi:
 
@@ -283,21 +572,21 @@ Isi:
 - username/password form,
 - test connection,
 - token status masked,
-- hasil `GetProfilPT`,
+- result card dari `GetProfilPT`,
 - timeout config.
 
-## 7.4 References
+### Referensi
 
 Isi:
 
-- daftar endpoint referensi,
+- endpoint reference list,
 - last sync,
 - row count,
 - failed reason,
 - refresh button,
 - preview records.
 
-## 7.5 Template Excel
+### Template Excel
 
 Isi:
 
@@ -308,7 +597,7 @@ Isi:
 - download,
 - daftar template generated.
 
-## 7.6 Import Batch
+### Import Batch
 
 Isi:
 
@@ -320,7 +609,7 @@ Isi:
 - total rows,
 - valid/error/warning counts.
 
-## 7.7 Batch Detail
+### Batch Detail
 
 Tabs:
 
@@ -331,7 +620,7 @@ Tabs:
 - Sync Attempts
 - Audit
 
-## 7.8 Automation Source
+### Automation Source
 
 Phase 2:
 
@@ -341,7 +630,7 @@ Phase 2:
 - schema discovery,
 - sample data.
 
-## 7.9 Mapping Profile
+### Mapping Profile
 
 Phase 2:
 
@@ -352,21 +641,107 @@ Phase 2:
 - transform rules,
 - sample validation.
 
-## 8. Form Rules
+## 10. Light And Dark Mode
+
+Implementation rule:
+
+- Gunakan CSS variables atau Tailwind dark class strategy.
+- Theme toggle berada di topbar.
+- Pilihan theme: `light`, `dark`, `system`.
+- Simpan preferensi di local storage.
+- Dark mode bukan hanya invert warna. Shadow, border, dan surface harus disesuaikan.
+
+Light mode:
+
+- background terang,
+- panel putih,
+- border slate-200,
+- blue soft hover.
+
+Dark mode:
+
+- background navy-slate gelap,
+- panel slate-900/800,
+- border slate-700,
+- blue glow secukupnya,
+- text utama putih lembut.
+
+## 11. Icon System
+
+Gunakan lucide-react di frontend.
+
+Mapping icon:
+
+```text
+Dashboard: LayoutDashboard
+Kampus: Building2
+Neo Feeder: DatabaseZap
+Referensi: BookOpen
+Template Excel: FileSpreadsheet
+Import Batch: UploadCloud
+Validasi: ShieldCheck
+Sinkronisasi: RefreshCcw
+Mapping: Waypoints
+Otomatisasi: Workflow
+Audit Log: ClipboardList
+Pengaturan: Settings
+Search: Search
+Theme: Moon / Sun
+Notification: Bell
+User: CircleUserRound
+```
+
+Icon tile colors:
+
+- primary: blue,
+- sync/info: cyan,
+- success: green,
+- warning: amber,
+- danger: red,
+- automation: purple.
+
+## 12. Motion
+
+Gunakan motion kecil:
+
+- hover card `translateY(-2px)`,
+- icon scale `1.04`,
+- button active press `scale(0.98)`,
+- drawer slide 160-220ms,
+- toast fade/slide 160-220ms.
+
+Hindari:
+
+- animasi looping yang mengganggu,
+- chart terlalu ramai,
+- transisi lambat untuk workflow import.
+
+## 13. Forms
+
+Rules:
 
 - Required label pakai `*`.
-- Field help singkat di bawah input jika perlu.
+- Field help singkat di bawah input.
 - Tanggal selalu `yyyy-mm-dd`.
 - UUID dan kode pakai monospace.
 - Dropdown referensi harus searchable.
-- Jangan paksa dropdown untuk referensi besar seperti wilayah tanpa search.
-- Untuk nilai numeric, tampilkan constraint min/max/precision.
+- Referensi besar seperti wilayah wajib searchable dan lazy-loaded.
+- Numeric menampilkan min/max/precision.
+- Password/token default masked.
 
-## 9. Empty, Loading, Error States
+Input style:
 
-Empty state harus memberi aksi berikutnya, bukan teks promosi.
+```text
+height: 40-44px
+radius: 12px
+border: neutral
+focus: blue ring
+error: red border + message
+```
 
-Contoh:
+## 14. Empty, Loading, Error States
+
+Empty state:
 
 ```text
 Belum ada batch import.
@@ -375,25 +750,19 @@ Belum ada batch import.
 
 Loading:
 
-- skeleton untuk table,
-- progress untuk parse/validation/sync,
+- skeleton table,
+- progress bar untuk parse/validation/sync,
+- spinner kecil untuk button,
 - jangan blocking seluruh halaman jika hanya satu panel loading.
 
 Error:
 
-- tampilkan pesan teknis ringkas,
-- link ke detail log jika ada,
-- jangan hilangkan raw error dari Neo Feeder untuk role teknis.
+- pesan ringkas,
+- field/sheet/row jika tersedia,
+- link detail log,
+- raw Neo Feeder error tetap tersedia untuk role teknis.
 
-## 10. Accessibility
-
-- Semua icon button punya tooltip dan aria-label.
-- Kontras warna status harus cukup.
-- Error form harus terhubung dengan field.
-- Navigasi keyboard untuk table dan modal.
-- Jangan mengandalkan warna saja untuk status; gunakan icon/label.
-
-## 11. Copywriting
+## 15. Copywriting
 
 Gunakan istilah konsisten:
 
@@ -409,12 +778,12 @@ Gunakan istilah konsisten:
 - `Mapping`
 - `Otomatisasi`
 
-Nada teks:
+Nada:
 
-- langsung,
-- jelas,
-- tidak marketing,
-- tidak menyalahkan user.
+- ramah,
+- singkat,
+- tidak menyalahkan user,
+- tetap teknis saat error.
 
 Contoh:
 
@@ -422,31 +791,69 @@ Contoh:
 NIK wajib 16 digit.
 Prodi tidak ditemukan di referensi Neo Feeder.
 Baris ini belum dikirim karena masih ada error validasi.
+Sinkronisasi selesai dengan 12 sukses dan 3 perlu diperiksa.
 ```
 
-## 12. Responsive
+## 16. Responsive
 
 Desktop adalah target utama.
 
-Mobile/tablet:
+Desktop:
 
-- dashboard ringkas,
-- list batch bisa dibaca,
-- detail error bisa dibuka,
-- mapping workspace boleh tidak optimal di mobile.
+- sidebar fixed,
+- topbar fixed,
+- metric cards 3-4 kolom,
+- mapping workspace 3 panel.
 
-Tabel besar harus menyediakan horizontal scroll yang jelas.
+Tablet:
 
-## 13. Data Density
+- sidebar bisa collapsed,
+- metric cards 2 kolom,
+- drawer detail full height.
+
+Mobile:
+
+- sidebar menjadi drawer,
+- topbar ringkas,
+- metric cards 1 kolom,
+- tabel punya horizontal scroll,
+- mapping workspace boleh read-only/terbatas.
+
+## 17. Accessibility
+
+- Semua icon button punya tooltip dan aria-label.
+- Kontras warna status harus cukup.
+- Jangan mengandalkan warna saja untuk status.
+- Error form harus terhubung dengan field.
+- Focus ring terlihat di light dan dark mode.
+- Keyboard navigation untuk sidebar, search, modal, drawer, dan table action.
+
+## 18. Data Density
 
 Default:
 
-- compact table,
-- row height 36-44px,
-- status badge pendek,
-- action column icon-only dengan tooltip.
+- dashboard card visual boleh lapang,
+- table dan validation workspace tetap compact,
+- row height tabel 40-44px,
+- action column icon-only,
+- detail panjang masuk drawer atau full page.
 
-Untuk log dan payload:
+Jangan:
 
-- gunakan drawer atau full page detail,
-- jangan menaruh JSON panjang di card kecil.
+- menaruh JSON panjang di kartu kecil,
+- membuat card di dalam card berulang,
+- membuat wizard terlalu banyak teks instruksional.
+
+## 19. Design QA Checklist
+
+Sebelum implementasi UI dianggap selesai:
+
+- Light mode dan dark mode dicek.
+- Sidebar active/hover/disabled dicek.
+- Header fixed tidak menutup konten.
+- Text tidak overlap di mobile.
+- Tabel besar bisa discroll horizontal.
+- Status badge terbaca di kedua mode.
+- Payload viewer masking aktif.
+- Error validation jelas per sheet, row, dan field.
+- Warna base biru konsisten, tetapi status tidak semuanya biru.
