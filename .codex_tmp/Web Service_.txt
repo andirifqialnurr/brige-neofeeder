@@ -1,0 +1,117 @@
+
+
+===== PAGE 1 / 5 : Web Service_.pdf =====
+User Guide Web Service Versi 2.0  Page 17 
+ 
+1 Pendahuluan 
+Web Service merupakan sistem yang digunakan untuk menyambungkan data dari Sistem yang dimiliki 
+oleh Perguruan Tinggi ke Aplikasi FEEDER PDDIKTI. Pada versi terbaru Web Service terdapat 
+beberapa pembaharuan, antara lain: 
+1. Web Service versi 2.1 dibuat dengan natural language / bahasa manusia. 
+2. Penggantian nama kolom pada tabel agar dapat lebih dikenal banyak orang 
+3. Output Web Service dibuat dengan dua model yaitu XML dan JSON 
+4. Fungsi yang ada pada WS disamakan dengan Feeder agar pengguna tidak mengalami 
+kesulitan terhadap fungsi Web Service 
+ 
+2 Skema Interoperabilitas dengan Web Service 
+ 
+Gambar 2.1 Skema Interoperabilitas dengan Web Service 
+Pada gambar diatas PDDIKTI Feeder menyediakan service yang dapat dimanfaatkan oleh Perguruan 
+Tinggi agar dapat melakukan interoperabilitas sistem informasi yang sudah berjalan di lingkungan 
+perguruan tinggi masing-masing.  
+
+
+===== PAGE 2 / 5 : Web Service_.pdf =====
+User Guide Web Service Versi 2.0  Page 18 
+ 
+Sumber data yang digunakan untuk memenuhi kebutuhan PDDIKTI bisa berasal dari sebuah system 
+informasi atau multi-sistem informasi, dimana data yang berasal dari sistem-sistem tersebut perlu 
+dilakukan mapping terlebih dahulu untuk disesuaikan dengan standar yang ditentukan PDDIKTI. 
+ 
+Gambar 2.2 Alur Pemanfaatan Data PDDIKTI Feeder 
+Pada skema alur pemanfaatan data PDDIKTI memungkinkan system inforamasi data perguruan tinggi 
+menerima update terbaru dari PDDIKTI pusat 
+  
+
+
+===== PAGE 3 / 5 : Web Service_.pdf =====
+Web Service Feeder PDDIKTI Versi 2.2 yang berfungsi sebagai jembatan integrasi data 
+antara sistem informasi internal perguruan tinggi dengan aplikasi pusat. Versi terbaru ini 
+memperkenalkan penggunaan bahasa pemrograman yang lebih alami serta mendukung 
+format keluaran berupa XML dan JSON untuk memudahkan interoperabilitas sistem. 
+Dokumentasi ini merinci berbagai fungsi teknis, mulai dari pengambilan token 
+akses hingga prosedur pengelolaan basis data mahasiswa, dosen, dan kurikulum. Melalui 
+skema pemetaan data yang terstandarisasi, institusi pendidikan dapat melakukan 
+pembaruan informasi secara dua arah dengan efisien. Seluruh struktur perintah dalam 
+layanan web ini dirancang agar selaras dengan fitur pada aplikasi utama guna 
+meminimalkan kendala teknis bagi pengguna. Penjelasan ini mencakup panduan lengkap 
+mengenai parameter masukan dan respon sistem untuk memastikan akurasi pelaporan 
+data pendidikan tinggi. 
+ 
+Integrasi data antara sistem internal perguruan tinggi dengan PDDIKTI Feeder dilakukan 
+menggunakan teknologi Web Service (WS). Melalui skema ini, perguruan tinggi dapat 
+melakukan interoperabilitas sistem informasi secara dua arah, baik mengirimkan data 
+akademik maupun menerima pembaruan terbaru dari PDDIKTI Pusat. 
+Berikut adalah penjelasan lengkap mengenai komponen dan langkah alur integrasi data 
+tersebut: 
+1. Skema Interoperabilitas (Gambar 2.1) 
+Secara arsitektur, proses integrasi ini membagi sistem ke dalam dua sisi utama: 
+• Sisi Client (Perguruan Tinggi): Terdiri dari berbagai aplikasi internal seperti SIAKAD 
+(Sistem Informasi Akademik), PMB (Penerimaan Mahasiswa Baru), dan aplikasi 
+lainnya. Data dari berbagai aplikasi ini disatukan dan disesuaikan melalui proses 
+Mapping sebelum dikirim oleh Webservice Client. 
+• Sisi Provider (FEEDER PDDIKTI): Menerima request dari client melalui Webservice 
+Provider. Di sisi ini, sistem melakukan proses Auth (autentikasi keamanan) dan 
+Validasi data sebelum diproses masuk ke database FEEDER PDDIKTI. 
+ 
+2. Alur Pemanfaatan dan Sinkronisasi Data (Gambar 2.2) 
+Proses pengiriman, pemrosesan, dan pembaruan data mengikuti urutan langkah 
+terstruktur berikut: 
+1. Request & Generate Token (Autentikasi): 
+
+===== PAGE 4 / 5 : Web Service_.pdf =====
+o Client memulai proses dengan mengirimkan permintaan token (Request 
+Token) menggunakan username dan password ke sistem Feeder. 
+o PDDIKTI Feeder melakukan verifikasi dan membalas dengan menghasilkan 
+token akses (Generate Token). Token ini wajib digunakan pada setiap 
+request transaksi data berikutnya. 
+2. Membaca Data Lokal & Mapping Pertama: 
+o Sistem perguruan tinggi membaca data akademik dari database internal 
+(SIAKAD Database). 
+o Sistem melakukan Mapping (pemetaan data) secara lokal untuk 
+menyesuaikan struktur kolom lokal agar sesuai dengan standar format yang 
+ditentukan oleh PDDIKTI. 
+3. Insert / Update Request & Processing: 
+o Client mengirimkan permintaan tambah data (Insert Request) atau ubah 
+data (Update Request) menggunakan metode POST ke URL Web Service. 
+o PDDIKTI Feeder melakukan Processing (pengolahan data) berupa validasi 
+aturan akademik dan penyimpanan ke database Feeder. 
+4. Response Handler & Mapping Kedua: 
+o Sistem Feeder mengirimkan Response balik ke Client yang berisi informasi 
+apakah operasi sukses, terjadi error (disertai kode dan deskripsi error), atau 
+menghasilkan ID data baru (seperti id_registrasi_mahasiswa). 
+o Response Handler di sisi Client menerima data tersebut. 
+o Sistem Client kembali melakukan Mapping data untuk mengekstrak 
+informasi penting dari response (misalnya menyimpan UUID atau ID unik 
+yang dihasilkan Feeder). 
+5. Write Back ke Database Lokal: 
+o Sistem Client menuliskan (write) ID transaksi atau status sinkronisasi terbaru 
+tersebut kembali ke SIAKAD Database lokal. 
+o Langkah ini sangat penting agar database perguruan tinggi dan PDDIKTI 
+Feeder tetap sinkron dan saling memiliki referensi data akademik yang sama. 
+ 
+
+===== PAGE 5 / 5 : Web Service_.pdf =====
+3. Keunggulan pada Versi Terbaru Web Service 
+Pada versi terbaru (Web Service versi 2.2), integrasi data dipermudah melalui beberapa 
+pembaruan: 
+• Natural Language: Format fungsi Web Service dibuat menggunakan bahasa 
+manusia/bahasa alami sehingga lebih mudah dipahami oleh pengembang aplikasi 
+di perguruan tinggi. 
+• Penyederhanaan Nama Kolom: Nama kolom pada tabel diubah agar lebih dikenal 
+secara umum oleh publik. 
+• Model Output Ganda: Output respons Web Service kini didukung dalam format 
+XML maupun JSON. 
+• Penyamaan Fungsi: Fungsi-fungsi yang ada di Web Service disamakan persis 
+dengan fungsi yang ada pada aplikasi Feeder agar tidak membingungkan pengguna. 
+ 
