@@ -13,6 +13,15 @@ Laravel API, queue worker, scheduler, dan integration layer untuk Bridge Neo Fee
 
 ## Setup
 
+Disarankan jalankan dari root project:
+
+```bash
+bun run setup:local
+bun run dev
+```
+
+Perintah manual backend:
+
 ```bash
 composer install
 cp .env.example .env

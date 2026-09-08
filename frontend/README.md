@@ -11,8 +11,8 @@ React + Vite dashboard untuk Bridge Neo Feeder.
 ## Setup
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 Copy `.env.example` menjadi `.env` dan sesuaikan API URL.

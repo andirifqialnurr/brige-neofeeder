@@ -1,0 +1,17 @@
+{
+  "name": "bridge-neofeeder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.3.0",
+  "scripts": {
+    "setup:local": "bun scripts/setup-local.mjs",
+    "dev": "bun scripts/dev.mjs",
+    "dev:app": "bun scripts/dev.mjs --no-docker",
+    "dev:full": "bun scripts/dev.mjs --with-worker --with-scheduler",
+    "dev:stop": "bun scripts/stop-local.mjs",
+    "frontend:build": "bun --cwd frontend run build",
+    "frontend:lint": "bun --cwd frontend run lint",
+    "backend:test": "composer --working-dir=backend test"
+  }
+}
