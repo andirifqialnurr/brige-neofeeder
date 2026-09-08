@@ -10,8 +10,8 @@
     "dev:app": "bun scripts/dev.mjs --no-docker",
     "dev:full": "bun scripts/dev.mjs --with-worker --with-scheduler",
     "dev:stop": "bun scripts/stop-local.mjs",
-    "frontend:build": "bun --cwd frontend run build",
-    "frontend:lint": "bun --cwd frontend run lint",
+    "frontend:build": "bun run --cwd frontend build",
+    "frontend:lint": "bun run --cwd frontend lint",
     "backend:test": "composer --working-dir=backend test"
   }
 }

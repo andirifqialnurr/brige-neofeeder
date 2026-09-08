@@ -81,11 +81,11 @@ if (useDocker) {
   await runDetached('docker', 'docker', ['compose', '-f', 'backend/docker-compose.yml', 'up', '-d', 'mysql', 'redis']);
 }
 
-console.log('[dev] backend: http://127.0.0.1:8000/api/health');
-console.log('[dev] frontend: http://127.0.0.1:5173');
+console.log('[dev] backend: http://127.0.0.1:2000/api/health');
+console.log('[dev] frontend: http://127.0.0.1:1000');
 console.log('[dev] press Ctrl+C to stop Laravel/Vite processes');
 
-run('api', 'php', ['artisan', 'serve', '--host=127.0.0.1', '--port=8000'], { cwd: 'backend' });
+run('api', 'php', ['artisan', 'serve', '--host=127.0.0.1', '--port=2000'], { cwd: 'backend' });
 
 if (withWorker) {
   run('queue', 'php', ['artisan', 'queue:work', '--tries=1'], { cwd: 'backend' });
@@ -95,4 +95,4 @@ if (withScheduler) {
   run('scheduler', 'php', ['artisan', 'schedule:work'], { cwd: 'backend' });
 }
 
-run('web', 'bun', ['run', 'dev', '--host', '127.0.0.1', '--port', '5173'], { cwd: 'frontend' });
+run('web', 'bun', ['run', 'dev', '--host', '127.0.0.1', '--port', '1000'], { cwd: 'frontend' });

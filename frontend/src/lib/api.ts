@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:2000/api';
 
 export async function getHealth(): Promise<{ status: string; service: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);

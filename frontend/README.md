@@ -18,7 +18,7 @@ bun run dev
 Copy `.env.example` menjadi `.env` dan sesuaikan API URL.
 
 ```text
-VITE_API_BASE_URL=http://localhost:8000/api
+VITE_API_BASE_URL=http://localhost:2000/api
 ```
 
 ## Scope Awal

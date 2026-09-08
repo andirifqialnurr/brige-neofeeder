@@ -21,8 +21,8 @@ bun run dev
 Akses lokal:
 
 ```text
-Frontend: http://127.0.0.1:5173
-Backend:  http://127.0.0.1:8000/api/health
+Frontend: http://127.0.0.1:1000
+Backend:  http://127.0.0.1:2000/api/health
 ```
 
 Jalankan frontend dan backend saja jika MySQL/Redis sudah berjalan:
