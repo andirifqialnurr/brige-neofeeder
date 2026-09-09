@@ -20,7 +20,7 @@
 ## UI Foundation - shadcn Dashboard
 
 - [x] Setup Tailwind CSS di frontend.
-- [ ] Setup shadcn/ui dan path alias.
+- [x] Setup shadcn/ui dan path alias.
 - [ ] Setup theme token light/dark.
 - [ ] Pindahkan shared UI ke struktur shadcn-style.
 - [ ] Reslice dashboard awal sesuai `design-system.md`.
