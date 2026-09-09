@@ -34,7 +34,7 @@
 
 ## 1.1 Contract Layer
 
-- [ ] Buat struktur `ChannelContract`.
+- [x] Buat struktur `ChannelContract`.
 - [ ] Buat struktur `FieldContract`.
 - [ ] Buat struktur `OperationContract`.
 - [ ] Buat dependency graph kanal.
