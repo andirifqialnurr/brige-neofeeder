@@ -37,7 +37,7 @@
 - [x] Buat struktur `ChannelContract`.
 - [x] Buat struktur `FieldContract`.
 - [x] Buat struktur `OperationContract`.
-- [ ] Buat dependency graph kanal.
+- [x] Buat dependency graph kanal.
 - [ ] Masukkan contract awal untuk referensi Neo Feeder.
 - [ ] Masukkan contract awal untuk biodata mahasiswa.
 - [ ] Masukkan contract awal untuk riwayat pendidikan mahasiswa.
