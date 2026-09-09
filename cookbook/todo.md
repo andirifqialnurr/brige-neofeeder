@@ -17,6 +17,19 @@
 - [x] Definisikan response parser `error_code`, `error_desc`, `data`.
 - [x] Buat audit log dasar.
 
+## UI Foundation - shadcn Dashboard
+
+- [ ] Setup Tailwind CSS di frontend.
+- [ ] Setup shadcn/ui dan path alias.
+- [ ] Setup theme token light/dark.
+- [ ] Pindahkan shared UI ke struktur shadcn-style.
+- [ ] Reslice dashboard awal sesuai `design-system.md`.
+- [ ] Tambahkan layout shell: sidebar, topbar, page header.
+- [ ] Tambahkan komponen dashboard: metric card, status badge, workspace panel.
+- [ ] Tambahkan table primitive untuk list data.
+- [ ] Tambahkan empty, loading, dan error state primitive.
+- [ ] Validasi build/lint frontend.
+
 ## Phase 1 - Export/Import Excel
 
 ## 1.1 Contract Layer
