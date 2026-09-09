@@ -28,7 +28,7 @@
 - [x] Tambahkan komponen dashboard: metric card, status badge, workspace panel.
 - [x] Tambahkan table primitive untuk list data.
 - [x] Tambahkan empty, loading, dan error state primitive.
-- [ ] Validasi build/lint frontend.
+- [x] Validasi build/lint frontend.
 
 ## Phase 1 - Export/Import Excel
 
