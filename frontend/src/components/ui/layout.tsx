@@ -47,3 +47,23 @@ export function Topbar({
     </header>
   );
 }
+
+export function PageHeader({
+  eyebrow,
+  title,
+  action,
+}: {
+  eyebrow?: string;
+  title: string;
+  action?: ReactNode;
+}) {
+  return (
+    <section className="dashboard-header">
+      <div>
+        {eyebrow ? <span className="status-pill">{eyebrow}</span> : null}
+        <h2>{title}</h2>
+      </div>
+      {action}
+    </section>
+  );
+}

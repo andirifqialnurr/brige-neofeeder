@@ -21,6 +21,7 @@ import {
   AppShell,
   Brand,
   MetricCard,
+  PageHeader,
   SectionHeader,
   Sidebar,
   SidebarNav,
@@ -84,13 +85,11 @@ function App() {
         title="Operasional Neo Feeder"
       />
 
-      <section className="dashboard-header">
-        <div>
-          <span className="status-pill">Local Dev</span>
-          <h2>Siapkan data kampus untuk sinkronisasi.</h2>
-        </div>
-        <AppButton icon={Upload}>Upload Excel</AppButton>
-      </section>
+      <PageHeader
+        action={<AppButton icon={Upload}>Upload Excel</AppButton>}
+        eyebrow="Local Dev"
+        title="Siapkan data kampus untuk sinkronisasi."
+      />
 
       <section className="status-grid" aria-label="Status ringkas">
         {metrics.map((item) => (
