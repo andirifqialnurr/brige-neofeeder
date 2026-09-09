@@ -21,6 +21,7 @@ import {
   AppShell,
   Brand,
   DataTable,
+  EmptyState,
   MetricCard,
   PageHeader,
   SectionHeader,
@@ -119,13 +120,7 @@ function App() {
 
           <DataTable
             columns={batchColumns}
-            emptyState={
-              <div className="empty-state">
-                <FileSpreadsheet size={22} />
-                <strong>Belum ada batch</strong>
-                <span>Upload template Excel untuk mulai validasi.</span>
-              </div>
-            }
+            emptyState={<EmptyState description="Upload template Excel untuk mulai validasi." icon={FileSpreadsheet} title="Belum ada batch" />}
           />
         </WorkspacePanel>
 

@@ -27,7 +27,7 @@
 - [x] Tambahkan layout shell: sidebar, topbar, page header.
 - [x] Tambahkan komponen dashboard: metric card, status badge, workspace panel.
 - [x] Tambahkan table primitive untuk list data.
-- [ ] Tambahkan empty, loading, dan error state primitive.
+- [x] Tambahkan empty, loading, dan error state primitive.
 - [ ] Validasi build/lint frontend.
 
 ## Phase 1 - Export/Import Excel

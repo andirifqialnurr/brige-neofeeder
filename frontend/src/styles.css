@@ -554,6 +554,47 @@ td {
   font-size: 13px;
 }
 
+.loading-state,
+.error-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 13px;
+}
+
+.loading-state {
+  justify-content: center;
+  color: hsl(var(--muted-foreground));
+}
+
+.loading-state svg {
+  animation: spin 1s linear infinite;
+}
+
+.error-state {
+  border: 1px solid hsl(var(--destructive) / 0.32);
+  background: hsl(var(--destructive) / 0.08);
+  color: hsl(var(--destructive));
+}
+
+.error-state strong,
+.error-state span {
+  display: block;
+}
+
+.error-state span {
+  margin-top: 2px;
+  color: hsl(var(--muted-foreground));
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .phase-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
