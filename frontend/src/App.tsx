@@ -20,6 +20,7 @@ import {
   AppButton,
   AppShell,
   Brand,
+  DataTable,
   MetricCard,
   PageHeader,
   SectionHeader,
@@ -116,28 +117,16 @@ function App() {
             title="Batch Import"
           />
 
-          <div className="table-shell">
-            <table>
-              <thead>
-                <tr>
-                  {batchColumns.map((column) => (
-                    <th key={column}>{column}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td colSpan={batchColumns.length}>
-                    <div className="empty-state">
-                      <FileSpreadsheet size={22} />
-                      <strong>Belum ada batch</strong>
-                      <span>Upload template Excel untuk mulai validasi.</span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={batchColumns}
+            emptyState={
+              <div className="empty-state">
+                <FileSpreadsheet size={22} />
+                <strong>Belum ada batch</strong>
+                <span>Upload template Excel untuk mulai validasi.</span>
+              </div>
+            }
+          />
         </WorkspacePanel>
 
         <aside className="side-panel">

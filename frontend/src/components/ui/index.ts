@@ -1,4 +1,5 @@
 export * from './button';
+export * from './data-table';
 export * from './layout';
 export * from './metric-card';
 export * from './navigation';

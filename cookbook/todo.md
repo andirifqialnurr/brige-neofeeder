@@ -26,7 +26,7 @@
 - [x] Reslice dashboard awal sesuai `design-system.md`.
 - [x] Tambahkan layout shell: sidebar, topbar, page header.
 - [x] Tambahkan komponen dashboard: metric card, status badge, workspace panel.
-- [ ] Tambahkan table primitive untuk list data.
+- [x] Tambahkan table primitive untuk list data.
 - [ ] Tambahkan empty, loading, dan error state primitive.
 - [ ] Validasi build/lint frontend.
 
