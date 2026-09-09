@@ -21,7 +21,7 @@
 
 - [x] Setup Tailwind CSS di frontend.
 - [x] Setup shadcn/ui dan path alias.
-- [ ] Setup theme token light/dark.
+- [x] Setup theme token light/dark.
 - [ ] Pindahkan shared UI ke struktur shadcn-style.
 - [ ] Reslice dashboard awal sesuai `design-system.md`.
 - [ ] Tambahkan layout shell: sidebar, topbar, page header.
