@@ -349,9 +349,29 @@ h3 {
   padding: 3px 8px;
 }
 
-.badge.warning {
+.badge-neutral {
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+}
+
+.badge-info {
+  background: hsl(var(--info) / 0.12);
+  color: hsl(var(--info));
+}
+
+.badge-success {
+  background: hsl(var(--success) / 0.12);
+  color: hsl(var(--success));
+}
+
+.badge-warning {
   background: hsl(var(--warning) / 0.12);
   color: hsl(var(--warning));
+}
+
+.badge-destructive {
+  background: hsl(var(--destructive) / 0.12);
+  color: hsl(var(--destructive));
 }
 
 .status-grid {

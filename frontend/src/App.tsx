@@ -25,6 +25,7 @@ import {
   SectionHeader,
   Sidebar,
   SidebarNav,
+  StatusBadge,
   Topbar,
   WorkspacePanel,
 } from './components/ui';
@@ -145,7 +146,7 @@ function App() {
             <div>
               <dt>Status</dt>
               <dd>
-                <span className="badge warning">Draft</span>
+                <StatusBadge tone="warning">Draft</StatusBadge>
               </dd>
             </div>
             <div>
