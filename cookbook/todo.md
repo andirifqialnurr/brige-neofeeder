@@ -23,7 +23,7 @@
 - [x] Setup shadcn/ui dan path alias.
 - [x] Setup theme token light/dark.
 - [x] Pindahkan shared UI ke struktur shadcn-style.
-- [ ] Reslice dashboard awal sesuai `design-system.md`.
+- [x] Reslice dashboard awal sesuai `design-system.md`.
 - [ ] Tambahkan layout shell: sidebar, topbar, page header.
 - [ ] Tambahkan komponen dashboard: metric card, status badge, workspace panel.
 - [ ] Tambahkan table primitive untuk list data.
