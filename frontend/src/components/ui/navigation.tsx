@@ -1,25 +1,37 @@
 import type { LucideIcon } from 'lucide-react';
 
-type SidebarNavItem = {
+export type SidebarNavItem = {
+  id: string;
   label: string;
   icon: LucideIcon;
 };
 
-export function SidebarNav({ items, activeItem }: { items: SidebarNavItem[]; activeItem: string }) {
+export function SidebarNav({
+  items,
+  activeItem,
+  onItemSelect,
+}: {
+  items: ReadonlyArray<SidebarNavItem>;
+  activeItem: string;
+  onItemSelect?: (item: SidebarNavItem) => void;
+}) {
   return (
     <nav className="nav-list" aria-label="Navigasi utama">
       {items.map((item) => {
         const Icon = item.icon;
+        const isActive = item.id === activeItem;
 
         return (
-          <a
-            className={item.label === activeItem ? 'active' : undefined}
-            href={`#${item.label.toLowerCase().replaceAll(' ', '-')}`}
-            key={item.label}
+          <button
+            aria-current={isActive ? 'page' : undefined}
+            className={isActive ? 'active' : undefined}
+            key={item.id}
+            onClick={() => onItemSelect?.(item)}
+            type="button"
           >
             <Icon size={18} />
             {item.label}
-          </a>
+          </button>
         );
       })}
     </nav>

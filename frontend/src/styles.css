@@ -160,21 +160,25 @@ a {
   gap: 6px;
 }
 
-.nav-list a {
+.nav-list button {
   display: flex;
   align-items: center;
   gap: 10px;
+  border: 0;
   border-radius: 12px;
+  background: transparent;
   color: hsl(var(--muted-foreground));
+  cursor: pointer;
   min-height: 40px;
   padding: 0 12px;
-  text-decoration: none;
   font-size: 14px;
   font-weight: 600;
+  text-align: left;
+  width: 100%;
 }
 
-.nav-list a.active,
-.nav-list a:hover {
+.nav-list button.active,
+.nav-list button:hover {
   background: hsl(var(--accent));
   color: hsl(var(--accent-foreground));
 }
@@ -463,6 +467,13 @@ h3 {
   align-items: start;
 }
 
+.page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 8fr) minmax(280px, 4fr);
+  gap: 16px;
+  align-items: start;
+}
+
 .side-panel {
   display: grid;
   gap: 18px;
@@ -563,6 +574,21 @@ h3 {
 
 .mono {
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+
+.task-list {
+  display: grid;
+  gap: 10px;
+}
+
+.task-list span {
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--muted) / 0.35);
+  color: hsl(var(--foreground));
+  padding: 11px 12px;
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .table-shell {
@@ -725,7 +751,8 @@ td {
   .status-grid,
   .reference-summary,
   .phase-grid,
-  .dashboard-grid {
+  .dashboard-grid,
+  .page-grid {
     grid-template-columns: 1fr;
   }
 

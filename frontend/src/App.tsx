@@ -6,6 +6,7 @@ import {
   CircleUserRound,
   Database,
   DatabaseZap,
+  Download,
   FileSpreadsheet,
   LayoutDashboard,
   Moon,
@@ -30,19 +31,33 @@ import {
   SectionHeader,
   Sidebar,
   SidebarNav,
+  type SidebarNavItem,
   StatusBadge,
   Topbar,
   WorkspacePanel,
 } from './components/ui';
 
-const navItems = [
-  { label: 'Dashboard', icon: LayoutDashboard },
-  { label: 'Kampus', icon: Building2 },
-  { label: 'Neo Feeder', icon: DatabaseZap },
-  { label: 'Template Excel', icon: FileSpreadsheet },
-  { label: 'Import Batch', icon: Upload },
-  { label: 'Validasi', icon: ShieldCheck },
-  { label: 'Mapping', icon: Waypoints },
+type PageId =
+  | 'dashboard'
+  | 'campus'
+  | 'neo-feeder'
+  | 'template-excel'
+  | 'import-batch'
+  | 'validation'
+  | 'mapping';
+
+type AppNavItem = SidebarNavItem & {
+  id: PageId;
+};
+
+const navItems: AppNavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'campus', label: 'Kampus', icon: Building2 },
+  { id: 'neo-feeder', label: 'Neo Feeder', icon: DatabaseZap },
+  { id: 'template-excel', label: 'Template Excel', icon: FileSpreadsheet },
+  { id: 'import-batch', label: 'Import Batch', icon: Upload },
+  { id: 'validation', label: 'Validasi', icon: ShieldCheck },
+  { id: 'mapping', label: 'Mapping', icon: Waypoints },
 ];
 
 const metrics = [
@@ -53,6 +68,20 @@ const metrics = [
 ] as const;
 
 const batchColumns = ['Batch', 'Kampus', 'Status', 'Valid', 'Error', 'Update'];
+const campusColumns = ['Kampus', 'Kode PT', 'Status', 'Batch', 'Update'];
+const templateColumns = ['Sheet', 'Endpoint', 'Wajib', 'Referensi', 'Status'];
+const validationColumns = ['Batch', 'Kategori', 'Field', 'Error', 'Status'];
+const mappingColumns = ['Sumber SIAKAD', 'Target Neo Feeder', 'Confidence', 'Status'];
+
+const pageMeta: Record<PageId, { eyebrow: string; title: string }> = {
+  dashboard: { eyebrow: 'Dashboard', title: 'Operasional Neo Feeder' },
+  campus: { eyebrow: 'Master Data', title: 'Kampus' },
+  'neo-feeder': { eyebrow: 'Integrasi', title: 'Neo Feeder' },
+  'template-excel': { eyebrow: 'Template', title: 'Template Excel' },
+  'import-batch': { eyebrow: 'Import', title: 'Import Batch' },
+  validation: { eyebrow: 'Validasi', title: 'Validasi Data' },
+  mapping: { eyebrow: 'Otomatisasi', title: 'Mapping SIAKAD' },
+};
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -69,8 +98,10 @@ function App() {
   const { theme, setTheme } = useTheme();
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
   const ThemeIcon = theme === 'dark' ? Sun : Moon;
+  const [activePage, setActivePage] = useState<PageId>('dashboard');
   const [referenceStatus, setReferenceStatus] = useState<ReferenceStatus | null>(null);
   const [referenceStatusState, setReferenceStatusState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const currentPage = pageMeta[activePage];
 
   useEffect(() => {
     let mounted = true;
@@ -101,38 +132,94 @@ function App() {
     [referenceStatus],
   );
 
-  return (
-    <AppShell
-      sidebar={
-        <Sidebar>
-          <Brand icon={Database} title="Bridge Neo Feeder" subtitle="PDDIKTI sync" />
-          <SidebarNav activeItem="Dashboard" items={navItems} />
-        </Sidebar>
-      }
-    >
-      <Topbar
+  const renderReferencePanel = () => (
+    <WorkspacePanel>
+      <SectionHeader
         action={
-          <div className="topbar-actions">
-            <button className="search-trigger" type="button">
-              <Search size={17} />
-              <span>Cari batch</span>
-              <kbd>Ctrl K</kbd>
-            </button>
-            <button aria-label="Ganti tema" className="icon-button" onClick={() => setTheme(nextTheme)} type="button">
-              <ThemeIcon size={18} />
-            </button>
-            <button aria-label="Notifikasi" className="icon-button" type="button">
-              <Bell size={18} />
-            </button>
-            <button aria-label="Menu pengguna" className="avatar-button" type="button">
-              <CircleUserRound size={20} />
-            </button>
-          </div>
+          <AppButton icon={RefreshCcw} variant="secondary">
+            Sync Referensi
+          </AppButton>
         }
-        eyebrow="Dashboard"
-        title="Operasional Neo Feeder"
+        description="Status cache lookup Neo Feeder untuk template dan validasi."
+        title="Referensi Neo Feeder"
       />
 
+      <div className="reference-summary">
+        <div>
+          <span>Total Rows</span>
+          <strong>{referenceStatus?.total_rows ?? 0}</strong>
+        </div>
+        <div>
+          <span>Endpoint Sync</span>
+          <strong>
+            {referenceStatus?.synced_endpoint_count ?? 0}/{referenceStatus?.endpoint_count ?? 0}
+          </strong>
+        </div>
+        <div>
+          <span>Belum Sync</span>
+          <strong>{referenceStatus?.failed_endpoint_count ?? 0}</strong>
+        </div>
+        <div>
+          <span>Last Refresh</span>
+          <strong>{formatDateTime(referenceStatus?.last_synced_at ?? null)}</strong>
+        </div>
+      </div>
+
+      <div className="reference-list">
+        {referencePreview.length > 0 ? (
+          referencePreview.map((item) => (
+            <div className="reference-row" key={item.endpoint}>
+              <div>
+                <strong>{item.endpoint}</strong>
+                <span>{item.total_rows} rows</span>
+              </div>
+              <StatusBadge tone={item.status === 'synced' ? 'success' : 'warning'}>
+                {item.status === 'synced' ? 'Synced' : 'Belum sync'}
+              </StatusBadge>
+            </div>
+          ))
+        ) : (
+          <EmptyState
+            description={
+              referenceStatusState === 'error'
+                ? 'Status referensi belum bisa dimuat dari API.'
+                : 'Tambahkan API token untuk melihat status referensi.'
+            }
+            icon={Clock3}
+            title="Status referensi belum tersedia"
+          />
+        )}
+      </div>
+    </WorkspacePanel>
+  );
+
+  const renderNeoFeederConnection = () => (
+    <aside className="side-panel">
+      <SectionHeader title="Neo Feeder" />
+      <dl className="connection-list">
+        <div>
+          <dt>Status</dt>
+          <dd>
+            <StatusBadge tone="warning">Draft</StatusBadge>
+          </dd>
+        </div>
+        <div>
+          <dt>Endpoint</dt>
+          <dd className="mono">Belum diset</dd>
+        </div>
+        <div>
+          <dt>Referensi</dt>
+          <dd>Belum sync</dd>
+        </div>
+      </dl>
+      <AppButton icon={DatabaseZap} variant="secondary">
+        Test Koneksi
+      </AppButton>
+    </aside>
+  );
+
+  const renderDashboard = () => (
+    <>
       <PageHeader
         action={<AppButton icon={Upload}>Upload Excel</AppButton>}
         eyebrow="Local Dev"
@@ -169,88 +256,202 @@ function App() {
           />
         </WorkspacePanel>
 
+        {renderNeoFeederConnection()}
+      </section>
+
+      {renderReferencePanel()}
+    </>
+  );
+
+  const renderCampus = () => (
+    <>
+      <PageHeader
+        action={<AppButton icon={Building2}>Tambah Kampus</AppButton>}
+        eyebrow="Master Data"
+        title="Kelola tenant kampus dan koneksi sumber data."
+      />
+
+      <section className="page-grid">
+        <WorkspacePanel>
+          <SectionHeader title="Daftar Kampus" />
+          <DataTable
+            columns={campusColumns}
+            emptyState={<EmptyState description="Kampus pertama akan dipakai untuk uji template Excel." icon={Building2} title="Belum ada kampus" />}
+          />
+        </WorkspacePanel>
+
         <aside className="side-panel">
-          <SectionHeader title="Neo Feeder" />
-          <dl className="connection-list">
-            <div>
-              <dt>Status</dt>
-              <dd>
-                <StatusBadge tone="warning">Draft</StatusBadge>
-              </dd>
-            </div>
-            <div>
-              <dt>Endpoint</dt>
-              <dd className="mono">Belum diset</dd>
-            </div>
-            <div>
-              <dt>Referensi</dt>
-              <dd>Belum sync</dd>
-            </div>
-          </dl>
+          <SectionHeader title="Onboarding" />
+          <div className="task-list">
+            <span>Profil kampus</span>
+            <span>Credential Neo Feeder</span>
+            <span>Format template Excel</span>
+            <span>Rule validasi awal</span>
+          </div>
+        </aside>
+      </section>
+    </>
+  );
+
+  const renderNeoFeeder = () => (
+    <>
+      <PageHeader
+        action={
           <AppButton icon={DatabaseZap} variant="secondary">
             Test Koneksi
           </AppButton>
-        </aside>
+        }
+        eyebrow="Integrasi"
+        title="Atur credential WS dan cache referensi Neo Feeder."
+      />
+
+      <section className="dashboard-grid">
+        {renderNeoFeederConnection()}
+        {renderReferencePanel()}
       </section>
+    </>
+  );
+
+  const renderTemplateExcel = () => (
+    <>
+      <PageHeader
+        action={<AppButton icon={Download}>Download Template</AppButton>}
+        eyebrow="Phase 1"
+        title="Template mengikuti kontrak field Neo Feeder."
+      />
+
+      <WorkspacePanel>
+        <SectionHeader title="Workbook Template" />
+        <DataTable
+          columns={templateColumns}
+          emptyState={<EmptyState description="Generator template akan membaca kanal data yang aktif." icon={FileSpreadsheet} title="Template belum digenerate" />}
+        />
+      </WorkspacePanel>
+    </>
+  );
+
+  const renderImportBatch = () => (
+    <>
+      <PageHeader
+        action={<AppButton icon={Upload}>Upload Excel</AppButton>}
+        eyebrow="Import"
+        title="Pantau upload, validasi, dan kesiapan sync."
+      />
 
       <WorkspacePanel>
         <SectionHeader
           action={
             <AppButton icon={RefreshCcw} variant="secondary">
-              Sync Referensi
+              Refresh
             </AppButton>
           }
-          description="Status cache lookup Neo Feeder untuk template dan validasi."
-          title="Referensi Neo Feeder"
+          title="Batch Import"
         />
-
-        <div className="reference-summary">
-          <div>
-            <span>Total Rows</span>
-            <strong>{referenceStatus?.total_rows ?? 0}</strong>
-          </div>
-          <div>
-            <span>Endpoint Sync</span>
-            <strong>
-              {referenceStatus?.synced_endpoint_count ?? 0}/{referenceStatus?.endpoint_count ?? 0}
-            </strong>
-          </div>
-          <div>
-            <span>Belum Sync</span>
-            <strong>{referenceStatus?.failed_endpoint_count ?? 0}</strong>
-          </div>
-          <div>
-            <span>Last Refresh</span>
-            <strong>{formatDateTime(referenceStatus?.last_synced_at ?? null)}</strong>
-          </div>
-        </div>
-
-        <div className="reference-list">
-          {referencePreview.length > 0 ? (
-            referencePreview.map((item) => (
-              <div className="reference-row" key={item.endpoint}>
-                <div>
-                  <strong>{item.endpoint}</strong>
-                  <span>{item.total_rows} rows</span>
-                </div>
-                <StatusBadge tone={item.status === 'synced' ? 'success' : 'warning'}>
-                  {item.status === 'synced' ? 'Synced' : 'Belum sync'}
-                </StatusBadge>
-              </div>
-            ))
-          ) : (
-            <EmptyState
-              description={
-                referenceStatusState === 'error'
-                  ? 'Status referensi belum bisa dimuat dari API.'
-                  : 'Tambahkan API token untuk melihat status referensi.'
-              }
-              icon={Clock3}
-              title="Status referensi belum tersedia"
-            />
-          )}
-        </div>
+        <DataTable
+          columns={batchColumns}
+          emptyState={<EmptyState description="Belum ada file yang diupload." icon={Upload} title="Batch kosong" />}
+        />
       </WorkspacePanel>
+    </>
+  );
+
+  const renderValidation = () => (
+    <>
+      <PageHeader
+        action={
+          <AppButton icon={ShieldCheck} variant="secondary">
+            Jalankan Validasi
+          </AppButton>
+        }
+        eyebrow="Quality Gate"
+        title="Cek field wajib, referensi, dan relasi data."
+      />
+
+      <WorkspacePanel>
+        <SectionHeader title="Temuan Validasi" />
+        <DataTable
+          columns={validationColumns}
+          emptyState={<EmptyState description="Upload batch untuk melihat hasil validasi." icon={ShieldCheck} title="Belum ada temuan" />}
+        />
+      </WorkspacePanel>
+    </>
+  );
+
+  const renderMapping = () => (
+    <>
+      <PageHeader
+        action={
+          <AppButton icon={Waypoints} variant="secondary">
+            Buat Draft Mapping
+          </AppButton>
+        }
+        eyebrow="Phase 2"
+        title="Siapkan mapping otomatis dari struktur SIAKAD."
+      />
+
+      <WorkspacePanel>
+        <SectionHeader title="Draft Mapping" />
+        <DataTable
+          columns={mappingColumns}
+          emptyState={<EmptyState description="Mapping dibuat setelah koneksi database SIAKAD dipelajari." icon={Waypoints} title="Belum ada mapping" />}
+        />
+      </WorkspacePanel>
+    </>
+  );
+
+  const renderPage = () => {
+    switch (activePage) {
+      case 'campus':
+        return renderCampus();
+      case 'neo-feeder':
+        return renderNeoFeeder();
+      case 'template-excel':
+        return renderTemplateExcel();
+      case 'import-batch':
+        return renderImportBatch();
+      case 'validation':
+        return renderValidation();
+      case 'mapping':
+        return renderMapping();
+      case 'dashboard':
+      default:
+        return renderDashboard();
+    }
+  };
+
+  return (
+    <AppShell
+      sidebar={
+        <Sidebar>
+          <Brand icon={Database} title="Bridge Neo Feeder" subtitle="PDDIKTI sync" />
+          <SidebarNav activeItem={activePage} items={navItems} onItemSelect={(item) => setActivePage(item.id as PageId)} />
+        </Sidebar>
+      }
+    >
+      <Topbar
+        action={
+          <div className="topbar-actions">
+            <button className="search-trigger" type="button">
+              <Search size={17} />
+              <span>Cari batch</span>
+              <kbd>Ctrl K</kbd>
+            </button>
+            <button aria-label="Ganti tema" className="icon-button" onClick={() => setTheme(nextTheme)} type="button">
+              <ThemeIcon size={18} />
+            </button>
+            <button aria-label="Notifikasi" className="icon-button" type="button">
+              <Bell size={18} />
+            </button>
+            <button aria-label="Menu pengguna" className="avatar-button" type="button">
+              <CircleUserRound size={20} />
+            </button>
+          </div>
+        }
+        eyebrow={currentPage.eyebrow}
+        title={currentPage.title}
+      />
+
+      {renderPage()}
     </AppShell>
   );
 }
