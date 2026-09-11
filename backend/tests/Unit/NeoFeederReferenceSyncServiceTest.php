@@ -480,6 +480,33 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_list_mata_kuliah_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetListMataKuliah', [
+            'data' => [
+                [
+                    'id_matkul' => 'matkul-1',
+                    'kode_mata_kuliah' => 'IF101',
+                    'nama_mata_kuliah' => 'Algoritma',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetListMataKuliah',
+                'value_key' => 'id_matkul',
+                'value' => 'matkul-1',
+                'label' => 'Algoritma',
+                'raw_payload' => [
+                    'id_matkul' => 'matkul-1',
+                    'kode_mata_kuliah' => 'IF101',
+                    'nama_mata_kuliah' => 'Algoritma',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);

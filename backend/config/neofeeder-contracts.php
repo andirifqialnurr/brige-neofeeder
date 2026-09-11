@@ -169,6 +169,13 @@ return [
                     'payload_mode' => 'filter',
                     'response_fields' => ['id_registrasi_dosen', 'id_dosen', 'nama_dosen'],
                 ],
+                [
+                    'name' => 'mata_kuliah',
+                    'action' => 'GetListMataKuliah',
+                    'type' => 'list',
+                    'payload_mode' => 'filter',
+                    'response_fields' => ['id_matkul', 'kode_mata_kuliah', 'nama_mata_kuliah'],
+                ],
             ],
         ],
         'mahasiswa_biodata' => [
