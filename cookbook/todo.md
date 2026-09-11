@@ -68,7 +68,7 @@
 - [x] Implement sync `GetJenisTinggal`.
 - [x] Implement sync `GetAlatTransportasi`.
 - [x] Implement sync `GetJenisPendaftaran`.
-- [ ] Implement sync `GetJalurMasuk`.
+- [x] Implement sync `GetJalurMasuk`.
 - [ ] Implement sync `GetPembiayaan`.
 - [ ] Implement sync `GetStatusMahasiswa`.
 - [ ] Implement sync `GetJenisKeluar`.

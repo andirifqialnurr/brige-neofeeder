@@ -251,6 +251,31 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_jalur_masuk_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetJalurMasuk', [
+            'data' => [
+                [
+                    'id_jalur_masuk' => 12,
+                    'nama_jalur_masuk' => 'Seleksi Mandiri',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetJalurMasuk',
+                'value_key' => 'id_jalur_masuk',
+                'value' => '12',
+                'label' => 'Seleksi Mandiri',
+                'raw_payload' => [
+                    'id_jalur_masuk' => 12,
+                    'nama_jalur_masuk' => 'Seleksi Mandiri',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);
