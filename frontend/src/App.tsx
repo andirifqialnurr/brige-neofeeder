@@ -25,6 +25,8 @@ import {
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/hooks/use-theme';
 import {
+  clearAuthSession,
+  getCurrentUser,
   getReferenceStatus,
   getStoredAuthUser,
   hasStoredApiToken,
@@ -114,6 +116,7 @@ function App() {
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
   const ThemeIcon = theme === 'dark' ? Sun : Moon;
   const [appScreen, setAppScreen] = useState<AppScreen>(() => (hasStoredApiToken() ? 'app' : 'landing'));
+  const [authState, setAuthState] = useState<'checking' | 'ready'>(() => (hasStoredApiToken() ? 'checking' : 'ready'));
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => getStoredAuthUser());
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -123,6 +126,44 @@ function App() {
   const [referenceStatus, setReferenceStatus] = useState<ReferenceStatus | null>(null);
   const [referenceStatusState, setReferenceStatusState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const currentPage = pageMeta[activePage];
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (!hasStoredApiToken()) {
+      setAuthState('ready');
+      return undefined;
+    }
+
+    setAuthState('checking');
+    getCurrentUser()
+      .then((user) => {
+        if (!mounted) {
+          return;
+        }
+
+        setAuthUser(user);
+        setAppScreen('app');
+      })
+      .catch(() => {
+        if (!mounted) {
+          return;
+        }
+
+        clearAuthSession();
+        setAuthUser(null);
+        setAppScreen('landing');
+      })
+      .finally(() => {
+        if (mounted) {
+          setAuthState('ready');
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -181,6 +222,18 @@ function App() {
     setReferenceStatusState('idle');
     setAppScreen('landing');
   };
+
+  const renderAuthChecking = () => (
+    <main className="auth-loading-shell">
+      <div className="auth-loading-card">
+        <Brand icon={Database} title="Bridge Neo Feeder" subtitle="PDDIKTI sync" />
+        <div className="loading-state">
+          <RefreshCcw size={18} />
+          Memeriksa sesi login
+        </div>
+      </div>
+    </main>
+  );
 
   const renderProductPreview = () => (
     <div className="product-preview" aria-hidden="true">
@@ -620,6 +673,10 @@ function App() {
         return renderDashboard();
     }
   };
+
+  if (authState === 'checking') {
+    return renderAuthChecking();
+  }
 
   if (appScreen === 'landing') {
     return renderLanding();

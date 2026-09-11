@@ -30,6 +30,7 @@
 - [x] Tambahkan empty, loading, dan error state primitive.
 - [x] Tambahkan landing page publik modern.
 - [x] Tambahkan halaman login setema dashboard.
+- [x] Validasi sesi login tersimpan via `/auth/me`.
 - [x] Validasi build/lint frontend.
 
 ## Phase 1 - Export/Import Excel

@@ -57,9 +57,26 @@ function storeAuthSession(token: string, user: AuthUser) {
   localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
 }
 
+function storeAuthUser(user: AuthUser) {
+  localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
+}
+
 export function clearAuthSession() {
   localStorage.removeItem(API_TOKEN_STORAGE_KEY);
   localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+}
+
+function getAuthHeaders() {
+  const token = getApiToken();
+
+  if (!token) {
+    return null;
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/json',
+  };
 }
 
 export async function getHealth(): Promise<{ status: string; service: string }> {
@@ -98,35 +115,54 @@ export async function login(email: string, password: string): Promise<AuthUser> 
 }
 
 export async function logout(): Promise<void> {
-  const token = getApiToken();
+  const headers = getAuthHeaders();
 
   try {
-    if (token) {
+    if (headers) {
       await fetch(`${API_BASE_URL}/auth/logout`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
+        headers,
       });
     }
+  } catch {
+    // Local logout must still clear stale credentials if the API is unreachable.
   } finally {
     clearAuthSession();
   }
 }
 
-export async function getReferenceStatus(): Promise<ReferenceStatus | null> {
-  const token = getApiToken();
+export async function getCurrentUser(): Promise<AuthUser> {
+  const headers = getAuthHeaders();
 
-  if (!token) {
+  if (!headers) {
+    throw new Error('Sesi login belum tersedia.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    headers,
+  });
+
+  const payload = (await response.json()) as { user?: AuthUser; message?: string };
+
+  if (!response.ok || !payload.user) {
+    clearAuthSession();
+    throw new Error(payload.message ?? 'Sesi login tidak valid.');
+  }
+
+  storeAuthUser(payload.user);
+
+  return payload.user;
+}
+
+export async function getReferenceStatus(): Promise<ReferenceStatus | null> {
+  const headers = getAuthHeaders();
+
+  if (!headers) {
     return null;
   }
 
   const response = await fetch(`${API_BASE_URL}/references/status`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-    },
+    headers,
   });
 
   if (!response.ok) {

@@ -739,7 +739,8 @@ td {
 }
 
 .public-shell,
-.auth-shell {
+.auth-shell,
+.auth-loading-shell {
   min-height: 100vh;
   background:
     linear-gradient(135deg, hsl(var(--primary) / 0.1), transparent 36%),
@@ -1054,6 +1055,26 @@ td {
   color: hsl(var(--muted-foreground));
   width: fit-content;
   padding: 0;
+}
+
+.auth-loading-shell {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-loading-card {
+  display: grid;
+  gap: 18px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 20px;
+  background: hsl(var(--card) / 0.88);
+  padding: 22px;
+  width: min(100%, 360px);
+}
+
+.auth-loading-card .brand {
+  margin-bottom: 0;
 }
 
 @media (max-width: 860px) {
