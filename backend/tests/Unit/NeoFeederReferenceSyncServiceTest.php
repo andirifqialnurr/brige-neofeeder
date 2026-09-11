@@ -151,6 +151,31 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_wilayah_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetWilayah', [
+            'data' => [
+                [
+                    'id_wilayah' => '016000',
+                    'nama_wilayah' => 'Kota Batam',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetWilayah',
+                'value_key' => 'id_wilayah',
+                'value' => '016000',
+                'label' => 'Kota Batam',
+                'raw_payload' => [
+                    'id_wilayah' => '016000',
+                    'nama_wilayah' => 'Kota Batam',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);

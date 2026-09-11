@@ -64,7 +64,7 @@
 - [x] Implement sync `GetSemester`.
 - [x] Implement sync `GetAgama`.
 - [x] Implement sync `GetNegara`.
-- [ ] Implement sync `GetWilayah`.
+- [x] Implement sync `GetWilayah`.
 - [ ] Implement sync `GetJenisTinggal`.
 - [ ] Implement sync `GetAlatTransportasi`.
 - [ ] Implement sync `GetJenisPendaftaran`.
