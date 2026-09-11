@@ -426,6 +426,33 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_list_dosen_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetListDosen', [
+            'data' => [
+                [
+                    'id_dosen' => 'dosen-1',
+                    'nidn' => '0011223344',
+                    'nama_dosen' => 'Dosen Contoh',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetListDosen',
+                'value_key' => 'id_dosen',
+                'value' => 'dosen-1',
+                'label' => 'Dosen Contoh',
+                'raw_payload' => [
+                    'id_dosen' => 'dosen-1',
+                    'nidn' => '0011223344',
+                    'nama_dosen' => 'Dosen Contoh',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);

@@ -75,7 +75,7 @@
 - [x] Implement sync `GetJenisEvaluasi`.
 - [x] Implement sync `GetKategoriKegiatan`.
 - [x] Implement sync `GetBasisEvaluasi`.
-- [ ] Implement sync `GetListDosen`.
+- [x] Implement sync `GetListDosen`.
 - [ ] Implement sync `GetListPenugasanDosen`.
 - [ ] Implement sync `GetListMataKuliah`.
 - [ ] Implement sync `GetListKelasKuliah`.

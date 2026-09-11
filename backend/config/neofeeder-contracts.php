@@ -155,6 +155,13 @@ return [
                     'payload_mode' => 'filter',
                     'response_fields' => ['id_basis_evaluasi', 'nama_basis_evaluasi'],
                 ],
+                [
+                    'name' => 'dosen',
+                    'action' => 'GetListDosen',
+                    'type' => 'list',
+                    'payload_mode' => 'filter',
+                    'response_fields' => ['id_dosen', 'nidn', 'nama_dosen'],
+                ],
             ],
         ],
         'mahasiswa_biodata' => [
