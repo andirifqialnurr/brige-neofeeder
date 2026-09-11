@@ -226,6 +226,31 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_jenis_pendaftaran_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetJenisPendaftaran', [
+            'data' => [
+                [
+                    'id_jenis_daftar' => 1,
+                    'nama_jenis_daftar' => 'Peserta didik baru',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetJenisPendaftaran',
+                'value_key' => 'id_jenis_daftar',
+                'value' => '1',
+                'label' => 'Peserta didik baru',
+                'raw_payload' => [
+                    'id_jenis_daftar' => 1,
+                    'nama_jenis_daftar' => 'Peserta didik baru',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);
