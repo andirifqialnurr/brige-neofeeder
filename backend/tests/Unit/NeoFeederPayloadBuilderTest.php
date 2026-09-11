@@ -193,6 +193,46 @@ class NeoFeederPayloadBuilderTest extends TestCase
         );
     }
 
+    public function test_it_builds_delete_key_payload(): void
+    {
+        $payload = (new NeoFeederPayloadBuilder())->buildDelete(
+            new OperationContract(
+                name: 'delete',
+                action: 'DeleteMataKuliah',
+                type: 'delete',
+                payloadMode: 'key_only',
+                keyFields: ['id_matkul'],
+            ),
+            [
+                'id_matkul' => 'matkul-1',
+                'nama_mata_kuliah' => 'ignored',
+            ],
+        );
+
+        $this->assertSame([
+            'key' => [
+                'id_matkul' => 'matkul-1',
+            ],
+        ], $payload);
+    }
+
+    public function test_it_rejects_delete_payloads_with_missing_key_fields(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Required key field [id_matkul] is missing');
+
+        (new NeoFeederPayloadBuilder())->buildDelete(
+            new OperationContract(
+                name: 'delete',
+                action: 'DeleteMataKuliah',
+                type: 'delete',
+                payloadMode: 'key_only',
+                keyFields: ['id_matkul'],
+            ),
+            [],
+        );
+    }
+
     private function courseChannel(): ChannelContract
     {
         return new ChannelContract(

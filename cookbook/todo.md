@@ -53,7 +53,7 @@
 - [x] Buat payload builder generic read/list.
 - [x] Buat payload builder generic insert.
 - [x] Buat payload builder generic update.
-- [ ] Buat payload builder generic delete.
+- [x] Buat payload builder generic delete.
 - [ ] Buat override payload builder untuk operasi yang memakai `record object[]`.
 - [ ] Implement pembanding contract internal vs `GetDictionary`.
 

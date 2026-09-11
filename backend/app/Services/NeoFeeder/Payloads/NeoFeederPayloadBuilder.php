@@ -88,6 +88,24 @@ final class NeoFeederPayloadBuilder
         ];
     }
 
+    /**
+     * Build Neo Feeder delete payload fragment for standard `key` operations.
+     */
+    public function buildDelete(OperationContract $operation, array $input): array
+    {
+        if ($operation->type !== 'delete') {
+            throw new InvalidArgumentException("Operation [{$operation->name}] is not a delete operation.");
+        }
+
+        if ($operation->payloadMode !== 'key_only') {
+            throw new InvalidArgumentException("Operation [{$operation->name}] does not use key_only payload mode.");
+        }
+
+        return [
+            'key' => $this->buildKey($operation, $input),
+        ];
+    }
+
     private function resolveFilter(OperationContract $operation, array $input): ?string
     {
         if (array_key_exists('filter', $input)) {
