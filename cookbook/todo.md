@@ -59,7 +59,7 @@
 
 ## 1.2 Reference Sync
 
-- [ ] Implement sync `GetProfilPT`.
+- [x] Implement sync `GetProfilPT`.
 - [ ] Implement sync `GetProdi`.
 - [ ] Implement sync `GetSemester`.
 - [ ] Implement sync `GetAgama`.
