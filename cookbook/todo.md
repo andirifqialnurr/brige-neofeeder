@@ -159,7 +159,7 @@
 - [x] Siapkan Dockerfile backend Laravel dengan PHP dan Composer di container.
 - [x] Siapkan Dockerfile frontend React dengan Bun build dan Nginx static runtime.
 - [x] Siapkan contoh Nginx reverse proxy host.
-- [ ] Deploy stack awal ke VPS.
+- [x] Deploy stack awal ke VPS.
 - [ ] Buat tenant trial.
 - [ ] Input credential/token trial.
 - [ ] Test `GetToken`.
