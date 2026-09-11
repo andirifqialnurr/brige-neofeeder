@@ -5,6 +5,7 @@ Laravel API, queue worker, scheduler, dan integration layer untuk Bridge Neo Fee
 ## Stack
 
 - Laravel
+- PHP 8.4+
 - MySQL/MariaDB
 - Redis
 - Laravel Queue

@@ -46,7 +46,7 @@ bun run dev:stop
 ## Prasyarat Lokal
 
 - Bun 1.3+
-- PHP 8.2+
+- PHP 8.4+ untuk backend lokal tanpa Docker
 - Composer
 - Docker Desktop
 
