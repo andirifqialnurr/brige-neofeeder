@@ -131,12 +131,12 @@
 
 ## 1.6 Dry-Run
 
-- [ ] Tampilkan ringkasan valid/invalid/warning.
-- [ ] Tampilkan dependency order.
-- [ ] Tampilkan payload preview per row.
-- [ ] Tampilkan calon insert/update/skip.
-- [ ] Tampilkan missing references.
-- [ ] Butuh approval operator sebelum sync.
+- [x] Tampilkan ringkasan valid/invalid/warning.
+- [x] Tampilkan dependency order.
+- [x] Tampilkan payload preview per row.
+- [x] Tampilkan calon insert/update/skip.
+- [x] Tampilkan missing references.
+- [x] Butuh approval operator sebelum sync.
 
 ## 1.7 Sync To Neo Feeder
 
