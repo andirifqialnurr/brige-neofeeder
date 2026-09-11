@@ -7,6 +7,7 @@ use App\Models\StagingRecord;
 use App\Services\NeoFeeder\Contracts\ChannelContract;
 use App\Services\NeoFeeder\Contracts\FieldContract;
 use App\Services\NeoFeeder\Contracts\NeoFeederContractRegistry;
+use App\Services\Validation\ImportBatchValidationService;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -18,6 +19,7 @@ final class ImportWorkbookParser
 
     public function __construct(
         private readonly NeoFeederContractRegistry $registry,
+        private readonly ImportBatchValidationService $validationService,
     ) {
     }
 
@@ -55,6 +57,10 @@ final class ImportWorkbookParser
                 'available_row_statuses' => self::ROW_STATUSES,
             ],
         ])->save();
+
+        if ($missingSheets === []) {
+            $this->validationService->validate($batch->refresh());
+        }
     }
 
     /**

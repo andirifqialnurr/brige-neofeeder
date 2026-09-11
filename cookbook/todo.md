@@ -116,18 +116,18 @@
 
 ## 1.5 Validation Engine
 
-- [ ] Required field validation.
-- [ ] Empty string/null normalization.
-- [ ] Date format validation.
-- [ ] Numeric validation.
-- [ ] Character length validation.
-- [ ] Enum validation.
-- [ ] Reference existence validation.
-- [ ] Duplicate row validation.
-- [ ] Dependency validation antar sheet.
-- [ ] Ambiguous reference validation.
-- [ ] Severity: error, warning, info.
-- [ ] UI error per sheet, row, dan field.
+- [x] Required field validation.
+- [x] Empty string/null normalization.
+- [x] Date format validation.
+- [x] Numeric validation.
+- [x] Character length validation.
+- [x] Enum validation.
+- [x] Reference existence validation.
+- [x] Duplicate row validation.
+- [x] Dependency validation antar sheet.
+- [x] Ambiguous reference validation.
+- [x] Severity: error, warning, info.
+- [x] UI error per sheet, row, dan field.
 
 ## 1.6 Dry-Run
 

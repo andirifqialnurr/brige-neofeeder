@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ApiAccessToken;
 use App\Models\ImportBatch;
+use App\Models\ReferenceRecord;
 use App\Models\StagingRecord;
 use App\Models\Tenant;
 use App\Models\User;
@@ -24,6 +25,7 @@ class ImportBatchUploadTest extends TestCase
         Storage::fake('uploads');
 
         [$tenant, $plainToken] = $this->tenantOperatorToken();
+        $this->seedBiodataReferences($tenant->id);
         $path = $this->workbookPath();
 
         $this
@@ -43,15 +45,16 @@ class ImportBatchUploadTest extends TestCase
 
         $batch = ImportBatch::query()->firstOrFail();
 
-        $this->assertSame('ready', $batch->status);
+        $this->assertSame('validated', $batch->status);
         $this->assertSame(1, $batch->summary['total_rows']);
         $this->assertSame([], $batch->summary['missing_sheets']);
+        $this->assertSame(1, $batch->summary['valid_rows']);
 
         $record = StagingRecord::query()->firstOrFail();
 
         $this->assertSame('mahasiswa_biodata', $record->channel);
         $this->assertSame(2, $record->row_number);
-        $this->assertSame('ready', $record->status);
+        $this->assertSame('valid', $record->status);
         $this->assertSame('3201010101010001', $record->normalized_row['nik']);
         $this->assertArrayHasKey('pending', array_flip($batch->summary['available_row_statuses']));
     }
@@ -112,16 +115,35 @@ class ImportBatchUploadTest extends TestCase
         $sheet->setCellValue('G2', '3201010101010001');
         $sheet->setCellValue('J2', 'ID');
         $sheet->setCellValue('O2', 'Batam Kota');
-        $sheet->setCellValue('R2', '016000');
+        $sheet->setCellValue('Q2', '016000');
         $sheet->setCellValue('W2', 0);
-        $sheet->setCellValue('X2', 'Ibu Contoh');
+        $sheet->setCellValue('AF2', 'Ibu Contoh');
+        $sheet->setCellValue('AP2', 0);
         $sheet->setCellValue('AQ2', 0);
         $sheet->setCellValue('AR2', 0);
-        $sheet->setCellValue('AS2', 0);
 
         $path = tempnam(sys_get_temp_dir(), 'bridge-neofeeder-template-').'.xlsx';
         (new Xlsx($workbook))->save($path);
 
         return $path;
+    }
+
+    private function seedBiodataReferences(string $tenantId): void
+    {
+        foreach ([
+            ['GetAgama', 'id_agama', '1', 'Islam'],
+            ['GetNegara', 'id_negara', 'ID', 'Indonesia'],
+            ['GetWilayah', 'id_wilayah', '016000', 'Kota Batam'],
+        ] as [$endpoint, $valueKey, $value, $label]) {
+            ReferenceRecord::query()->create([
+                'tenant_id' => $tenantId,
+                'endpoint' => $endpoint,
+                'value_key' => $valueKey,
+                'value' => $value,
+                'label' => $label,
+                'raw_payload' => [],
+                'synced_at' => now(),
+            ]);
+        }
     }
 }
