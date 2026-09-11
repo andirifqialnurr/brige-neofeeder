@@ -502,6 +502,65 @@ h3 {
   text-align: right;
 }
 
+.reference-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.reference-summary div {
+  display: grid;
+  gap: 5px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  padding: 12px;
+  background: hsl(var(--muted) / 0.35);
+}
+
+.reference-summary span,
+.reference-row span {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reference-summary strong {
+  color: hsl(var(--foreground));
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.reference-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.reference-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.reference-row div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.reference-row strong {
+  overflow: hidden;
+  color: hsl(var(--foreground));
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mono {
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
 }
@@ -664,6 +723,7 @@ td {
   }
 
   .status-grid,
+  .reference-summary,
   .phase-grid,
   .dashboard-grid {
     grid-template-columns: 1fr;

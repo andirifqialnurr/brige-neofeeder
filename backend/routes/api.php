@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\NeoFeederConnectionController;
+use App\Http\Controllers\Api\ReferenceStatusController;
 use App\Http\Controllers\Api\TenantController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,4 +20,5 @@ Route::middleware('api.token')->group(function (): void {
     Route::apiResource('neofeeder-connections', NeoFeederConnectionController::class)
         ->parameters(['neofeeder-connections' => 'neofeederConnection'])
         ->only(['index', 'store', 'show', 'update']);
+    Route::get('references/status', ReferenceStatusController::class);
 });

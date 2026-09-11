@@ -79,7 +79,7 @@
 - [x] Implement sync `GetListPenugasanDosen`.
 - [x] Implement sync `GetListMataKuliah`.
 - [x] Implement sync `GetListKelasKuliah`.
-- [ ] Buat UI status referensi: last refresh, total rows, failed endpoint.
+- [x] Buat UI status referensi: last refresh, total rows, failed endpoint.
 
 ## 1.3 Template Excel Generator
 
