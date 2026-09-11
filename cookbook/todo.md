@@ -44,7 +44,7 @@
 - [x] Masukkan contract awal untuk mata kuliah.
 - [x] Masukkan contract awal untuk kurikulum.
 - [x] Masukkan contract awal untuk mata kuliah kurikulum.
-- [ ] Masukkan contract awal untuk kelas kuliah.
+- [x] Masukkan contract awal untuk kelas kuliah.
 - [ ] Masukkan contract awal untuk peserta kelas kuliah.
 - [ ] Masukkan contract awal untuk dosen pengajar kelas kuliah.
 - [ ] Masukkan contract awal untuk nilai perkuliahan kelas.
