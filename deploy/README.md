@@ -38,7 +38,18 @@ ADMIN_PASSWORD=password-admin-kuat
 `APP_KEY` boleh kosong sebelum boot pertama, lalu isi dengan hasil `php artisan key:generate`.
 Jangan regenerate `APP_KEY` setelah credential Neo Feeder tersimpan.
 
-## 2. Build And Start
+## 2. Deploy Script
+
+Setelah env diisi, jalankan:
+
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+Script akan pull code terbaru, build image, start MySQL/Redis, generate `APP_KEY` jika masih kosong, menjalankan migration/seed, lalu start frontend, backend, worker, dan scheduler.
+
+## 3. Manual Build And Start
 
 ```bash
 docker compose up -d --build mysql redis
@@ -54,7 +65,7 @@ docker compose exec backend php artisan db:seed --force
 docker compose exec backend php artisan storage:link
 ```
 
-## 3. Nginx Host
+## 4. Nginx Host
 
 Gunakan contoh config:
 
@@ -66,7 +77,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-## 4. Health Check
+## 5. Health Check
 
 ```bash
 curl http://127.0.0.1:2000/api/health
@@ -75,7 +86,7 @@ docker compose ps
 docker compose logs -f backend
 ```
 
-## 5. Trial Flow
+## 6. Trial Flow
 
 1. Login memakai admin dari `backend/.env`.
 2. Buat tenant kampus trial.
