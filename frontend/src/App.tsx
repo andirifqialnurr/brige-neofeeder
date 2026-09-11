@@ -1,7 +1,9 @@
 import {
   Activity,
+  ArrowRight,
   Bell,
   Building2,
+  CheckCircle2,
   Clock3,
   CircleUserRound,
   Database,
@@ -9,6 +11,9 @@ import {
   Download,
   FileSpreadsheet,
   LayoutDashboard,
+  LockKeyhole,
+  LogIn,
+  LogOut,
   Moon,
   RefreshCcw,
   Search,
@@ -17,9 +22,17 @@ import {
   Upload,
   Waypoints,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/hooks/use-theme';
-import { getReferenceStatus, type ReferenceStatus } from '@/lib/api';
+import {
+  getReferenceStatus,
+  getStoredAuthUser,
+  hasStoredApiToken,
+  login,
+  logout,
+  type AuthUser,
+  type ReferenceStatus,
+} from '@/lib/api';
 import {
   AppButton,
   AppShell,
@@ -49,6 +62,8 @@ type PageId =
 type AppNavItem = SidebarNavItem & {
   id: PageId;
 };
+
+type AppScreen = 'landing' | 'login' | 'app';
 
 const navItems: AppNavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -98,6 +113,12 @@ function App() {
   const { theme, setTheme } = useTheme();
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
   const ThemeIcon = theme === 'dark' ? Sun : Moon;
+  const [appScreen, setAppScreen] = useState<AppScreen>(() => (hasStoredApiToken() ? 'app' : 'landing'));
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => getStoredAuthUser());
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginState, setLoginState] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [loginError, setLoginError] = useState('');
   const [activePage, setActivePage] = useState<PageId>('dashboard');
   const [referenceStatus, setReferenceStatus] = useState<ReferenceStatus | null>(null);
   const [referenceStatusState, setReferenceStatusState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
@@ -105,6 +126,10 @@ function App() {
 
   useEffect(() => {
     let mounted = true;
+
+    if (appScreen !== 'app') {
+      return undefined;
+    }
 
     setReferenceStatusState('loading');
     getReferenceStatus()
@@ -125,11 +150,188 @@ function App() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [appScreen]);
 
   const referencePreview = useMemo(
     () => referenceStatus?.endpoints.slice(0, 5) ?? [],
     [referenceStatus],
+  );
+
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginState('loading');
+    setLoginError('');
+
+    try {
+      const user = await login(loginEmail, loginPassword);
+      setAuthUser(user);
+      setAppScreen('app');
+      setLoginPassword('');
+      setLoginState('idle');
+    } catch (error) {
+      setLoginState('error');
+      setLoginError(error instanceof Error ? error.message : 'Login gagal.');
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setAuthUser(null);
+    setReferenceStatus(null);
+    setReferenceStatusState('idle');
+    setAppScreen('landing');
+  };
+
+  const renderProductPreview = () => (
+    <div className="product-preview" aria-hidden="true">
+      <div className="preview-topbar">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="preview-grid">
+        <div className="preview-card preview-card-strong">
+          <small>Koneksi</small>
+          <strong>Draft</strong>
+          <span>Neo Feeder WS</span>
+        </div>
+        <div className="preview-card">
+          <small>Batch</small>
+          <strong>0</strong>
+          <span>Siap import</span>
+        </div>
+        <div className="preview-card">
+          <small>Validasi</small>
+          <strong>0</strong>
+          <span>Error aktif</span>
+        </div>
+      </div>
+      <div className="preview-table">
+        {['mahasiswa_biodata', 'riwayat_pendidikan', 'kelas_kuliah', 'nilai_perkuliahan'].map((item) => (
+          <div key={item}>
+            <span>{item}</span>
+            <CheckCircle2 size={16} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderPublicNav = () => (
+    <header className="public-nav">
+      <Brand icon={Database} title="Bridge Neo Feeder" subtitle="PDDIKTI sync" />
+      <div className="public-actions">
+        <button aria-label="Ganti tema" className="icon-button" onClick={() => setTheme(nextTheme)} type="button">
+          <ThemeIcon size={18} />
+        </button>
+        <button className="public-login-button" onClick={() => setAppScreen('login')} type="button">
+          <LogIn size={17} />
+          Masuk
+        </button>
+      </div>
+    </header>
+  );
+
+  const renderLanding = () => (
+    <main className="public-shell">
+      {renderPublicNav()}
+
+      <section className="landing-hero">
+        <div className="landing-copy">
+          <span className="status-pill">Trial VPS aktif</span>
+          <h1>Bridge Neo Feeder</h1>
+          <p>
+            Kanal kerja untuk menyiapkan template Excel, validasi data kampus, dan sinkronisasi bertahap ke Neo Feeder.
+          </p>
+          <div className="landing-actions">
+            <button className="hero-button" onClick={() => setAppScreen('login')} type="button">
+              Masuk Dashboard
+              <ArrowRight size={18} />
+            </button>
+            <button className="hero-button secondary" onClick={() => setAppScreen('login')} type="button">
+              Login Admin
+            </button>
+          </div>
+        </div>
+
+        <div className="landing-visual">
+          {renderProductPreview()}
+        </div>
+      </section>
+
+      <section className="landing-strip" aria-label="Alur aplikasi">
+        {[
+          ['Template', 'Workbook sesuai kanal Neo Feeder'],
+          ['Validasi', 'Cek field, referensi, dan dependency'],
+          ['Sync', 'Post bertahap dengan audit response'],
+        ].map(([title, text]) => (
+          <div key={title}>
+            <strong>{title}</strong>
+            <span>{text}</span>
+          </div>
+        ))}
+      </section>
+    </main>
+  );
+
+  const renderLogin = () => (
+    <main className="auth-shell">
+      <section className="auth-visual">
+        <Brand icon={Database} title="Bridge Neo Feeder" subtitle="PDDIKTI sync" />
+        {renderProductPreview()}
+      </section>
+
+      <section className="auth-panel">
+        <div className="auth-card">
+          <div className="auth-heading">
+            <span className="brand-icon">
+              <LockKeyhole size={22} />
+            </span>
+            <div>
+              <p className="eyebrow">Admin Area</p>
+              <h1>Masuk Dashboard</h1>
+            </div>
+          </div>
+
+          <form className="auth-form" onSubmit={handleLogin}>
+            <label>
+              Email
+              <input
+                autoComplete="email"
+                onChange={(event) => setLoginEmail(event.target.value)}
+                placeholder="admin@example.com"
+                required
+                type="email"
+                value={loginEmail}
+              />
+            </label>
+
+            <label>
+              Password
+              <input
+                autoComplete="current-password"
+                onChange={(event) => setLoginPassword(event.target.value)}
+                placeholder="Password admin"
+                required
+                type="password"
+                value={loginPassword}
+              />
+            </label>
+
+            {loginState === 'error' ? <p className="auth-error">{loginError}</p> : null}
+
+            <button className="hero-button" disabled={loginState === 'loading'} type="submit">
+              {loginState === 'loading' ? 'Memproses...' : 'Masuk'}
+              <ArrowRight size={18} />
+            </button>
+          </form>
+
+          <button className="back-button" onClick={() => setAppScreen('landing')} type="button">
+            Kembali ke landing page
+          </button>
+        </div>
+      </section>
+    </main>
   );
 
   const renderReferencePanel = () => (
@@ -419,6 +621,14 @@ function App() {
     }
   };
 
+  if (appScreen === 'landing') {
+    return renderLanding();
+  }
+
+  if (appScreen === 'login') {
+    return renderLogin();
+  }
+
   return (
     <AppShell
       sidebar={
@@ -442,8 +652,11 @@ function App() {
             <button aria-label="Notifikasi" className="icon-button" type="button">
               <Bell size={18} />
             </button>
-            <button aria-label="Menu pengguna" className="avatar-button" type="button">
+            <button aria-label={authUser ? `User ${authUser.name}` : 'Menu pengguna'} className="avatar-button" type="button">
               <CircleUserRound size={20} />
+            </button>
+            <button aria-label="Keluar" className="icon-button" onClick={handleLogout} type="button">
+              <LogOut size={18} />
             </button>
           </div>
         }
