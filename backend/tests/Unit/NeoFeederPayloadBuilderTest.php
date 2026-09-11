@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Services\NeoFeeder\Contracts\ChannelContract;
 use App\Services\NeoFeeder\Contracts\OperationContract;
 use App\Services\NeoFeeder\Payloads\NeoFeederPayloadBuilder;
 use InvalidArgumentException;
@@ -67,6 +68,75 @@ class NeoFeederPayloadBuilderTest extends TestCase
                 type: 'insert',
                 payloadMode: 'record',
             ),
+        );
+    }
+
+    public function test_it_builds_insert_record_from_channel_fields(): void
+    {
+        $payload = (new NeoFeederPayloadBuilder())->buildInsert(
+            $this->courseChannel(),
+            new OperationContract(
+                name: 'insert',
+                action: 'InsertMataKuliah',
+                type: 'insert',
+                payloadMode: 'record',
+            ),
+            [
+                'id_matkul' => 'neo-generated-id',
+                'kode_mata_kuliah' => 'IF101',
+                'nama_mata_kuliah' => 'Algoritma',
+                'id_prodi' => 'prodi-1',
+                'sks_mata_kuliah' => 3,
+                'sks_tatap_muka' => 2,
+                'unknown_column' => 'ignored',
+            ],
+        );
+
+        $this->assertSame([
+            'record' => [
+                'kode_mata_kuliah' => 'IF101',
+                'nama_mata_kuliah' => 'Algoritma',
+                'id_prodi' => 'prodi-1',
+                'sks_mata_kuliah' => 3,
+                'sks_tatap_muka' => 2,
+            ],
+        ], $payload);
+    }
+
+    public function test_it_rejects_insert_records_with_missing_required_fields(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Required field [nama_mata_kuliah] is missing');
+
+        (new NeoFeederPayloadBuilder())->buildInsert(
+            $this->courseChannel(),
+            new OperationContract(
+                name: 'insert',
+                action: 'InsertMataKuliah',
+                type: 'insert',
+                payloadMode: 'record',
+            ),
+            [
+                'kode_mata_kuliah' => 'IF101',
+                'id_prodi' => 'prodi-1',
+                'sks_mata_kuliah' => 3,
+            ],
+        );
+    }
+
+    private function courseChannel(): ChannelContract
+    {
+        return new ChannelContract(
+            key: 'mata_kuliah',
+            label: 'Mata Kuliah',
+            fields: [
+                ['name' => 'id_matkul', 'label' => 'ID Mata Kuliah', 'type' => 'uuid', 'primary' => true, 'required' => false],
+                ['name' => 'kode_mata_kuliah', 'label' => 'Kode Mata Kuliah', 'type' => 'string', 'required' => true],
+                ['name' => 'nama_mata_kuliah', 'label' => 'Nama Mata Kuliah', 'type' => 'string', 'required' => true],
+                ['name' => 'id_prodi', 'label' => 'Program Studi', 'type' => 'uuid', 'required' => true],
+                ['name' => 'sks_mata_kuliah', 'label' => 'SKS Mata Kuliah', 'type' => 'numeric', 'required' => true],
+                ['name' => 'sks_tatap_muka', 'label' => 'SKS Tatap Muka', 'type' => 'numeric', 'required' => false],
+            ],
         );
     }
 }

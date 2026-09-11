@@ -51,7 +51,7 @@
 - [x] Masukkan contract awal untuk AKM/perkuliahan mahasiswa.
 - [x] Masukkan contract awal untuk mahasiswa lulus/DO.
 - [x] Buat payload builder generic read/list.
-- [ ] Buat payload builder generic insert.
+- [x] Buat payload builder generic insert.
 - [ ] Buat payload builder generic update.
 - [ ] Buat payload builder generic delete.
 - [ ] Buat override payload builder untuk operasi yang memakai `record object[]`.

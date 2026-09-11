@@ -2,6 +2,8 @@
 
 namespace App\Services\NeoFeeder\Payloads;
 
+use App\Services\NeoFeeder\Contracts\ChannelContract;
+use App\Services\NeoFeeder\Contracts\FieldContract;
 use App\Services\NeoFeeder\Contracts\OperationContract;
 use InvalidArgumentException;
 
@@ -36,6 +38,24 @@ final class NeoFeederPayloadBuilder
         return $payload;
     }
 
+    /**
+     * Build Neo Feeder insert payload fragment for standard `record` operations.
+     */
+    public function buildInsert(ChannelContract $channel, OperationContract $operation, array $input): array
+    {
+        if ($operation->type !== 'insert') {
+            throw new InvalidArgumentException("Operation [{$operation->name}] is not an insert operation.");
+        }
+
+        if ($operation->payloadMode !== 'record') {
+            throw new InvalidArgumentException("Operation [{$operation->name}] does not use record payload mode.");
+        }
+
+        return [
+            'record' => $this->buildRecord($channel, $input, skipPrimary: true),
+        ];
+    }
+
     private function resolveFilter(OperationContract $operation, array $input): ?string
     {
         if (array_key_exists('filter', $input)) {
@@ -62,5 +82,30 @@ final class NeoFeederPayloadBuilder
     private function escapeFilterValue(mixed $value): string
     {
         return str_replace("'", "''", (string) $value);
+    }
+
+    private function buildRecord(ChannelContract $channel, array $input, bool $skipPrimary): array
+    {
+        $record = [];
+
+        foreach ($channel->fields as $fieldPayload) {
+            $field = FieldContract::fromArray($fieldPayload);
+
+            if ($skipPrimary && $field->primary) {
+                continue;
+            }
+
+            if (! array_key_exists($field->name, $input) || $input[$field->name] === null || $input[$field->name] === '') {
+                if ($field->required) {
+                    throw new InvalidArgumentException("Required field [{$field->name}] is missing for channel [{$channel->key}].");
+                }
+
+                continue;
+            }
+
+            $record[$field->name] = $input[$field->name];
+        }
+
+        return $record;
     }
 }
