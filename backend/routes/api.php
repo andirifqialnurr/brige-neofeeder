@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\ImportBatchUploadController;
 use App\Http\Controllers\Api\NeoFeederConnectionController;
 use App\Http\Controllers\Api\ReferenceStatusController;
 use App\Http\Controllers\Api\TenantController;
@@ -21,4 +22,5 @@ Route::middleware('api.token')->group(function (): void {
         ->parameters(['neofeeder-connections' => 'neofeederConnection'])
         ->only(['index', 'store', 'show', 'update']);
     Route::get('references/status', ReferenceStatusController::class);
+    Route::post('import-batches/upload', ImportBatchUploadController::class);
 });

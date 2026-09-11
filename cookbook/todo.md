@@ -104,15 +104,15 @@
 
 ## 1.4 Upload And Staging
 
-- [ ] Buat endpoint upload workbook.
-- [ ] Validasi file type dan ukuran.
-- [ ] Simpan uploaded file metadata.
-- [ ] Buat `import_batch`.
-- [ ] Parse workbook di worker.
-- [ ] Validasi sheet wajib.
-- [ ] Simpan raw row.
-- [ ] Simpan normalized row.
-- [ ] Buat status per row: pending, valid, invalid, ready, syncing, success, failed, skipped.
+- [x] Buat endpoint upload workbook.
+- [x] Validasi file type dan ukuran.
+- [x] Simpan uploaded file metadata.
+- [x] Buat `import_batch`.
+- [x] Parse workbook di worker.
+- [x] Validasi sheet wajib.
+- [x] Simpan raw row.
+- [x] Simpan normalized row.
+- [x] Buat status per row: pending, valid, invalid, ready, syncing, success, failed, skipped.
 
 ## 1.5 Validation Engine
 
