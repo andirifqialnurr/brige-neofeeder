@@ -76,6 +76,31 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_semester_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetSemester', [
+            'data' => [
+                [
+                    'id_semester' => '20241',
+                    'nama_semester' => '2024/2025 Ganjil',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetSemester',
+                'value_key' => 'id_semester',
+                'value' => '20241',
+                'label' => '2024/2025 Ganjil',
+                'raw_payload' => [
+                    'id_semester' => '20241',
+                    'nama_semester' => '2024/2025 Ganjil',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);
