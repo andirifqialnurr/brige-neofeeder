@@ -48,7 +48,7 @@
 - [x] Masukkan contract awal untuk peserta kelas kuliah.
 - [x] Masukkan contract awal untuk dosen pengajar kelas kuliah.
 - [x] Masukkan contract awal untuk nilai perkuliahan kelas.
-- [ ] Masukkan contract awal untuk AKM/perkuliahan mahasiswa.
+- [x] Masukkan contract awal untuk AKM/perkuliahan mahasiswa.
 - [ ] Masukkan contract awal untuk mahasiswa lulus/DO.
 - [ ] Buat payload builder generic read/list.
 - [ ] Buat payload builder generic insert.
