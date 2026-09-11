@@ -101,6 +101,31 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_agama_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetAgama', [
+            'data' => [
+                [
+                    'id_agama' => 1,
+                    'nama_agama' => 'Islam',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetAgama',
+                'value_key' => 'id_agama',
+                'value' => '1',
+                'label' => 'Islam',
+                'raw_payload' => [
+                    'id_agama' => 1,
+                    'nama_agama' => 'Islam',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);

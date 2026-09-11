@@ -62,7 +62,7 @@
 - [x] Implement sync `GetProfilPT`.
 - [x] Implement sync `GetProdi`.
 - [x] Implement sync `GetSemester`.
-- [ ] Implement sync `GetAgama`.
+- [x] Implement sync `GetAgama`.
 - [ ] Implement sync `GetNegara`.
 - [ ] Implement sync `GetWilayah`.
 - [ ] Implement sync `GetJenisTinggal`.
