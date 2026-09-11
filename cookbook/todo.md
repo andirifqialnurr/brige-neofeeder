@@ -40,7 +40,7 @@
 - [x] Buat dependency graph kanal.
 - [x] Masukkan contract awal untuk referensi Neo Feeder.
 - [x] Masukkan contract awal untuk biodata mahasiswa.
-- [ ] Masukkan contract awal untuk riwayat pendidikan mahasiswa.
+- [x] Masukkan contract awal untuk riwayat pendidikan mahasiswa.
 - [ ] Masukkan contract awal untuk mata kuliah.
 - [ ] Masukkan contract awal untuk kurikulum.
 - [ ] Masukkan contract awal untuk mata kuliah kurikulum.
