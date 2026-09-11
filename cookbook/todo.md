@@ -42,7 +42,7 @@
 - [x] Masukkan contract awal untuk biodata mahasiswa.
 - [x] Masukkan contract awal untuk riwayat pendidikan mahasiswa.
 - [x] Masukkan contract awal untuk mata kuliah.
-- [ ] Masukkan contract awal untuk kurikulum.
+- [x] Masukkan contract awal untuk kurikulum.
 - [ ] Masukkan contract awal untuk mata kuliah kurikulum.
 - [ ] Masukkan contract awal untuk kelas kuliah.
 - [ ] Masukkan contract awal untuk peserta kelas kuliah.
