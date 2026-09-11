@@ -43,7 +43,7 @@
 - [x] Masukkan contract awal untuk riwayat pendidikan mahasiswa.
 - [x] Masukkan contract awal untuk mata kuliah.
 - [x] Masukkan contract awal untuk kurikulum.
-- [ ] Masukkan contract awal untuk mata kuliah kurikulum.
+- [x] Masukkan contract awal untuk mata kuliah kurikulum.
 - [ ] Masukkan contract awal untuk kelas kuliah.
 - [ ] Masukkan contract awal untuk peserta kelas kuliah.
 - [ ] Masukkan contract awal untuk dosen pengajar kelas kuliah.
