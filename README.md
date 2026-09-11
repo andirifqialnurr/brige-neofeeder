@@ -51,3 +51,9 @@ bun run dev:stop
 - Docker Desktop
 
 Neo Feeder tetap diakses lewat Web Service. Aplikasi ini tidak menulis langsung ke database internal Neo Feeder.
+
+## VPS Deployment
+
+Runtime VPS disiapkan dengan Docker Compose di root project. Host cukup menyediakan Docker, Docker Compose, Git, dan Nginx sebagai reverse proxy.
+
+Panduan deployment ada di [`deploy/README.md`](deploy/README.md).
