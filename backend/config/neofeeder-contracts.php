@@ -162,6 +162,13 @@ return [
                     'payload_mode' => 'filter',
                     'response_fields' => ['id_dosen', 'nidn', 'nama_dosen'],
                 ],
+                [
+                    'name' => 'penugasan_dosen',
+                    'action' => 'GetListPenugasanDosen',
+                    'type' => 'list',
+                    'payload_mode' => 'filter',
+                    'response_fields' => ['id_registrasi_dosen', 'id_dosen', 'nama_dosen'],
+                ],
             ],
         ],
         'mahasiswa_biodata' => [

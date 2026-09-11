@@ -76,7 +76,7 @@
 - [x] Implement sync `GetKategoriKegiatan`.
 - [x] Implement sync `GetBasisEvaluasi`.
 - [x] Implement sync `GetListDosen`.
-- [ ] Implement sync `GetListPenugasanDosen`.
+- [x] Implement sync `GetListPenugasanDosen`.
 - [ ] Implement sync `GetListMataKuliah`.
 - [ ] Implement sync `GetListKelasKuliah`.
 - [ ] Buat UI status referensi: last refresh, total rows, failed endpoint.
