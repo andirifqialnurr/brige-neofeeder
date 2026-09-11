@@ -401,6 +401,31 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_basis_evaluasi_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetBasisEvaluasi', [
+            'data' => [
+                [
+                    'id_basis_evaluasi' => 1,
+                    'nama_basis_evaluasi' => 'Aktivitas Partisipatif',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetBasisEvaluasi',
+                'value_key' => 'id_basis_evaluasi',
+                'value' => '1',
+                'label' => 'Aktivitas Partisipatif',
+                'raw_payload' => [
+                    'id_basis_evaluasi' => 1,
+                    'nama_basis_evaluasi' => 'Aktivitas Partisipatif',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);
