@@ -201,6 +201,31 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_alat_transportasi_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetAlatTransportasi', [
+            'data' => [
+                [
+                    'id_alat_transportasi' => 3,
+                    'nama_alat_transportasi' => 'Sepeda motor',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetAlatTransportasi',
+                'value_key' => 'id_alat_transportasi',
+                'value' => '3',
+                'label' => 'Sepeda motor',
+                'raw_payload' => [
+                    'id_alat_transportasi' => 3,
+                    'nama_alat_transportasi' => 'Sepeda motor',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);
