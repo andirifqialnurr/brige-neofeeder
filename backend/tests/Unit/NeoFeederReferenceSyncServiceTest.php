@@ -126,6 +126,31 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_negara_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetNegara', [
+            'data' => [
+                [
+                    'id_negara' => 'ID',
+                    'nama_negara' => 'Indonesia',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetNegara',
+                'value_key' => 'id_negara',
+                'value' => 'ID',
+                'label' => 'Indonesia',
+                'raw_payload' => [
+                    'id_negara' => 'ID',
+                    'nama_negara' => 'Indonesia',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);

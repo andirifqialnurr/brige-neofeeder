@@ -63,7 +63,7 @@
 - [x] Implement sync `GetProdi`.
 - [x] Implement sync `GetSemester`.
 - [x] Implement sync `GetAgama`.
-- [ ] Implement sync `GetNegara`.
+- [x] Implement sync `GetNegara`.
 - [ ] Implement sync `GetWilayah`.
 - [ ] Implement sync `GetJenisTinggal`.
 - [ ] Implement sync `GetAlatTransportasi`.
