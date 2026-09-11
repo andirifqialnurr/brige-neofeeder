@@ -41,7 +41,7 @@ COPY docker/php/entrypoint.sh /usr/local/bin/bridge-entrypoint
 
 RUN composer dump-autoload --optimize --no-dev \
     && chmod +x /usr/local/bin/bridge-entrypoint \
-    && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && mkdir -p resources/views storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 2000
