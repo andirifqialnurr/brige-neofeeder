@@ -55,7 +55,7 @@
 - [x] Buat payload builder generic update.
 - [x] Buat payload builder generic delete.
 - [x] Buat override payload builder untuk operasi yang memakai `record object[]`.
-- [ ] Implement pembanding contract internal vs `GetDictionary`.
+- [x] Implement pembanding contract internal vs `GetDictionary`.
 
 ## 1.2 Reference Sync
 
