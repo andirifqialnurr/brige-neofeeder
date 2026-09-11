@@ -416,5 +416,27 @@ return [
                 ['name' => 'delete', 'action' => 'DeleteDosenPengajarKelasKuliah', 'type' => 'delete', 'payload_mode' => 'key_only', 'key_fields' => ['id_aktivitas_mengajar']],
             ],
         ],
+        'nilai_perkuliahan' => [
+            'key' => 'nilai_perkuliahan',
+            'label' => 'Nilai Perkuliahan Kelas',
+            'description' => 'Nilai angka, indeks, dan huruf untuk peserta kelas kuliah.',
+            'sheet_name' => 'nilai_perkuliahan',
+            'depends_on' => ['peserta_kelas'],
+            'natural_key' => ['id_kelas_kuliah', 'id_registrasi_mahasiswa'],
+            'identity_fields' => ['id_kelas_kuliah', 'id_registrasi_mahasiswa'],
+            'sort_order' => 330,
+            'fields' => [
+                ['name' => 'id_registrasi_mahasiswa', 'label' => 'Registrasi Mahasiswa', 'type' => 'uuid', 'required' => true, 'nullable' => false, 'reference' => 'GetListRiwayatPendidikanMahasiswa'],
+                ['name' => 'id_kelas_kuliah', 'label' => 'Kelas Kuliah', 'type' => 'uuid', 'required' => true, 'nullable' => false, 'reference' => 'GetListKelasKuliah'],
+                ['name' => 'nilai_angka', 'label' => 'Nilai Angka', 'type' => 'numeric', 'required' => false, 'nullable' => true, 'rules' => ['decimal:4,1', 'min:0', 'max:100']],
+                ['name' => 'nilai_indeks', 'label' => 'Nilai Indeks', 'type' => 'numeric', 'required' => false, 'nullable' => true, 'rules' => ['decimal:4,2', 'min:0', 'max:4']],
+                ['name' => 'nilai_huruf', 'label' => 'Nilai Huruf', 'type' => 'string', 'required' => false, 'nullable' => true, 'max_length' => 3],
+            ],
+            'operations' => [
+                ['name' => 'get_list', 'action' => 'GetListNilaiPerkuliahanKelas', 'type' => 'list', 'payload_mode' => 'filter', 'key_fields' => ['id_kelas_kuliah']],
+                ['name' => 'get_detail', 'action' => 'GetDetailNilaiPerkuliahanKelas', 'type' => 'read', 'payload_mode' => 'filter', 'key_fields' => ['id_kelas_kuliah', 'id_registrasi_mahasiswa']],
+                ['name' => 'update', 'action' => 'UpdateNilaiPerkuliahanKelas', 'type' => 'update', 'payload_mode' => 'key_record', 'key_fields' => ['id_kelas_kuliah', 'id_registrasi_mahasiswa']],
+            ],
+        ],
     ],
 ];
