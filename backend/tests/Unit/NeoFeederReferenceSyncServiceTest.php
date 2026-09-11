@@ -276,6 +276,31 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_pembiayaan_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetPembiayaan', [
+            'data' => [
+                [
+                    'id_pembiayaan' => 1,
+                    'nama_pembiayaan' => 'Mandiri',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetPembiayaan',
+                'value_key' => 'id_pembiayaan',
+                'value' => '1',
+                'label' => 'Mandiri',
+                'raw_payload' => [
+                    'id_pembiayaan' => 1,
+                    'nama_pembiayaan' => 'Mandiri',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);
