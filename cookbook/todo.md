@@ -83,24 +83,24 @@
 
 ## 1.3 Template Excel Generator
 
-- [ ] Buat service generate workbook.
-- [ ] Buat sheet `README`.
-- [ ] Buat sheet referensi per lookup.
-- [ ] Buat sheet `mahasiswa_biodata`.
-- [ ] Buat sheet `mahasiswa_riwayat_pendidikan`.
-- [ ] Buat sheet `mata_kuliah`.
-- [ ] Buat sheet `kurikulum`.
-- [ ] Buat sheet `matkul_kurikulum`.
-- [ ] Buat sheet `kelas_kuliah`.
-- [ ] Buat sheet `dosen_pengajar_kelas`.
-- [ ] Buat sheet `peserta_kelas`.
-- [ ] Buat sheet `nilai_perkuliahan`.
-- [ ] Buat sheet `perkuliahan_mahasiswa_akm`.
-- [ ] Buat sheet `mahasiswa_lulus_do`.
-- [ ] Tandai kolom wajib.
-- [ ] Tambahkan notes format tanggal `yyyy-mm-dd`.
-- [ ] Tambahkan dropdown untuk referensi kecil.
-- [ ] Tambahkan template version dan generated timestamp.
+- [x] Buat service generate workbook.
+- [x] Buat sheet `README`.
+- [x] Buat sheet referensi per lookup.
+- [x] Buat sheet `mahasiswa_biodata`.
+- [x] Buat sheet `mahasiswa_riwayat_pendidikan`.
+- [x] Buat sheet `mata_kuliah`.
+- [x] Buat sheet `kurikulum`.
+- [x] Buat sheet `matkul_kurikulum`.
+- [x] Buat sheet `kelas_kuliah`.
+- [x] Buat sheet `dosen_pengajar_kelas`.
+- [x] Buat sheet `peserta_kelas`.
+- [x] Buat sheet `nilai_perkuliahan`.
+- [x] Buat sheet `perkuliahan_mahasiswa_akm`.
+- [x] Buat sheet `mahasiswa_lulus_do`.
+- [x] Tandai kolom wajib.
+- [x] Tambahkan notes format tanggal `yyyy-mm-dd`.
+- [x] Tambahkan dropdown untuk referensi kecil.
+- [x] Tambahkan template version dan generated timestamp.
 
 ## 1.4 Upload And Staging
 
