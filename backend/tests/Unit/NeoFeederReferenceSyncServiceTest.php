@@ -301,6 +301,31 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_status_mahasiswa_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetStatusMahasiswa', [
+            'data' => [
+                [
+                    'id_status_mahasiswa' => 'A',
+                    'nama_status_mahasiswa' => 'Aktif',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetStatusMahasiswa',
+                'value_key' => 'id_status_mahasiswa',
+                'value' => 'A',
+                'label' => 'Aktif',
+                'raw_payload' => [
+                    'id_status_mahasiswa' => 'A',
+                    'nama_status_mahasiswa' => 'Aktif',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);

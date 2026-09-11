@@ -70,7 +70,7 @@
 - [x] Implement sync `GetJenisPendaftaran`.
 - [x] Implement sync `GetJalurMasuk`.
 - [x] Implement sync `GetPembiayaan`.
-- [ ] Implement sync `GetStatusMahasiswa`.
+- [x] Implement sync `GetStatusMahasiswa`.
 - [ ] Implement sync `GetJenisKeluar`.
 - [ ] Implement sync `GetJenisEvaluasi`.
 - [ ] Implement sync `GetKategoriKegiatan`.
