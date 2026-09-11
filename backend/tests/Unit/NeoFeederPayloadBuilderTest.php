@@ -124,6 +124,75 @@ class NeoFeederPayloadBuilderTest extends TestCase
         );
     }
 
+    public function test_it_builds_update_key_record_payload(): void
+    {
+        $payload = (new NeoFeederPayloadBuilder())->buildUpdate(
+            $this->courseChannel(),
+            new OperationContract(
+                name: 'update',
+                action: 'UpdateMataKuliah',
+                type: 'update',
+                payloadMode: 'key_record',
+                keyFields: ['id_matkul'],
+            ),
+            [
+                'id_matkul' => 'matkul-1',
+                'kode_mata_kuliah' => 'IF101',
+                'nama_mata_kuliah' => 'Algoritma Lanjut',
+            ],
+        );
+
+        $this->assertSame([
+            'key' => [
+                'id_matkul' => 'matkul-1',
+            ],
+            'record' => [
+                'kode_mata_kuliah' => 'IF101',
+                'nama_mata_kuliah' => 'Algoritma Lanjut',
+            ],
+        ], $payload);
+    }
+
+    public function test_it_rejects_update_payloads_with_missing_key_fields(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Required key field [id_matkul] is missing');
+
+        (new NeoFeederPayloadBuilder())->buildUpdate(
+            $this->courseChannel(),
+            new OperationContract(
+                name: 'update',
+                action: 'UpdateMataKuliah',
+                type: 'update',
+                payloadMode: 'key_record',
+                keyFields: ['id_matkul'],
+            ),
+            [
+                'nama_mata_kuliah' => 'Algoritma Lanjut',
+            ],
+        );
+    }
+
+    public function test_it_rejects_empty_update_records(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Update record is empty');
+
+        (new NeoFeederPayloadBuilder())->buildUpdate(
+            $this->courseChannel(),
+            new OperationContract(
+                name: 'update',
+                action: 'UpdateMataKuliah',
+                type: 'update',
+                payloadMode: 'key_record',
+                keyFields: ['id_matkul'],
+            ),
+            [
+                'id_matkul' => 'matkul-1',
+            ],
+        );
+    }
+
     private function courseChannel(): ChannelContract
     {
         return new ChannelContract(

@@ -52,7 +52,39 @@ final class NeoFeederPayloadBuilder
         }
 
         return [
-            'record' => $this->buildRecord($channel, $input, skipPrimary: true),
+            'record' => $this->buildRecord($channel, $input, skipPrimary: true, enforceRequired: true),
+        ];
+    }
+
+    /**
+     * Build Neo Feeder update payload fragment for standard `key` + `record` operations.
+     */
+    public function buildUpdate(ChannelContract $channel, OperationContract $operation, array $input): array
+    {
+        if ($operation->type !== 'update') {
+            throw new InvalidArgumentException("Operation [{$operation->name}] is not an update operation.");
+        }
+
+        if ($operation->payloadMode !== 'key_record') {
+            throw new InvalidArgumentException("Operation [{$operation->name}] does not use key_record payload mode.");
+        }
+
+        $key = $this->buildKey($operation, $input);
+        $record = $this->buildRecord(
+            $channel,
+            $input,
+            skipPrimary: true,
+            enforceRequired: false,
+            excludeFields: array_keys($key),
+        );
+
+        if ($record === []) {
+            throw new InvalidArgumentException("Update record is empty for operation [{$operation->name}].");
+        }
+
+        return [
+            'key' => $key,
+            'record' => $record,
         ];
     }
 
@@ -84,19 +116,40 @@ final class NeoFeederPayloadBuilder
         return str_replace("'", "''", (string) $value);
     }
 
-    private function buildRecord(ChannelContract $channel, array $input, bool $skipPrimary): array
+    private function buildKey(OperationContract $operation, array $input): array
+    {
+        $key = [];
+
+        foreach ($operation->keyFields as $field) {
+            if (! array_key_exists($field, $input) || $input[$field] === null || $input[$field] === '') {
+                throw new InvalidArgumentException("Required key field [{$field}] is missing for operation [{$operation->name}].");
+            }
+
+            $key[$field] = $input[$field];
+        }
+
+        return $key;
+    }
+
+    private function buildRecord(
+        ChannelContract $channel,
+        array $input,
+        bool $skipPrimary,
+        bool $enforceRequired,
+        array $excludeFields = [],
+    ): array
     {
         $record = [];
 
         foreach ($channel->fields as $fieldPayload) {
             $field = FieldContract::fromArray($fieldPayload);
 
-            if ($skipPrimary && $field->primary) {
+            if (($skipPrimary && $field->primary) || in_array($field->name, $excludeFields, true)) {
                 continue;
             }
 
             if (! array_key_exists($field->name, $input) || $input[$field->name] === null || $input[$field->name] === '') {
-                if ($field->required) {
+                if ($enforceRequired && $field->required) {
                     throw new InvalidArgumentException("Required field [{$field->name}] is missing for channel [{$channel->key}].");
                 }
 
