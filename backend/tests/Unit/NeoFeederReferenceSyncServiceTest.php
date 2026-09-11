@@ -33,6 +33,49 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_prodi_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetProdi', [
+            'data' => [
+                [
+                    'id_prodi' => 'prodi-1',
+                    'kode_program_studi' => '55201',
+                    'nama_program_studi' => 'Informatika',
+                ],
+                [
+                    'id_prodi' => 'prodi-2',
+                    'kode_program_studi' => '61201',
+                    'nama_program_studi' => 'Manajemen',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetProdi',
+                'value_key' => 'id_prodi',
+                'value' => 'prodi-1',
+                'label' => 'Informatika',
+                'raw_payload' => [
+                    'id_prodi' => 'prodi-1',
+                    'kode_program_studi' => '55201',
+                    'nama_program_studi' => 'Informatika',
+                ],
+            ],
+            [
+                'endpoint' => 'GetProdi',
+                'value_key' => 'id_prodi',
+                'value' => 'prodi-2',
+                'label' => 'Manajemen',
+                'raw_payload' => [
+                    'id_prodi' => 'prodi-2',
+                    'kode_program_studi' => '61201',
+                    'nama_program_studi' => 'Manajemen',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);

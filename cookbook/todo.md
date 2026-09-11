@@ -60,7 +60,7 @@
 ## 1.2 Reference Sync
 
 - [x] Implement sync `GetProfilPT`.
-- [ ] Implement sync `GetProdi`.
+- [x] Implement sync `GetProdi`.
 - [ ] Implement sync `GetSemester`.
 - [ ] Implement sync `GetAgama`.
 - [ ] Implement sync `GetNegara`.
