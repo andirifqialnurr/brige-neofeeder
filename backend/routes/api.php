@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\ImportBatchDryRunController;
+use App\Http\Controllers\Api\ImportBatchSyncController;
 use App\Http\Controllers\Api\ImportBatchUploadController;
 use App\Http\Controllers\Api\NeoFeederConnectionController;
 use App\Http\Controllers\Api\ReferenceStatusController;
@@ -25,4 +26,7 @@ Route::middleware('api.token')->group(function (): void {
     Route::get('references/status', ReferenceStatusController::class);
     Route::post('import-batches/upload', ImportBatchUploadController::class);
     Route::post('import-batches/{importBatch}/dry-run', ImportBatchDryRunController::class);
+    Route::post('import-batches/{importBatch}/sync', [ImportBatchSyncController::class, 'start']);
+    Route::get('import-batches/{importBatch}/sync-progress', [ImportBatchSyncController::class, 'progress']);
+    Route::post('sync-attempts/{syncAttempt}/retry', [ImportBatchSyncController::class, 'retry']);
 });

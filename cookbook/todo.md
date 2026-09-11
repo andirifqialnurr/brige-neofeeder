@@ -140,18 +140,18 @@
 
 ## 1.7 Sync To Neo Feeder
 
-- [ ] Buat sync batch.
-- [ ] Enqueue record sync sesuai dependency graph.
-- [ ] Refresh token saat perlu.
-- [ ] Post satu record per attempt.
-- [ ] Simpan raw request.
-- [ ] Simpan raw response.
-- [ ] Simpan `error_code` dan `error_desc`.
-- [ ] Simpan ID hasil Neo Feeder.
-- [ ] Implement retry untuk network/timeout/token.
-- [ ] Jangan retry otomatis untuk business error.
-- [ ] Buat UI retry manual.
-- [ ] Buat UI batch progress.
+- [x] Buat sync batch.
+- [x] Enqueue record sync sesuai dependency graph.
+- [x] Refresh token saat perlu.
+- [x] Post satu record per attempt.
+- [x] Simpan raw request.
+- [x] Simpan raw response.
+- [x] Simpan `error_code` dan `error_desc`.
+- [x] Simpan ID hasil Neo Feeder.
+- [x] Implement retry untuk network/timeout/token.
+- [x] Jangan retry otomatis untuk business error.
+- [x] Buat UI retry manual.
+- [x] Buat UI batch progress.
 
 ## 1.8 Trial VPS
 

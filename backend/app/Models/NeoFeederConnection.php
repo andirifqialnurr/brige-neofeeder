@@ -10,6 +10,8 @@ class NeoFeederConnection extends Model
 {
     use HasUuids;
 
+    protected $table = 'neofeeder_connections';
+
     protected $fillable = [
         'tenant_id',
         'base_url',
