@@ -233,6 +233,103 @@ class NeoFeederPayloadBuilderTest extends TestCase
         );
     }
 
+    public function test_it_builds_record_array_insert_payload(): void
+    {
+        $payload = (new NeoFeederPayloadBuilder())->buildRecordArrayInsert(
+            $this->evaluationChannel(),
+            new OperationContract(
+                name: 'insert',
+                action: 'InsertRencanaEvaluasi',
+                type: 'insert',
+                payloadMode: 'record_array',
+            ),
+            [
+                [
+                    'id_matkul' => 'matkul-1',
+                    'id_basis_evaluasi' => 1,
+                    'deskripsi_indonesia' => 'Tugas',
+                    'bobot_evaluasi' => 20,
+                ],
+                [
+                    'id_matkul' => 'matkul-1',
+                    'id_basis_evaluasi' => 2,
+                    'deskripsi_indonesia' => 'UAS',
+                    'bobot_evaluasi' => 40,
+                ],
+            ],
+        );
+
+        $this->assertSame([
+            'record' => [
+                [
+                    'id_matkul' => 'matkul-1',
+                    'id_basis_evaluasi' => 1,
+                    'deskripsi_indonesia' => 'Tugas',
+                    'bobot_evaluasi' => 20,
+                ],
+                [
+                    'id_matkul' => 'matkul-1',
+                    'id_basis_evaluasi' => 2,
+                    'deskripsi_indonesia' => 'UAS',
+                    'bobot_evaluasi' => 40,
+                ],
+            ],
+        ], $payload);
+    }
+
+    public function test_it_builds_key_record_array_update_payload(): void
+    {
+        $payload = (new NeoFeederPayloadBuilder())->buildRecordArrayUpdate(
+            $this->evaluationChannel(),
+            new OperationContract(
+                name: 'update',
+                action: 'UpdateRencanaEvaluasi',
+                type: 'update',
+                payloadMode: 'key_record_array',
+                keyFields: ['id_matkul'],
+            ),
+            [
+                'id_matkul' => 'matkul-1',
+                'records' => [
+                    [
+                        'id_matkul' => 'ignored-in-record',
+                        'id_basis_evaluasi' => 1,
+                        'deskripsi_indonesia' => 'Tugas revisi',
+                    ],
+                ],
+            ],
+        );
+
+        $this->assertSame([
+            'key' => [
+                'id_matkul' => 'matkul-1',
+            ],
+            'record' => [
+                [
+                    'id_basis_evaluasi' => 1,
+                    'deskripsi_indonesia' => 'Tugas revisi',
+                ],
+            ],
+        ], $payload);
+    }
+
+    public function test_it_rejects_empty_record_array_payloads(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Record array is empty or invalid');
+
+        (new NeoFeederPayloadBuilder())->buildRecordArrayInsert(
+            $this->evaluationChannel(),
+            new OperationContract(
+                name: 'insert',
+                action: 'InsertRencanaEvaluasi',
+                type: 'insert',
+                payloadMode: 'record_array',
+            ),
+            [],
+        );
+    }
+
     private function courseChannel(): ChannelContract
     {
         return new ChannelContract(
@@ -245,6 +342,22 @@ class NeoFeederPayloadBuilderTest extends TestCase
                 ['name' => 'id_prodi', 'label' => 'Program Studi', 'type' => 'uuid', 'required' => true],
                 ['name' => 'sks_mata_kuliah', 'label' => 'SKS Mata Kuliah', 'type' => 'numeric', 'required' => true],
                 ['name' => 'sks_tatap_muka', 'label' => 'SKS Tatap Muka', 'type' => 'numeric', 'required' => false],
+            ],
+        );
+    }
+
+    private function evaluationChannel(): ChannelContract
+    {
+        return new ChannelContract(
+            key: 'rencana_evaluasi',
+            label: 'Rencana Evaluasi',
+            fields: [
+                ['name' => 'id_matkul', 'label' => 'Mata Kuliah', 'type' => 'uuid', 'required' => true],
+                ['name' => 'id_basis_evaluasi', 'label' => 'Basis Evaluasi', 'type' => 'numeric', 'required' => true],
+                ['name' => 'komponen_evaluasi', 'label' => 'Komponen Evaluasi', 'type' => 'string', 'required' => false],
+                ['name' => 'deskripsi_indonesia', 'label' => 'Deskripsi Indonesia', 'type' => 'string', 'required' => true],
+                ['name' => 'deskripsi_inggris', 'label' => 'Deskripsi Inggris', 'type' => 'string', 'required' => false],
+                ['name' => 'bobot_evaluasi', 'label' => 'Bobot Evaluasi', 'type' => 'numeric', 'required' => false],
             ],
         );
     }

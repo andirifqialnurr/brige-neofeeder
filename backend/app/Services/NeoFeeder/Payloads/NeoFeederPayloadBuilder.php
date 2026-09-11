@@ -106,6 +106,52 @@ final class NeoFeederPayloadBuilder
         ];
     }
 
+    /**
+     * Build override payload for insert operations that require `record` as object[].
+     */
+    public function buildRecordArrayInsert(ChannelContract $channel, OperationContract $operation, array $records): array
+    {
+        if ($operation->type !== 'insert') {
+            throw new InvalidArgumentException("Operation [{$operation->name}] is not an insert operation.");
+        }
+
+        if ($operation->payloadMode !== 'record_array') {
+            throw new InvalidArgumentException("Operation [{$operation->name}] does not use record_array payload mode.");
+        }
+
+        return [
+            'record' => $this->buildRecordList($channel, $records, skipPrimary: true, enforceRequired: true),
+        ];
+    }
+
+    /**
+     * Build override payload for update operations that require `key` + `record` object[].
+     */
+    public function buildRecordArrayUpdate(ChannelContract $channel, OperationContract $operation, array $input): array
+    {
+        if ($operation->type !== 'update') {
+            throw new InvalidArgumentException("Operation [{$operation->name}] is not an update operation.");
+        }
+
+        if ($operation->payloadMode !== 'key_record_array') {
+            throw new InvalidArgumentException("Operation [{$operation->name}] does not use key_record_array payload mode.");
+        }
+
+        $key = $this->buildKey($operation, $input);
+        $records = $input['records'] ?? [];
+
+        return [
+            'key' => $key,
+            'record' => $this->buildRecordList(
+                $channel,
+                is_array($records) ? $records : [],
+                skipPrimary: true,
+                enforceRequired: false,
+                excludeFields: array_keys($key),
+            ),
+        ];
+    }
+
     private function resolveFilter(OperationContract $operation, array $input): ?string
     {
         if (array_key_exists('filter', $input)) {
@@ -147,6 +193,29 @@ final class NeoFeederPayloadBuilder
         }
 
         return $key;
+    }
+
+    private function buildRecordList(
+        ChannelContract $channel,
+        array $records,
+        bool $skipPrimary,
+        bool $enforceRequired,
+        array $excludeFields = [],
+    ): array
+    {
+        if (! array_is_list($records) || $records === []) {
+            throw new InvalidArgumentException("Record array is empty or invalid for channel [{$channel->key}].");
+        }
+
+        return array_map(function (array $record) use ($channel, $skipPrimary, $enforceRequired, $excludeFields): array {
+            $payload = $this->buildRecord($channel, $record, $skipPrimary, $enforceRequired, $excludeFields);
+
+            if ($payload === []) {
+                throw new InvalidArgumentException("Record array contains an empty record for channel [{$channel->key}].");
+            }
+
+            return $payload;
+        }, $records);
     }
 
     private function buildRecord(
