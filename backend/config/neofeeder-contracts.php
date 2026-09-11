@@ -371,5 +371,24 @@ return [
                 ['name' => 'delete', 'action' => 'DeleteKelasKuliah', 'type' => 'delete', 'payload_mode' => 'key_only', 'key_fields' => ['id_kelas_kuliah']],
             ],
         ],
+        'peserta_kelas' => [
+            'key' => 'peserta_kelas',
+            'label' => 'Peserta Kelas Kuliah',
+            'description' => 'Relasi mahasiswa terdaftar ke kelas kuliah.',
+            'sheet_name' => 'peserta_kelas',
+            'depends_on' => ['kelas_kuliah', 'mahasiswa_riwayat_pendidikan'],
+            'natural_key' => ['id_kelas_kuliah', 'id_registrasi_mahasiswa'],
+            'identity_fields' => [],
+            'sort_order' => 310,
+            'fields' => [
+                ['name' => 'id_kelas_kuliah', 'label' => 'Kelas Kuliah', 'type' => 'uuid', 'required' => true, 'nullable' => false, 'reference' => 'GetListKelasKuliah'],
+                ['name' => 'id_registrasi_mahasiswa', 'label' => 'Registrasi Mahasiswa', 'type' => 'uuid', 'required' => true, 'nullable' => false, 'reference' => 'GetListRiwayatPendidikanMahasiswa'],
+            ],
+            'operations' => [
+                ['name' => 'get', 'action' => 'GetPesertaKelasKuliah', 'type' => 'list', 'payload_mode' => 'filter', 'key_fields' => ['id_kelas_kuliah', 'id_registrasi_mahasiswa']],
+                ['name' => 'insert', 'action' => 'InsertPesertaKelasKuliah', 'type' => 'insert', 'payload_mode' => 'record'],
+                ['name' => 'delete', 'action' => 'DeletePesertaKelasKuliah', 'type' => 'delete', 'payload_mode' => 'key_only', 'key_fields' => ['id_kelas_kuliah', 'id_registrasi_mahasiswa']],
+            ],
+        ],
     ],
 ];
