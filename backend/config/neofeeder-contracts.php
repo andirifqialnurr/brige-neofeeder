@@ -176,6 +176,13 @@ return [
                     'payload_mode' => 'filter',
                     'response_fields' => ['id_matkul', 'kode_mata_kuliah', 'nama_mata_kuliah'],
                 ],
+                [
+                    'name' => 'kelas_kuliah',
+                    'action' => 'GetListKelasKuliah',
+                    'type' => 'list',
+                    'payload_mode' => 'filter',
+                    'response_fields' => ['id_kelas_kuliah', 'nama_kelas_kuliah', 'nama_mata_kuliah'],
+                ],
             ],
         ],
         'mahasiswa_biodata' => [
