@@ -73,7 +73,7 @@
 - [x] Implement sync `GetStatusMahasiswa`.
 - [x] Implement sync `GetJenisKeluar`.
 - [x] Implement sync `GetJenisEvaluasi`.
-- [ ] Implement sync `GetKategoriKegiatan`.
+- [x] Implement sync `GetKategoriKegiatan`.
 - [ ] Implement sync `GetBasisEvaluasi`.
 - [ ] Implement sync `GetListDosen`.
 - [ ] Implement sync `GetListPenugasanDosen`.

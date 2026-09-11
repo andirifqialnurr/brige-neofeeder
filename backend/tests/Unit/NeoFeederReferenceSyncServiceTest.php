@@ -376,6 +376,31 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
         ], $rows);
     }
 
+    public function test_it_normalizes_get_kategori_kegiatan_response(): void
+    {
+        $rows = (new NeoFeederReferenceSyncService())->normalize('GetKategoriKegiatan', [
+            'data' => [
+                [
+                    'id_kategori_kegiatan' => 110100,
+                    'nama_kategori_kegiatan' => 'Kuliah Kerja Nyata',
+                ],
+            ],
+        ]);
+
+        $this->assertSame([
+            [
+                'endpoint' => 'GetKategoriKegiatan',
+                'value_key' => 'id_kategori_kegiatan',
+                'value' => '110100',
+                'label' => 'Kuliah Kerja Nyata',
+                'raw_payload' => [
+                    'id_kategori_kegiatan' => 110100,
+                    'nama_kategori_kegiatan' => 'Kuliah Kerja Nyata',
+                ],
+            ],
+        ], $rows);
+    }
+
     public function test_it_rejects_unknown_reference_endpoint(): void
     {
         $this->expectException(InvalidArgumentException::class);
