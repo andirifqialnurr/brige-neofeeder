@@ -55,12 +55,21 @@ class ImportBatchUploadController extends Controller
 
         ParseImportWorkbookJob::dispatch($batch->id);
 
+        $batch->load('tenant');
+
         return response()->json([
             'data' => [
                 'id' => $batch->id,
                 'tenant_id' => $batch->tenant_id,
+                'tenant_name' => $batch->tenant?->name,
+                'source_type' => $batch->source_type,
                 'status' => $batch->status,
                 'file_path' => $batch->file_path,
+                'template_version' => $batch->template_version,
+                'summary' => $batch->summary ?? [],
+                'staging_records_count' => 0,
+                'created_at' => $batch->created_at,
+                'updated_at' => $batch->updated_at,
                 'file_exists' => Storage::disk('uploads')->exists($path),
             ],
         ], 201);

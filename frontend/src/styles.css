@@ -632,6 +632,47 @@ h3 {
   font-size: 13px;
 }
 
+.batch-cell {
+  display: grid;
+  gap: 3px;
+  min-width: 160px;
+}
+
+.batch-cell strong {
+  overflow: hidden;
+  color: hsl(var(--foreground));
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-cell span,
+.upload-preview span {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+
+.file-input {
+  padding: 9px 12px;
+}
+
+.upload-preview {
+  display: grid;
+  gap: 4px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--muted) / 0.32);
+  padding: 11px 12px;
+}
+
+.upload-preview strong {
+  overflow: hidden;
+  color: hsl(var(--foreground));
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .table-url {
   display: inline-block;
   max-width: 260px;

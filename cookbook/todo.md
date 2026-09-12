@@ -120,6 +120,8 @@
 - [x] Simpan raw row.
 - [x] Simpan normalized row.
 - [x] Buat status per row: pending, valid, invalid, ready, syncing, success, failed, skipped.
+- [x] Buat endpoint list import batch.
+- [x] Sambungkan UI upload dan list import batch.
 
 ## 1.5 Validation Engine
 

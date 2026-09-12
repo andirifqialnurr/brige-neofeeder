@@ -23,7 +23,7 @@ import {
   Upload,
   Waypoints,
 } from 'lucide-react';
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/hooks/use-theme';
 import {
   clearAuthSession,
@@ -31,6 +31,7 @@ import {
   createTenant,
   downloadNeoFeederTemplate,
   getCurrentUser,
+  getImportBatches,
   getNeoFeederConnections,
   getReferenceStatus,
   getStoredAuthUser,
@@ -39,7 +40,10 @@ import {
   login,
   logout,
   updateNeoFeederConnection,
+  uploadImportBatch,
   type AuthUser,
+  type ImportBatch,
+  type ImportBatchStatus,
   type NeoFeederConnection,
   type NeoFeederConnectionStatus,
   type ReferenceStatus,
@@ -137,6 +141,30 @@ const connectionStatusTones: Record<NeoFeederConnectionStatus, 'success' | 'neut
   error: 'destructive',
 };
 
+const importBatchStatusLabels: Record<ImportBatchStatus, string> = {
+  uploaded: 'Uploaded',
+  parsing: 'Parsing',
+  ready: 'Ready',
+  validated: 'Validated',
+  invalid: 'Invalid',
+  dry_run_ready: 'Dry-run',
+  syncing: 'Syncing',
+  synced: 'Synced',
+  failed: 'Failed',
+};
+
+const importBatchStatusTones: Record<ImportBatchStatus, 'success' | 'neutral' | 'warning' | 'destructive' | 'info'> = {
+  uploaded: 'info',
+  parsing: 'info',
+  ready: 'warning',
+  validated: 'success',
+  invalid: 'destructive',
+  dry_run_ready: 'success',
+  syncing: 'info',
+  synced: 'success',
+  failed: 'destructive',
+};
+
 function formatDateTime(value: string | null) {
   if (!value) {
     return 'Belum sync';
@@ -146,6 +174,22 @@ function formatDateTime(value: string | null) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
+}
+
+function formatFileSize(value?: number) {
+  if (!value) {
+    return '-';
+  }
+
+  if (value < 1024 * 1024) {
+    return `${Math.ceil(value / 1024)} KB`;
+  }
+
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function shortId(value: string) {
+  return value.slice(0, 8);
 }
 
 function App() {
@@ -192,6 +236,14 @@ function App() {
   const [templateDownloadError, setTemplateDownloadError] = useState('');
   const [referenceStatus, setReferenceStatus] = useState<ReferenceStatus | null>(null);
   const [referenceStatusState, setReferenceStatusState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [importBatches, setImportBatches] = useState<ImportBatch[]>([]);
+  const [importBatchState, setImportBatchState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [importBatchError, setImportBatchError] = useState('');
+  const [importUploadTenantId, setImportUploadTenantId] = useState('');
+  const [importUploadFile, setImportUploadFile] = useState<File | null>(null);
+  const [importUploadInputKey, setImportUploadInputKey] = useState(0);
+  const [importUploadState, setImportUploadState] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [importUploadError, setImportUploadError] = useState('');
   const currentPage = pageMeta[activePage];
 
   const loadTenants = useCallback(async () => {
@@ -219,6 +271,20 @@ function App() {
     } catch (error) {
       setConnectionState('error');
       setConnectionError(error instanceof Error ? error.message : 'Daftar koneksi Neo Feeder belum bisa dimuat.');
+    }
+  }, []);
+
+  const loadImportBatches = useCallback(async () => {
+    setImportBatchState('loading');
+
+    try {
+      const items = await getImportBatches();
+      setImportBatches(items);
+      setImportBatchState('loaded');
+      setImportBatchError('');
+    } catch (error) {
+      setImportBatchState('error');
+      setImportBatchError(error instanceof Error ? error.message : 'Daftar import batch belum bisa dimuat.');
     }
   }, []);
 
@@ -309,6 +375,16 @@ function App() {
   }, [appScreen, loadConnections]);
 
   useEffect(() => {
+    if (appScreen !== 'app') {
+      return undefined;
+    }
+
+    loadImportBatches();
+
+    return undefined;
+  }, [appScreen, loadImportBatches]);
+
+  useEffect(() => {
     if (connectionForm.tenantId !== '' || tenants.length === 0) {
       return;
     }
@@ -319,6 +395,14 @@ function App() {
     }));
   }, [connectionForm.tenantId, tenants]);
 
+  useEffect(() => {
+    if (importUploadTenantId !== '' || tenants.length === 0) {
+      return;
+    }
+
+    setImportUploadTenantId(tenants[0].id);
+  }, [importUploadTenantId, tenants]);
+
   const referencePreview = useMemo(
     () => referenceStatus?.endpoints.slice(0, 5) ?? [],
     [referenceStatus],
@@ -326,6 +410,27 @@ function App() {
   const tenantNameById = useMemo(
     () => new Map(tenants.map((tenant) => [tenant.id, tenant.name])),
     [tenants],
+  );
+  const importBatchRows = useMemo(
+    () =>
+      importBatches.map((batch) => [
+        <div className="batch-cell" key={`${batch.id}-batch`}>
+          <strong>{batch.summary.original_name ?? `Batch ${shortId(batch.id)}`}</strong>
+          <span>
+            {shortId(batch.id)} · {formatFileSize(batch.summary.size)}
+          </span>
+        </div>,
+        <strong className="table-primary" key={`${batch.id}-tenant`}>
+          {tenantNameById.get(batch.tenant_id) ?? batch.tenant_name ?? batch.tenant_id}
+        </strong>,
+        <StatusBadge key={`${batch.id}-status`} tone={importBatchStatusTones[batch.status] ?? 'neutral'}>
+          {importBatchStatusLabels[batch.status] ?? batch.status}
+        </StatusBadge>,
+        <span key={`${batch.id}-valid`}>{batch.summary.valid_rows ?? 0}</span>,
+        <span key={`${batch.id}-invalid`}>{batch.summary.invalid_rows ?? 0}</span>,
+        <span key={`${batch.id}-updated`}>{formatDateTime(batch.updated_at)}</span>,
+      ]),
+    [importBatches, tenantNameById],
   );
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
@@ -445,6 +550,39 @@ function App() {
     } catch (error) {
       setTemplateDownloadState('error');
       setTemplateDownloadError(error instanceof Error ? error.message : 'Template belum bisa didownload.');
+    }
+  };
+
+  const handleImportFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setImportUploadFile(event.target.files?.[0] ?? null);
+  };
+
+  const handleUploadImportBatch = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setImportUploadState('saving');
+    setImportUploadError('');
+
+    if (!importUploadTenantId || !importUploadFile) {
+      setImportUploadState('error');
+      setImportUploadError('Pilih kampus dan file Excel terlebih dahulu.');
+      return;
+    }
+
+    try {
+      const batch = await uploadImportBatch({
+        tenantId: importUploadTenantId,
+        file: importUploadFile,
+      });
+
+      setImportBatches((current) => [batch, ...current.filter((item) => item.id !== batch.id)]);
+      setImportUploadFile(null);
+      setImportUploadInputKey((current) => current + 1);
+      setImportUploadState('idle');
+      setImportBatchState('loaded');
+      await loadImportBatches();
+    } catch (error) {
+      setImportUploadState('error');
+      setImportUploadError(error instanceof Error ? error.message : 'Workbook belum bisa diupload.');
     }
   };
 
@@ -831,7 +969,11 @@ function App() {
   const renderDashboard = () => (
     <>
       <PageHeader
-        action={<AppButton icon={Upload}>Upload Excel</AppButton>}
+        action={
+          <AppButton icon={Upload} onClick={() => setActivePage('import-batch')}>
+            Upload Excel
+          </AppButton>
+        }
         eyebrow="Local Dev"
         title="Siapkan data kampus untuk sinkronisasi."
       />
@@ -862,7 +1004,22 @@ function App() {
 
           <DataTable
             columns={batchColumns}
-            emptyState={<EmptyState description="Upload template Excel untuk mulai validasi." icon={FileSpreadsheet} title="Belum ada batch" />}
+            rows={importBatchRows.slice(0, 5)}
+            emptyState={
+              importBatchState === 'loading' ? (
+                <div className="loading-state">
+                  <RefreshCcw size={18} />
+                  Memuat import batch
+                </div>
+              ) : importBatchState === 'error' ? (
+                <div className="error-state">
+                  <strong>Import batch gagal dimuat.</strong>
+                  <span>{importBatchError}</span>
+                </div>
+              ) : (
+                <EmptyState description="Upload template Excel untuk mulai validasi." icon={FileSpreadsheet} title="Belum ada batch" />
+              )
+            }
           />
         </WorkspacePanel>
 
@@ -1160,25 +1317,103 @@ function App() {
   const renderImportBatch = () => (
     <>
       <PageHeader
-        action={<AppButton icon={Upload}>Upload Excel</AppButton>}
+        action={
+          <AppButton icon={RefreshCcw} onClick={loadImportBatches} variant="secondary">
+            Refresh
+          </AppButton>
+        }
         eyebrow="Import"
         title="Pantau upload, validasi, dan kesiapan sync."
       />
 
-      <WorkspacePanel>
-        <SectionHeader
-          action={
-            <AppButton icon={RefreshCcw} variant="secondary">
-              Refresh
-            </AppButton>
-          }
-          title="Batch Import"
-        />
-        <DataTable
-          columns={batchColumns}
-          emptyState={<EmptyState description="Belum ada file yang diupload." icon={Upload} title="Batch kosong" />}
-        />
-      </WorkspacePanel>
+      <section className="page-grid">
+        <WorkspacePanel>
+          <SectionHeader
+            action={
+              <AppButton icon={RefreshCcw} onClick={loadImportBatches} variant="secondary">
+                Refresh
+              </AppButton>
+            }
+            title="Batch Import"
+          />
+          <DataTable
+            columns={batchColumns}
+            rows={importBatchRows}
+            emptyState={
+              importBatchState === 'loading' ? (
+                <div className="loading-state">
+                  <RefreshCcw size={18} />
+                  Memuat import batch
+                </div>
+              ) : importBatchState === 'error' ? (
+                <div className="error-state">
+                  <strong>Import batch gagal dimuat.</strong>
+                  <span>{importBatchError}</span>
+                </div>
+              ) : (
+                <EmptyState description="Belum ada file yang diupload." icon={Upload} title="Batch kosong" />
+              )
+            }
+          />
+        </WorkspacePanel>
+
+        <aside className="side-panel">
+          <SectionHeader title="Upload Workbook" />
+          <form className="stack-form" onSubmit={handleUploadImportBatch}>
+            <label>
+              Kampus
+              <select
+                disabled={tenants.length === 0}
+                onChange={(event) => setImportUploadTenantId(event.target.value)}
+                required
+                value={importUploadTenantId}
+              >
+                {tenants.length === 0 ? <option value="">Buat kampus dulu</option> : null}
+                {tenants.map((tenant) => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              File Excel
+              <input
+                accept=".xlsx,.xls"
+                className="file-input"
+                key={importUploadInputKey}
+                onChange={handleImportFileChange}
+                required
+                type="file"
+              />
+            </label>
+
+            {importUploadFile ? (
+              <div className="upload-preview">
+                <strong>{importUploadFile.name}</strong>
+                <span>{formatFileSize(importUploadFile.size)}</span>
+              </div>
+            ) : null}
+
+            {importUploadState === 'error' ? <p className="auth-error">{importUploadError}</p> : null}
+
+            <button
+              className="app-button app-button-primary"
+              disabled={importUploadState === 'saving' || tenants.length === 0 || !importUploadFile}
+              type="submit"
+            >
+              <Upload size={18} />
+              {importUploadState === 'saving' ? 'Mengupload...' : 'Upload Workbook'}
+            </button>
+          </form>
+
+          <div className="notice compact-notice">
+            <Clock3 size={18} />
+            <p>Worker akan parse workbook dan mengubah status batch setelah file tersimpan.</p>
+          </div>
+        </aside>
+      </section>
     </>
   );
 

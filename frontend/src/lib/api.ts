@@ -57,6 +57,40 @@ export type ReferenceStatus = {
   endpoints: ReferenceEndpointStatus[];
 };
 
+export type ImportBatchStatus =
+  | 'uploaded'
+  | 'parsing'
+  | 'ready'
+  | 'validated'
+  | 'invalid'
+  | 'dry_run_ready'
+  | 'syncing'
+  | 'synced'
+  | 'failed';
+
+export type ImportBatch = {
+  id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  source_type: string;
+  file_path: string;
+  template_version: string;
+  status: ImportBatchStatus;
+  summary: {
+    original_name?: string;
+    size?: number;
+    total_rows?: number;
+    valid_rows?: number;
+    invalid_rows?: number;
+    warning_rows?: number;
+    missing_sheets?: string[];
+    [key: string]: unknown;
+  };
+  staging_records_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
 function getApiToken() {
   return import.meta.env.VITE_API_TOKEN ?? localStorage.getItem(API_TOKEN_STORAGE_KEY);
 }
@@ -410,6 +444,53 @@ export async function getReferenceStatus(): Promise<ReferenceStatus | null> {
   }
 
   const payload = (await response.json()) as { data: ReferenceStatus };
+
+  return payload.data;
+}
+
+export async function getImportBatches(tenantId?: string): Promise<ImportBatch[]> {
+  const headers = getAuthHeaders();
+
+  if (!headers) {
+    return [];
+  }
+
+  const query = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : '';
+  const response = await fetch(`${API_BASE_URL}/import-batches${query}`, {
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const payload = (await response.json()) as { data: ImportBatch[] };
+
+  return payload.data;
+}
+
+export async function uploadImportBatch(input: { tenantId: string; file: File }): Promise<ImportBatch> {
+  const headers = getAuthHeaders();
+
+  if (!headers) {
+    throw new Error('Sesi login belum tersedia.');
+  }
+
+  const formData = new FormData();
+  formData.append('tenant_id', input.tenantId);
+  formData.append('file', input.file);
+
+  const response = await fetch(`${API_BASE_URL}/import-batches/upload`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const payload = (await response.json()) as { data: ImportBatch };
 
   return payload.data;
 }
