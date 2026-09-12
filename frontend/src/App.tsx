@@ -40,6 +40,7 @@ import {
   login,
   logout,
   runImportBatchDryRun,
+  testNeoFeederConnection,
   updateNeoFeederConnection,
   uploadImportBatch,
   type AuthUser,
@@ -47,6 +48,7 @@ import {
   type ImportBatch,
   type ImportBatchStatus,
   type NeoFeederConnection,
+  type NeoFeederConnectionTestResult,
   type NeoFeederConnectionStatus,
   type ReferenceStatus,
   type Tenant,
@@ -234,6 +236,9 @@ function App() {
   });
   const [connectionFormState, setConnectionFormState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [connectionFormError, setConnectionFormError] = useState('');
+  const [connectionTestingId, setConnectionTestingId] = useState('');
+  const [connectionTestResult, setConnectionTestResult] = useState<NeoFeederConnectionTestResult | null>(null);
+  const [connectionTestError, setConnectionTestError] = useState('');
   const [templateDownloadState, setTemplateDownloadState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [templateDownloadError, setTemplateDownloadError] = useState('');
   const [referenceStatus, setReferenceStatus] = useState<ReferenceStatus | null>(null);
@@ -599,6 +604,23 @@ function App() {
     } catch (error) {
       setConnectionFormState('error');
       setConnectionFormError(error instanceof Error ? error.message : 'Koneksi Neo Feeder belum bisa disimpan.');
+    }
+  };
+
+  const handleTestConnection = async (connectionId: string) => {
+    setConnectionTestingId(connectionId);
+    setConnectionTestError('');
+    setConnectionTestResult(null);
+
+    try {
+      const result = await testNeoFeederConnection(connectionId);
+
+      setConnectionTestResult(result);
+      setConnections((current) => current.map((item) => (item.id === result.connection.id ? result.connection : item)));
+    } catch (error) {
+      setConnectionTestError(error instanceof Error ? error.message : 'Test koneksi Neo Feeder gagal.');
+    } finally {
+      setConnectionTestingId('');
     }
   };
 
@@ -1224,8 +1246,8 @@ function App() {
     <>
       <PageHeader
         action={
-          <AppButton disabled icon={DatabaseZap} variant="secondary">
-            Test butuh credential
+          <AppButton icon={RefreshCcw} onClick={loadConnections} variant="secondary">
+            Refresh
           </AppButton>
         }
         eyebrow="Integrasi"
@@ -1256,9 +1278,19 @@ function App() {
               </StatusBadge>,
               <span key={`${connection.id}-password`}>{connection.password_configured ? 'Tersimpan' : 'Belum'}</span>,
               <span key={`${connection.id}-checked`}>{formatDateTime(connection.last_checked_at)}</span>,
-              <button className="row-action" key={`${connection.id}-action`} onClick={() => applyConnectionToForm(connection.tenant_id)} type="button">
-                Edit
-              </button>,
+              <div className="row-actions" key={`${connection.id}-action`}>
+                <button className="row-action" onClick={() => applyConnectionToForm(connection.tenant_id)} type="button">
+                  Edit
+                </button>
+                <button
+                  className="row-action"
+                  disabled={connectionTestingId === connection.id || !connection.password_configured || !connection.username}
+                  onClick={() => handleTestConnection(connection.id)}
+                  type="button"
+                >
+                  {connectionTestingId === connection.id ? 'Testing' : 'Test'}
+                </button>
+              </div>,
             ])}
             emptyState={
               connectionState === 'loading' ? (
@@ -1345,6 +1377,16 @@ function App() {
             </label>
 
             {connectionFormState === 'error' ? <p className="auth-error">{connectionFormError}</p> : null}
+            {connectionTestError ? <p className="auth-error">{connectionTestError}</p> : null}
+            {connectionTestResult ? (
+              <div className={`connection-test-result ${connectionTestResult.ok ? 'connection-test-ok' : 'connection-test-error'}`}>
+                <strong>{connectionTestResult.ok ? 'Koneksi aktif' : 'Koneksi belum valid'}</strong>
+                <span>
+                  {connectionTestResult.token_received ? 'Token diterima' : 'Token belum diterima'}
+                  {connectionTestResult.error_desc ? ` · ${connectionTestResult.error_desc}` : ''}
+                </span>
+              </div>
+            ) : null}
 
             <button className="app-button app-button-primary" disabled={connectionFormState === 'saving' || tenants.length === 0} type="submit">
               <DatabaseZap size={18} />

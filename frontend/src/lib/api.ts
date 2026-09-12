@@ -39,6 +39,14 @@ export type NeoFeederConnection = {
   updated_at: string;
 };
 
+export type NeoFeederConnectionTestResult = {
+  ok: boolean;
+  error_code: string | null;
+  error_desc: string | null;
+  token_received: boolean;
+  connection: NeoFeederConnection;
+};
+
 export type ReferenceEndpointStatus = {
   name: string;
   endpoint: string;
@@ -432,6 +440,27 @@ export async function updateNeoFeederConnection(
   }
 
   const payload = (await response.json()) as { data: NeoFeederConnection };
+
+  return payload.data;
+}
+
+export async function testNeoFeederConnection(connectionId: string): Promise<NeoFeederConnectionTestResult> {
+  const headers = getAuthHeaders();
+
+  if (!headers) {
+    throw new Error('Sesi login belum tersedia.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/neofeeder-connections/${connectionId}/test`, {
+    method: 'POST',
+    headers,
+  });
+
+  const payload = (await response.json()) as { data?: NeoFeederConnectionTestResult; message?: string };
+
+  if (!payload.data) {
+    throw new Error(payload.message ?? `Request gagal: ${response.status}`);
+  }
 
   return payload.data;
 }

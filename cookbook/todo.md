@@ -33,6 +33,7 @@
 - [x] Tambahkan konten landing page untuk fitur, workflow, dan roadmap otomatisasi.
 - [x] Tambahkan halaman login setema dashboard.
 - [x] Validasi sesi login tersimpan via `/auth/me`.
+- [x] Sambungkan UI test koneksi Neo Feeder ke endpoint backend.
 - [x] Validasi build/lint frontend.
 
 ## Phase 1 - Export/Import Excel
