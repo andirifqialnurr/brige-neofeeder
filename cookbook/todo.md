@@ -146,6 +146,7 @@
 - [x] Tampilkan calon insert/update/skip.
 - [x] Tampilkan missing references.
 - [x] Butuh approval operator sebelum sync.
+- [x] Sambungkan UI pilih batch dan jalankan dry-run.
 
 ## 1.7 Sync To Neo Feeder
 

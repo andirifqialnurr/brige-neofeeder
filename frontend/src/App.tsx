@@ -39,9 +39,11 @@ import {
   hasStoredApiToken,
   login,
   logout,
+  runImportBatchDryRun,
   updateNeoFeederConnection,
   uploadImportBatch,
   type AuthUser,
+  type DryRunPreview,
   type ImportBatch,
   type ImportBatchStatus,
   type NeoFeederConnection,
@@ -102,7 +104,7 @@ const metrics = [
 const batchColumns = ['Batch', 'Kampus', 'Status', 'Valid', 'Error', 'Update'];
 const campusColumns = ['Kampus', 'Kode PT', 'Status', 'Batch', 'Update'];
 const templateColumns = ['Sheet', 'Endpoint', 'Wajib', 'Referensi', 'Status'];
-const validationColumns = ['Batch', 'Kategori', 'Field', 'Error', 'Status'];
+const validationColumns = ['Row', 'Kanal', 'Operasi', 'Issue', 'Status'];
 const mappingColumns = ['Sumber SIAKAD', 'Target Neo Feeder', 'Confidence', 'Status'];
 
 const pageMeta: Record<PageId, { eyebrow: string; title: string }> = {
@@ -244,6 +246,10 @@ function App() {
   const [importUploadInputKey, setImportUploadInputKey] = useState(0);
   const [importUploadState, setImportUploadState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [importUploadError, setImportUploadError] = useState('');
+  const [dryRunBatchId, setDryRunBatchId] = useState('');
+  const [dryRunPreview, setDryRunPreview] = useState<DryRunPreview | null>(null);
+  const [dryRunState, setDryRunState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [dryRunError, setDryRunError] = useState('');
   const currentPage = pageMeta[activePage];
 
   const loadTenants = useCallback(async () => {
@@ -403,6 +409,14 @@ function App() {
     setImportUploadTenantId(tenants[0].id);
   }, [importUploadTenantId, tenants]);
 
+  useEffect(() => {
+    if (dryRunBatchId !== '' || importBatches.length === 0) {
+      return;
+    }
+
+    setDryRunBatchId(importBatches[0].id);
+  }, [dryRunBatchId, importBatches]);
+
   const referencePreview = useMemo(
     () => referenceStatus?.endpoints.slice(0, 5) ?? [],
     [referenceStatus],
@@ -432,6 +446,54 @@ function App() {
       ]),
     [importBatches, tenantNameById],
   );
+  const dryRunIssueRows = useMemo(() => {
+    if (!dryRunPreview) {
+      return [];
+    }
+
+    return dryRunPreview.payload_preview.flatMap((item) => {
+      const issues = [
+        ...(item.validation_result.errors ?? []).map((issue) => ({ ...issue, level: 'error' as const })),
+        ...(item.validation_result.warnings ?? []).map((issue) => ({ ...issue, level: 'warning' as const })),
+        ...(item.validation_result.info ?? []).map((issue) => ({ ...issue, level: 'info' as const })),
+      ];
+
+      if (issues.length === 0) {
+        return [
+          [
+            <strong className="table-primary" key={`${item.staging_record_id}-row`}>
+              {item.sheet_name} #{item.row_number}
+            </strong>,
+            <span className="mono" key={`${item.staging_record_id}-channel`}>
+              {item.channel}
+            </span>,
+            <span key={`${item.staging_record_id}-operation`}>{item.action ?? item.candidate_operation}</span>,
+            <span key={`${item.staging_record_id}-issue`}>Payload siap</span>,
+            <StatusBadge key={`${item.staging_record_id}-status`} tone={item.candidate_operation === 'skip' ? 'neutral' : 'success'}>
+              {item.candidate_operation === 'skip' ? 'Skip' : 'Ready'}
+            </StatusBadge>,
+          ],
+        ];
+      }
+
+      return issues.map((issue, index) => [
+        <strong className="table-primary" key={`${item.staging_record_id}-${index}-row`}>
+          {item.sheet_name} #{item.row_number}
+        </strong>,
+        <span className="mono" key={`${item.staging_record_id}-${index}-channel`}>
+          {item.channel}
+        </span>,
+        <span key={`${item.staging_record_id}-${index}-operation`}>{item.action ?? item.candidate_operation}</span>,
+        <span key={`${item.staging_record_id}-${index}-issue`}>
+          {issue.field ? `${issue.field}: ` : ''}
+          {issue.message ?? issue.rule ?? 'Issue validasi'}
+        </span>,
+        <StatusBadge key={`${item.staging_record_id}-${index}-status`} tone={issue.level === 'error' ? 'destructive' : issue.level === 'warning' ? 'warning' : 'info'}>
+          {issue.level === 'error' ? 'Error' : issue.level === 'warning' ? 'Warning' : 'Info'}
+        </StatusBadge>,
+      ]);
+    });
+  }, [dryRunPreview]);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -583,6 +645,27 @@ function App() {
     } catch (error) {
       setImportUploadState('error');
       setImportUploadError(error instanceof Error ? error.message : 'Workbook belum bisa diupload.');
+    }
+  };
+
+  const handleRunDryRun = async () => {
+    setDryRunState('loading');
+    setDryRunError('');
+
+    if (!dryRunBatchId) {
+      setDryRunState('error');
+      setDryRunError('Pilih import batch terlebih dahulu.');
+      return;
+    }
+
+    try {
+      const preview = await runImportBatchDryRun(dryRunBatchId);
+      setDryRunPreview(preview);
+      setDryRunState('loaded');
+      await loadImportBatches();
+    } catch (error) {
+      setDryRunState('error');
+      setDryRunError(error instanceof Error ? error.message : 'Dry-run belum bisa dijalankan.');
     }
   };
 
@@ -1421,21 +1504,98 @@ function App() {
     <>
       <PageHeader
         action={
-          <AppButton icon={ShieldCheck} variant="secondary">
-            Jalankan Validasi
+          <AppButton disabled={dryRunState === 'loading' || !dryRunBatchId} icon={ShieldCheck} onClick={handleRunDryRun} variant="secondary">
+            {dryRunState === 'loading' ? 'Menjalankan...' : 'Jalankan Dry-run'}
           </AppButton>
         }
         eyebrow="Quality Gate"
-        title="Cek field wajib, referensi, dan relasi data."
+        title="Preview payload sebelum sinkronisasi."
       />
 
-      <WorkspacePanel>
-        <SectionHeader title="Temuan Validasi" />
-        <DataTable
-          columns={validationColumns}
-          emptyState={<EmptyState description="Upload batch untuk melihat hasil validasi." icon={ShieldCheck} title="Belum ada temuan" />}
-        />
-      </WorkspacePanel>
+      <section className="page-grid">
+        <WorkspacePanel>
+          <SectionHeader
+            action={
+              <AppButton disabled={dryRunState === 'loading' || !dryRunBatchId} icon={ShieldCheck} onClick={handleRunDryRun} variant="secondary">
+                {dryRunState === 'loading' ? 'Menjalankan...' : 'Dry-run'}
+              </AppButton>
+            }
+            title="Temuan Validasi"
+          />
+          {dryRunState === 'error' ? (
+            <div className="error-state">
+              <strong>Dry-run gagal dijalankan.</strong>
+              <span>{dryRunError}</span>
+            </div>
+          ) : null}
+          <DataTable
+            columns={validationColumns}
+            rows={dryRunIssueRows}
+            emptyState={
+              dryRunState === 'loading' ? (
+                <div className="loading-state">
+                  <RefreshCcw size={18} />
+                  Menyiapkan payload preview
+                </div>
+              ) : (
+                <EmptyState description="Pilih batch dan jalankan dry-run untuk melihat hasil validasi." icon={ShieldCheck} title="Belum ada preview" />
+              )
+            }
+          />
+        </WorkspacePanel>
+
+        <aside className="side-panel">
+          <SectionHeader title="Dry-run Batch" />
+          <form className="stack-form">
+            <label>
+              Import Batch
+              <select
+                disabled={importBatches.length === 0}
+                onChange={(event) => setDryRunBatchId(event.target.value)}
+                value={dryRunBatchId}
+              >
+                {importBatches.length === 0 ? <option value="">Upload batch dulu</option> : null}
+                {importBatches.map((batch) => (
+                  <option key={batch.id} value={batch.id}>
+                    {(batch.summary.original_name ?? `Batch ${shortId(batch.id)}`)} · {tenantNameById.get(batch.tenant_id) ?? batch.tenant_name ?? 'Kampus'}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button className="app-button app-button-primary" disabled={dryRunState === 'loading' || !dryRunBatchId} onClick={handleRunDryRun} type="button">
+              <ShieldCheck size={18} />
+              {dryRunState === 'loading' ? 'Menjalankan...' : 'Jalankan Dry-run'}
+            </button>
+          </form>
+
+          <div className="dry-run-summary">
+            <div>
+              <span>Total</span>
+              <strong>{dryRunPreview?.summary.total_rows ?? 0}</strong>
+            </div>
+            <div>
+              <span>Valid</span>
+              <strong>{dryRunPreview?.summary.valid_rows ?? 0}</strong>
+            </div>
+            <div>
+              <span>Error</span>
+              <strong>{dryRunPreview?.summary.invalid_rows ?? 0}</strong>
+            </div>
+            <div>
+              <span>Warning</span>
+              <strong>{dryRunPreview?.summary.warning_rows ?? 0}</strong>
+            </div>
+          </div>
+
+          <div className="notice compact-notice">
+            <Clock3 size={18} />
+            <p>
+              Approval dan sync final ditahan sampai credential Neo Feeder siap. Dry-run hanya membuat preview payload dan dependency order.
+            </p>
+          </div>
+        </aside>
+      </section>
     </>
   );
 

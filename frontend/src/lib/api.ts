@@ -91,6 +91,50 @@ export type ImportBatch = {
   updated_at: string;
 };
 
+export type DryRunIssue = {
+  field: string | null;
+  rule?: string;
+  message?: string;
+};
+
+export type DryRunPayloadPreview = {
+  staging_record_id: string;
+  channel: string;
+  sheet_name: string;
+  row_number: number;
+  status: string;
+  candidate_operation: string;
+  action: string | null;
+  payload: Record<string, unknown> | null;
+  validation_result: {
+    errors?: DryRunIssue[];
+    warnings?: DryRunIssue[];
+    info?: DryRunIssue[];
+  };
+};
+
+export type DryRunPreview = {
+  import_batch_id: string;
+  summary: {
+    total_rows: number;
+    valid_rows: number;
+    invalid_rows: number;
+    warning_rows: number;
+  };
+  dependency_order: string[];
+  payload_preview: DryRunPayloadPreview[];
+  missing_references: Array<{
+    staging_record_id: string;
+    channel: string;
+    sheet_name: string;
+    row_number: number;
+    field: string | null;
+    message: string | null;
+  }>;
+  requires_operator_approval: boolean;
+  approved: boolean;
+};
+
 function getApiToken() {
   return import.meta.env.VITE_API_TOKEN ?? localStorage.getItem(API_TOKEN_STORAGE_KEY);
 }
@@ -491,6 +535,27 @@ export async function uploadImportBatch(input: { tenantId: string; file: File })
   }
 
   const payload = (await response.json()) as { data: ImportBatch };
+
+  return payload.data;
+}
+
+export async function runImportBatchDryRun(importBatchId: string): Promise<DryRunPreview> {
+  const headers = getAuthHeaders();
+
+  if (!headers) {
+    throw new Error('Sesi login belum tersedia.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/import-batches/${importBatchId}/dry-run`, {
+    method: 'POST',
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const payload = (await response.json()) as { data: DryRunPreview };
 
   return payload.data;
 }
