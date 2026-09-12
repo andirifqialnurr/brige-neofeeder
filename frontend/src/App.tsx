@@ -40,6 +40,7 @@ import {
   login,
   logout,
   runImportBatchDryRun,
+  syncReferences,
   testNeoFeederConnection,
   updateNeoFeederConnection,
   uploadImportBatch,
@@ -243,6 +244,10 @@ function App() {
   const [templateDownloadError, setTemplateDownloadError] = useState('');
   const [referenceStatus, setReferenceStatus] = useState<ReferenceStatus | null>(null);
   const [referenceStatusState, setReferenceStatusState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [referenceTenantId, setReferenceTenantId] = useState('');
+  const [referenceSyncState, setReferenceSyncState] = useState<'idle' | 'loading' | 'queued' | 'error'>('idle');
+  const [referenceSyncError, setReferenceSyncError] = useState('');
+  const [referenceQueuedCount, setReferenceQueuedCount] = useState(0);
   const [importBatches, setImportBatches] = useState<ImportBatch[]>([]);
   const [importBatchState, setImportBatchState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const [importBatchError, setImportBatchError] = useState('');
@@ -299,6 +304,18 @@ function App() {
     }
   }, []);
 
+  const loadReferenceStatus = useCallback(async (tenantId?: string) => {
+    setReferenceStatusState('loading');
+
+    try {
+      const status = await getReferenceStatus(tenantId);
+      setReferenceStatus(status);
+      setReferenceStatusState(status === null ? 'idle' : 'loaded');
+    } catch {
+      setReferenceStatusState('error');
+    }
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
@@ -338,32 +355,14 @@ function App() {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-
     if (appScreen !== 'app') {
       return undefined;
     }
 
-    setReferenceStatusState('loading');
-    getReferenceStatus()
-      .then((status) => {
-        if (!mounted) {
-          return;
-        }
+    loadReferenceStatus(referenceTenantId || undefined);
 
-        setReferenceStatus(status);
-        setReferenceStatusState(status === null ? 'idle' : 'loaded');
-      })
-      .catch(() => {
-        if (mounted) {
-          setReferenceStatusState('error');
-        }
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, [appScreen]);
+    return undefined;
+  }, [appScreen, loadReferenceStatus, referenceTenantId]);
 
   useEffect(() => {
     if (appScreen !== 'app') {
@@ -413,6 +412,14 @@ function App() {
 
     setImportUploadTenantId(tenants[0].id);
   }, [importUploadTenantId, tenants]);
+
+  useEffect(() => {
+    if (referenceTenantId !== '' || tenants.length === 0) {
+      return;
+    }
+
+    setReferenceTenantId(tenants[0].id);
+  }, [referenceTenantId, tenants]);
 
   useEffect(() => {
     if (dryRunBatchId !== '' || importBatches.length === 0) {
@@ -634,6 +641,28 @@ function App() {
     } catch (error) {
       setTemplateDownloadState('error');
       setTemplateDownloadError(error instanceof Error ? error.message : 'Template belum bisa didownload.');
+    }
+  };
+
+  const handleSyncReferences = async () => {
+    setReferenceSyncState('loading');
+    setReferenceSyncError('');
+    setReferenceQueuedCount(0);
+
+    if (!referenceTenantId) {
+      setReferenceSyncState('error');
+      setReferenceSyncError('Pilih tenant kampus untuk sync referensi.');
+      return;
+    }
+
+    try {
+      const result = await syncReferences({ tenantId: referenceTenantId });
+      setReferenceQueuedCount(result.queued_endpoint_count);
+      setReferenceSyncState('queued');
+      await loadReferenceStatus(referenceTenantId);
+    } catch (error) {
+      setReferenceSyncState('error');
+      setReferenceSyncError(error instanceof Error ? error.message : 'Sync referensi belum bisa diantrekan.');
     }
   };
 
@@ -989,13 +1018,41 @@ function App() {
     <WorkspacePanel>
       <SectionHeader
         action={
-          <AppButton icon={RefreshCcw} variant="secondary">
-            Sync Referensi
-          </AppButton>
+          <div className="section-actions">
+            <select
+              className="inline-select"
+              disabled={tenants.length === 0}
+              onChange={(event) => setReferenceTenantId(event.target.value)}
+              value={referenceTenantId}
+            >
+              {tenants.length === 0 ? <option value="">Tenant belum ada</option> : null}
+              {tenants.map((tenant) => (
+                <option key={tenant.id} value={tenant.id}>
+                  {tenant.name}
+                </option>
+              ))}
+            </select>
+            <AppButton disabled={referenceSyncState === 'loading' || !referenceTenantId} icon={RefreshCcw} onClick={handleSyncReferences} variant="secondary">
+              {referenceSyncState === 'loading' ? 'Mengantre...' : 'Sync Referensi'}
+            </AppButton>
+          </div>
         }
         description="Status cache lookup Neo Feeder untuk template dan validasi."
         title="Referensi Neo Feeder"
       />
+
+      {referenceSyncState === 'queued' ? (
+        <div className="success-state">
+          <strong>{referenceQueuedCount} endpoint referensi diantrekan.</strong>
+          <span>Worker akan mengambil data dari Neo Feeder jika credential valid.</span>
+        </div>
+      ) : null}
+      {referenceSyncState === 'error' ? (
+        <div className="error-state">
+          <strong>Sync referensi belum bisa dijalankan.</strong>
+          <span>{referenceSyncError}</span>
+        </div>
+      ) : null}
 
       <div className="reference-summary">
         <div>

@@ -65,6 +65,12 @@ export type ReferenceStatus = {
   endpoints: ReferenceEndpointStatus[];
 };
 
+export type ReferenceSyncResult = {
+  tenant_id: string;
+  queued_endpoint_count: number;
+  endpoints: string[];
+};
+
 export type ImportBatchStatus =
   | 'uploaded'
   | 'parsing'
@@ -501,14 +507,15 @@ export async function downloadNeoFeederTemplate(): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-export async function getReferenceStatus(): Promise<ReferenceStatus | null> {
+export async function getReferenceStatus(tenantId?: string): Promise<ReferenceStatus | null> {
   const headers = getAuthHeaders();
 
   if (!headers) {
     return null;
   }
 
-  const response = await fetch(`${API_BASE_URL}/references/status`, {
+  const query = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : '';
+  const response = await fetch(`${API_BASE_URL}/references/status${query}`, {
     headers,
   });
 
@@ -517,6 +524,31 @@ export async function getReferenceStatus(): Promise<ReferenceStatus | null> {
   }
 
   const payload = (await response.json()) as { data: ReferenceStatus };
+
+  return payload.data;
+}
+
+export async function syncReferences(input: { tenantId: string; endpoint?: string }): Promise<ReferenceSyncResult> {
+  const headers = getJsonHeaders();
+
+  if (!headers) {
+    throw new Error('Sesi login belum tersedia.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/references/sync`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      tenant_id: input.tenantId,
+      ...(input.endpoint ? { endpoint: input.endpoint } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const payload = (await response.json()) as { data: ReferenceSyncResult };
 
   return payload.data;
 }

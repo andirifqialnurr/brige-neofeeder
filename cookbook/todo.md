@@ -85,7 +85,9 @@
 - [x] Implement sync `GetListPenugasanDosen`.
 - [x] Implement sync `GetListMataKuliah`.
 - [x] Implement sync `GetListKelasKuliah`.
+- [x] Buat endpoint dan job queue untuk refresh referensi Neo Feeder.
 - [x] Buat UI status referensi: last refresh, total rows, failed endpoint.
+- [x] Sambungkan UI tombol sync referensi ke endpoint backend.
 
 ## 1.3 Template Excel Generator
 

@@ -218,6 +218,24 @@ a {
   gap: 10px;
 }
 
+.section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.inline-select {
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  min-height: 38px;
+  max-width: 220px;
+  padding: 0 12px;
+  outline: none;
+}
+
 .eyebrow,
 .section-heading p {
   margin: 0;
@@ -810,7 +828,8 @@ td {
 }
 
 .loading-state,
-.error-state {
+.error-state,
+.success-state {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -834,12 +853,21 @@ td {
   color: hsl(var(--destructive));
 }
 
+.success-state {
+  border: 1px solid hsl(var(--success) / 0.32);
+  background: hsl(var(--success) / 0.08);
+  color: hsl(var(--success));
+}
+
 .error-state strong,
-.error-state span {
+.error-state span,
+.success-state strong,
+.success-state span {
   display: block;
 }
 
-.error-state span {
+.error-state span,
+.success-state span {
   margin-top: 2px;
   color: hsl(var(--muted-foreground));
 }
