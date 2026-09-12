@@ -235,8 +235,8 @@ function App() {
     </main>
   );
 
-  const renderProductPreview = () => (
-    <div className="product-preview" aria-hidden="true">
+  const renderProductPreview = (variant: 'compact' | 'hero' = 'compact') => (
+    <div className={`product-preview ${variant === 'hero' ? 'product-preview-hero' : ''}`} aria-hidden="true">
       <div className="preview-topbar">
         <span />
         <span />
@@ -270,6 +270,50 @@ function App() {
     </div>
   );
 
+  const renderLandingShowcase = () => (
+    <div className="landing-showcase" aria-hidden="true">
+      <div className="showcase-sidebar">
+        <span className="brand-icon">
+          <Database size={22} />
+        </span>
+        <div />
+        <div />
+        <div />
+      </div>
+
+      <div className="showcase-main">
+        <div className="showcase-toolbar">
+          <span>Operasional Neo Feeder</span>
+          <strong>Trial VPS</strong>
+        </div>
+
+        <div className="showcase-metrics">
+          {metrics.map((item) => (
+            <div key={item.label}>
+              <small>{item.label}</small>
+              <strong>{item.value}</strong>
+              <span>{item.helper}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="showcase-flow">
+          {[
+            ['01', 'Template Excel'],
+            ['02', 'Validasi Data'],
+            ['03', 'Dry-run Payload'],
+            ['04', 'Sync Bertahap'],
+          ].map(([step, label]) => (
+            <div key={step}>
+              <strong>{step}</strong>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   const renderPublicNav = () => (
     <header className="public-nav">
       <Brand icon={Database} title="Bridge Neo Feeder" subtitle="PDDIKTI sync" />
@@ -290,6 +334,8 @@ function App() {
       {renderPublicNav()}
 
       <section className="landing-hero">
+        {renderLandingShowcase()}
+
         <div className="landing-copy">
           <span className="status-pill">Trial VPS aktif</span>
           <h1>Bridge Neo Feeder</h1>
@@ -305,10 +351,6 @@ function App() {
               Login Admin
             </button>
           </div>
-        </div>
-
-        <div className="landing-visual">
-          {renderProductPreview()}
         </div>
       </section>
 
