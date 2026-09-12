@@ -15,6 +15,7 @@ import {
   LogIn,
   LogOut,
   Moon,
+  Plus,
   RefreshCcw,
   Search,
   ShieldCheck,
@@ -22,18 +23,22 @@ import {
   Upload,
   Waypoints,
 } from 'lucide-react';
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTheme } from '@/hooks/use-theme';
 import {
   clearAuthSession,
+  createTenant,
   getCurrentUser,
   getReferenceStatus,
   getStoredAuthUser,
+  getTenants,
   hasStoredApiToken,
   login,
   logout,
   type AuthUser,
   type ReferenceStatus,
+  type Tenant,
+  type TenantStatus,
 } from '@/lib/api';
 import {
   AppButton,
@@ -100,6 +105,18 @@ const pageMeta: Record<PageId, { eyebrow: string; title: string }> = {
   mapping: { eyebrow: 'Otomatisasi', title: 'Mapping SIAKAD' },
 };
 
+const tenantStatusLabels: Record<TenantStatus, string> = {
+  active: 'Aktif',
+  inactive: 'Nonaktif',
+  draft: 'Draft',
+};
+
+const tenantStatusTones: Record<TenantStatus, 'success' | 'neutral' | 'warning'> = {
+  active: 'success',
+  inactive: 'neutral',
+  draft: 'warning',
+};
+
 function formatDateTime(value: string | null) {
   if (!value) {
     return 'Belum sync';
@@ -123,9 +140,33 @@ function App() {
   const [loginState, setLoginState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [loginError, setLoginError] = useState('');
   const [activePage, setActivePage] = useState<PageId>('dashboard');
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [tenantState, setTenantState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [tenantError, setTenantError] = useState('');
+  const [tenantForm, setTenantForm] = useState<{ name: string; code: string; status: TenantStatus }>({
+    name: '',
+    code: '',
+    status: 'draft',
+  });
+  const [tenantFormState, setTenantFormState] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [tenantFormError, setTenantFormError] = useState('');
   const [referenceStatus, setReferenceStatus] = useState<ReferenceStatus | null>(null);
   const [referenceStatusState, setReferenceStatusState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const currentPage = pageMeta[activePage];
+
+  const loadTenants = useCallback(async () => {
+    setTenantState('loading');
+
+    try {
+      const items = await getTenants();
+      setTenants(items);
+      setTenantState('loaded');
+      setTenantError('');
+    } catch (error) {
+      setTenantState('error');
+      setTenantError(error instanceof Error ? error.message : 'Daftar kampus belum bisa dimuat.');
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -193,6 +234,16 @@ function App() {
     };
   }, [appScreen]);
 
+  useEffect(() => {
+    if (appScreen !== 'app') {
+      return undefined;
+    }
+
+    loadTenants();
+
+    return undefined;
+  }, [appScreen, loadTenants]);
+
   const referencePreview = useMemo(
     () => referenceStatus?.endpoints.slice(0, 5) ?? [],
     [referenceStatus],
@@ -221,6 +272,35 @@ function App() {
     setReferenceStatus(null);
     setReferenceStatusState('idle');
     setAppScreen('landing');
+  };
+
+  const handleTenantFormChange = (field: keyof typeof tenantForm, value: string) => {
+    setTenantForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const handleCreateTenant = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setTenantFormState('saving');
+    setTenantFormError('');
+
+    try {
+      const tenant = await createTenant({
+        name: tenantForm.name,
+        code: tenantForm.code,
+        status: tenantForm.status,
+      });
+
+      setTenants((current) => [tenant, ...current]);
+      setTenantForm({ name: '', code: '', status: 'draft' });
+      setTenantFormState('idle');
+      setTenantState('loaded');
+    } catch (error) {
+      setTenantFormState('error');
+      setTenantFormError(error instanceof Error ? error.message : 'Kampus belum bisa disimpan.');
+    }
   };
 
   const renderAuthChecking = () => (
@@ -628,7 +708,7 @@ function App() {
         <WorkspacePanel>
           <SectionHeader
             action={
-              <AppButton icon={RefreshCcw} variant="secondary">
+              <AppButton icon={RefreshCcw} onClick={loadTenants} variant="secondary">
                 Refresh
               </AppButton>
             }
@@ -658,15 +738,92 @@ function App() {
 
       <section className="page-grid">
         <WorkspacePanel>
-          <SectionHeader title="Daftar Kampus" />
+          <SectionHeader
+            action={
+              <AppButton icon={RefreshCcw} variant="secondary">
+                Refresh
+              </AppButton>
+            }
+            title="Daftar Kampus"
+          />
           <DataTable
             columns={campusColumns}
-            emptyState={<EmptyState description="Kampus pertama akan dipakai untuk uji template Excel." icon={Building2} title="Belum ada kampus" />}
+            rows={tenants.map((tenant) => [
+              <strong className="table-primary" key={`${tenant.id}-name`}>
+                {tenant.name}
+              </strong>,
+              <span className="mono" key={`${tenant.id}-code`}>
+                {tenant.code}
+              </span>,
+              <StatusBadge key={`${tenant.id}-status`} tone={tenantStatusTones[tenant.status]}>
+                {tenantStatusLabels[tenant.status]}
+              </StatusBadge>,
+              <span key={`${tenant.id}-batch`}>0 batch</span>,
+              <span key={`${tenant.id}-updated`}>{formatDateTime(tenant.updated_at)}</span>,
+            ])}
+            emptyState={
+              tenantState === 'loading' ? (
+                <div className="loading-state">
+                  <RefreshCcw size={18} />
+                  Memuat kampus
+                </div>
+              ) : tenantState === 'error' ? (
+                <div className="error-state">
+                  <strong>Daftar kampus gagal dimuat.</strong>
+                  <span>{tenantError}</span>
+                </div>
+              ) : (
+                <EmptyState description="Kampus pertama akan dipakai untuk uji template Excel." icon={Building2} title="Belum ada kampus" />
+              )
+            }
           />
         </WorkspacePanel>
 
         <aside className="side-panel">
-          <SectionHeader title="Onboarding" />
+          <SectionHeader title="Tambah Kampus" />
+          <form className="stack-form" onSubmit={handleCreateTenant}>
+            <label>
+              Nama Kampus
+              <input
+                onChange={(event) => handleTenantFormChange('name', event.target.value)}
+                placeholder="Universitas Contoh"
+                required
+                type="text"
+                value={tenantForm.name}
+              />
+            </label>
+
+            <label>
+              Kode PT
+              <input
+                onChange={(event) => handleTenantFormChange('code', event.target.value)}
+                placeholder="001001"
+                required
+                type="text"
+                value={tenantForm.code}
+              />
+            </label>
+
+            <label>
+              Status
+              <select
+                onChange={(event) => handleTenantFormChange('status', event.target.value as TenantStatus)}
+                value={tenantForm.status}
+              >
+                <option value="draft">Draft</option>
+                <option value="active">Aktif</option>
+                <option value="inactive">Nonaktif</option>
+              </select>
+            </label>
+
+            {tenantFormState === 'error' ? <p className="auth-error">{tenantFormError}</p> : null}
+
+            <button className="app-button app-button-primary" disabled={tenantFormState === 'saving'} type="submit">
+              <Plus size={18} />
+              {tenantFormState === 'saving' ? 'Menyimpan...' : 'Tambah Kampus'}
+            </button>
+          </form>
+
           <div className="task-list">
             <span>Profil kampus</span>
             <span>Credential Neo Feeder</span>

@@ -11,6 +11,18 @@ export type AuthUser = {
   status: string;
 };
 
+export type TenantStatus = 'active' | 'inactive' | 'draft';
+
+export type Tenant = {
+  id: string;
+  name: string;
+  code: string;
+  status: TenantStatus;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ReferenceEndpointStatus = {
   name: string;
   endpoint: string;
@@ -77,6 +89,28 @@ function getAuthHeaders() {
     Authorization: `Bearer ${token}`,
     Accept: 'application/json',
   };
+}
+
+function getJsonHeaders() {
+  const headers = getAuthHeaders();
+
+  if (!headers) {
+    return null;
+  }
+
+  return {
+    ...headers,
+    'Content-Type': 'application/json',
+  };
+}
+
+async function parseApiError(response: Response): Promise<string> {
+  try {
+    const payload = (await response.json()) as { message?: string };
+    return payload.message ?? `Request gagal: ${response.status}`;
+  } catch {
+    return `Request gagal: ${response.status}`;
+  }
 }
 
 export async function getHealth(): Promise<{ status: string; service: string }> {
@@ -152,6 +186,81 @@ export async function getCurrentUser(): Promise<AuthUser> {
   storeAuthUser(payload.user);
 
   return payload.user;
+}
+
+export async function getTenants(): Promise<Tenant[]> {
+  const headers = getAuthHeaders();
+
+  if (!headers) {
+    return [];
+  }
+
+  const response = await fetch(`${API_BASE_URL}/tenants`, {
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const payload = (await response.json()) as { data: Tenant[] };
+
+  return payload.data;
+}
+
+export async function createTenant(input: {
+  name: string;
+  code: string;
+  status?: TenantStatus;
+}): Promise<Tenant> {
+  const headers = getJsonHeaders();
+
+  if (!headers) {
+    throw new Error('Sesi login belum tersedia.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/tenants`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const payload = (await response.json()) as { data: Tenant };
+
+  return payload.data;
+}
+
+export async function updateTenant(
+  tenantId: string,
+  input: {
+    name?: string;
+    code?: string;
+    status?: TenantStatus;
+  },
+): Promise<Tenant> {
+  const headers = getJsonHeaders();
+
+  if (!headers) {
+    throw new Error('Sesi login belum tersedia.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/tenants/${tenantId}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const payload = (await response.json()) as { data: Tenant };
+
+  return payload.data;
 }
 
 export async function getReferenceStatus(): Promise<ReferenceStatus | null> {

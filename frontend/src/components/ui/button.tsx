@@ -5,14 +5,23 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 
 type AppButtonProps = {
   children: ReactNode;
+  disabled?: boolean;
   icon?: LucideIcon;
+  onClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
   variant?: ButtonVariant;
 };
 
-export function AppButton({ children, icon: Icon, type = 'button', variant = 'primary' }: AppButtonProps) {
+export function AppButton({
+  children,
+  disabled = false,
+  icon: Icon,
+  onClick,
+  type = 'button',
+  variant = 'primary',
+}: AppButtonProps) {
   return (
-    <button className={`app-button app-button-${variant}`} type={type}>
+    <button className={`app-button app-button-${variant}`} disabled={disabled} onClick={onClick} type={type}>
       {Icon ? <Icon size={18} /> : null}
       {children}
     </button>
