@@ -42,7 +42,7 @@
 - [x] Rapikan shared component, layout tabel, dialog form, navigasi mobile, dan bantuan kontekstual.
 - [x] Hilangkan aksi/data duplikat dan kontrol dummy; perjelas alur batch ke validasi.
 - [x] Selaraskan landing/login, ringkas konten, dan ganti preview dekoratif dengan media produk.
-- [ ] Verifikasi browser desktop/mobile light/dark, build, dan lint.
+- [x] Verifikasi browser desktop/mobile light/dark, build, dan lint (lihat `ui-review-2026-09.md`; API contoh lokal).
 
 ## Phase 1 - Export/Import Excel
 
