@@ -27,15 +27,20 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react
 import { useTheme } from '@/hooks/use-theme';
 import {
   clearAuthSession,
+  createNeoFeederConnection,
   createTenant,
   getCurrentUser,
+  getNeoFeederConnections,
   getReferenceStatus,
   getStoredAuthUser,
   getTenants,
   hasStoredApiToken,
   login,
   logout,
+  updateNeoFeederConnection,
   type AuthUser,
+  type NeoFeederConnection,
+  type NeoFeederConnectionStatus,
   type ReferenceStatus,
   type Tenant,
   type TenantStatus,
@@ -117,6 +122,20 @@ const tenantStatusTones: Record<TenantStatus, 'success' | 'neutral' | 'warning'>
   draft: 'warning',
 };
 
+const connectionStatusLabels: Record<NeoFeederConnectionStatus, string> = {
+  active: 'Aktif',
+  inactive: 'Nonaktif',
+  draft: 'Draft',
+  error: 'Error',
+};
+
+const connectionStatusTones: Record<NeoFeederConnectionStatus, 'success' | 'neutral' | 'warning' | 'destructive'> = {
+  active: 'success',
+  inactive: 'neutral',
+  draft: 'warning',
+  error: 'destructive',
+};
+
 function formatDateTime(value: string | null) {
   if (!value) {
     return 'Belum sync';
@@ -150,6 +169,24 @@ function App() {
   });
   const [tenantFormState, setTenantFormState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [tenantFormError, setTenantFormError] = useState('');
+  const [connections, setConnections] = useState<NeoFeederConnection[]>([]);
+  const [connectionState, setConnectionState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [connectionError, setConnectionError] = useState('');
+  const [connectionForm, setConnectionForm] = useState<{
+    tenantId: string;
+    baseUrl: string;
+    username: string;
+    password: string;
+    status: NeoFeederConnectionStatus;
+  }>({
+    tenantId: '',
+    baseUrl: '',
+    username: '',
+    password: '',
+    status: 'draft',
+  });
+  const [connectionFormState, setConnectionFormState] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [connectionFormError, setConnectionFormError] = useState('');
   const [referenceStatus, setReferenceStatus] = useState<ReferenceStatus | null>(null);
   const [referenceStatusState, setReferenceStatusState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const currentPage = pageMeta[activePage];
@@ -165,6 +202,20 @@ function App() {
     } catch (error) {
       setTenantState('error');
       setTenantError(error instanceof Error ? error.message : 'Daftar kampus belum bisa dimuat.');
+    }
+  }, []);
+
+  const loadConnections = useCallback(async () => {
+    setConnectionState('loading');
+
+    try {
+      const items = await getNeoFeederConnections();
+      setConnections(items);
+      setConnectionState('loaded');
+      setConnectionError('');
+    } catch (error) {
+      setConnectionState('error');
+      setConnectionError(error instanceof Error ? error.message : 'Daftar koneksi Neo Feeder belum bisa dimuat.');
     }
   }, []);
 
@@ -244,9 +295,34 @@ function App() {
     return undefined;
   }, [appScreen, loadTenants]);
 
+  useEffect(() => {
+    if (appScreen !== 'app') {
+      return undefined;
+    }
+
+    loadConnections();
+
+    return undefined;
+  }, [appScreen, loadConnections]);
+
+  useEffect(() => {
+    if (connectionForm.tenantId !== '' || tenants.length === 0) {
+      return;
+    }
+
+    setConnectionForm((current) => ({
+      ...current,
+      tenantId: tenants[0].id,
+    }));
+  }, [connectionForm.tenantId, tenants]);
+
   const referencePreview = useMemo(
     () => referenceStatus?.endpoints.slice(0, 5) ?? [],
     [referenceStatus],
+  );
+  const tenantNameById = useMemo(
+    () => new Map(tenants.map((tenant) => [tenant.id, tenant.name])),
+    [tenants],
   );
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
@@ -300,6 +376,59 @@ function App() {
     } catch (error) {
       setTenantFormState('error');
       setTenantFormError(error instanceof Error ? error.message : 'Kampus belum bisa disimpan.');
+    }
+  };
+
+  const handleConnectionFormChange = (field: keyof typeof connectionForm, value: string) => {
+    setConnectionForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const applyConnectionToForm = (tenantId: string) => {
+    const connection = connections.find((item) => item.tenant_id === tenantId);
+
+    setConnectionForm({
+      tenantId,
+      baseUrl: connection?.base_url ?? '',
+      username: connection?.username ?? '',
+      password: '',
+      status: connection?.status ?? 'draft',
+    });
+  };
+
+  const handleSaveConnection = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setConnectionFormState('saving');
+    setConnectionFormError('');
+
+    try {
+      const existingConnection = connections.find((item) => item.tenant_id === connectionForm.tenantId);
+      const payload = {
+        base_url: connectionForm.baseUrl,
+        username: connectionForm.username,
+        status: connectionForm.status,
+        ...(connectionForm.password ? { password: connectionForm.password } : {}),
+      };
+
+      const savedConnection = existingConnection
+        ? await updateNeoFeederConnection(existingConnection.id, payload)
+        : await createNeoFeederConnection({
+            tenant_id: connectionForm.tenantId,
+            ...payload,
+          });
+
+      setConnections((current) => {
+        const otherConnections = current.filter((item) => item.id !== savedConnection.id);
+        return [savedConnection, ...otherConnections];
+      });
+      setConnectionForm((current) => ({ ...current, password: '' }));
+      setConnectionFormState('idle');
+      setConnectionState('loaded');
+    } catch (error) {
+      setConnectionFormState('error');
+      setConnectionFormError(error instanceof Error ? error.message : 'Koneksi Neo Feeder belum bisa disimpan.');
     }
   };
 
@@ -839,17 +968,139 @@ function App() {
     <>
       <PageHeader
         action={
-          <AppButton icon={DatabaseZap} variant="secondary">
-            Test Koneksi
+          <AppButton disabled icon={DatabaseZap} variant="secondary">
+            Test butuh credential
           </AppButton>
         }
         eyebrow="Integrasi"
-        title="Atur credential WS dan cache referensi Neo Feeder."
+        title="Simpan credential WS Neo Feeder per kampus."
       />
 
-      <section className="dashboard-grid">
-        {renderNeoFeederConnection()}
-        {renderReferencePanel()}
+      <section className="page-grid">
+        <WorkspacePanel>
+          <SectionHeader
+            action={
+              <AppButton icon={RefreshCcw} onClick={loadConnections} variant="secondary">
+                Refresh
+              </AppButton>
+            }
+            title="Koneksi Neo Feeder"
+          />
+          <DataTable
+            columns={['Kampus', 'Endpoint', 'Status', 'Password', 'Last Check', 'Aksi']}
+            rows={connections.map((connection) => [
+              <strong className="table-primary" key={`${connection.id}-tenant`}>
+                {tenantNameById.get(connection.tenant_id) ?? connection.tenant_id}
+              </strong>,
+              <span className="mono table-url" key={`${connection.id}-endpoint`}>
+                {connection.base_url}
+              </span>,
+              <StatusBadge key={`${connection.id}-status`} tone={connectionStatusTones[connection.status]}>
+                {connectionStatusLabels[connection.status]}
+              </StatusBadge>,
+              <span key={`${connection.id}-password`}>{connection.password_configured ? 'Tersimpan' : 'Belum'}</span>,
+              <span key={`${connection.id}-checked`}>{formatDateTime(connection.last_checked_at)}</span>,
+              <button className="row-action" key={`${connection.id}-action`} onClick={() => applyConnectionToForm(connection.tenant_id)} type="button">
+                Edit
+              </button>,
+            ])}
+            emptyState={
+              connectionState === 'loading' ? (
+                <div className="loading-state">
+                  <RefreshCcw size={18} />
+                  Memuat koneksi
+                </div>
+              ) : connectionState === 'error' ? (
+                <div className="error-state">
+                  <strong>Daftar koneksi gagal dimuat.</strong>
+                  <span>{connectionError}</span>
+                </div>
+              ) : (
+                <EmptyState description="Tambahkan credential setelah tenant kampus tersedia." icon={DatabaseZap} title="Belum ada koneksi" />
+              )
+            }
+          />
+        </WorkspacePanel>
+
+        <aside className="side-panel">
+          <SectionHeader title="Credential WS" />
+          <form className="stack-form" onSubmit={handleSaveConnection}>
+            <label>
+              Kampus
+              <select
+                disabled={tenants.length === 0}
+                onChange={(event) => applyConnectionToForm(event.target.value)}
+                required
+                value={connectionForm.tenantId}
+              >
+                {tenants.length === 0 ? <option value="">Buat kampus dulu</option> : null}
+                {tenants.map((tenant) => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Endpoint WS
+              <input
+                onChange={(event) => handleConnectionFormChange('baseUrl', event.target.value)}
+                placeholder="https://.../ws/live2.php"
+                required
+                type="url"
+                value={connectionForm.baseUrl}
+              />
+            </label>
+
+            <label>
+              Username
+              <input
+                autoComplete="username"
+                onChange={(event) => handleConnectionFormChange('username', event.target.value)}
+                placeholder="Username Neo Feeder"
+                type="text"
+                value={connectionForm.username}
+              />
+            </label>
+
+            <label>
+              Password
+              <input
+                autoComplete="new-password"
+                onChange={(event) => handleConnectionFormChange('password', event.target.value)}
+                placeholder="Kosongkan jika tidak ingin ubah"
+                type="password"
+                value={connectionForm.password}
+              />
+            </label>
+
+            <label>
+              Status
+              <select
+                onChange={(event) => handleConnectionFormChange('status', event.target.value as NeoFeederConnectionStatus)}
+                value={connectionForm.status}
+              >
+                <option value="draft">Draft</option>
+                <option value="active">Aktif</option>
+                <option value="inactive">Nonaktif</option>
+                <option value="error">Error</option>
+              </select>
+            </label>
+
+            {connectionFormState === 'error' ? <p className="auth-error">{connectionFormError}</p> : null}
+
+            <button className="app-button app-button-primary" disabled={connectionFormState === 'saving' || tenants.length === 0} type="submit">
+              <DatabaseZap size={18} />
+              {connectionFormState === 'saving' ? 'Menyimpan...' : 'Simpan Credential'}
+            </button>
+          </form>
+
+          <div className="notice compact-notice">
+            <Clock3 size={18} />
+            <p>Test koneksi dan sync referensi menunggu credential Neo Feeder resmi.</p>
+          </div>
+        </aside>
       </section>
     </>
   );

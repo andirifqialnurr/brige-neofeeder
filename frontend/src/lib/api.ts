@@ -23,6 +23,22 @@ export type Tenant = {
   updated_at: string;
 };
 
+export type NeoFeederConnectionStatus = 'draft' | 'active' | 'inactive' | 'error';
+
+export type NeoFeederConnection = {
+  id: string;
+  tenant_id: string;
+  base_url: string;
+  username: string | null;
+  password_configured: boolean;
+  status: NeoFeederConnectionStatus;
+  last_token_refreshed_at: string | null;
+  last_checked_at: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ReferenceEndpointStatus = {
   name: string;
   endpoint: string;
@@ -259,6 +275,85 @@ export async function updateTenant(
   }
 
   const payload = (await response.json()) as { data: Tenant };
+
+  return payload.data;
+}
+
+export async function getNeoFeederConnections(): Promise<NeoFeederConnection[]> {
+  const headers = getAuthHeaders();
+
+  if (!headers) {
+    return [];
+  }
+
+  const response = await fetch(`${API_BASE_URL}/neofeeder-connections`, {
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const payload = (await response.json()) as { data: NeoFeederConnection[] };
+
+  return payload.data;
+}
+
+export async function createNeoFeederConnection(input: {
+  tenant_id: string;
+  base_url: string;
+  username?: string;
+  password?: string;
+  status?: NeoFeederConnectionStatus;
+}): Promise<NeoFeederConnection> {
+  const headers = getJsonHeaders();
+
+  if (!headers) {
+    throw new Error('Sesi login belum tersedia.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/neofeeder-connections`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const payload = (await response.json()) as { data: NeoFeederConnection };
+
+  return payload.data;
+}
+
+export async function updateNeoFeederConnection(
+  connectionId: string,
+  input: {
+    base_url?: string;
+    username?: string;
+    password?: string;
+    clear_password?: boolean;
+    status?: NeoFeederConnectionStatus;
+  },
+): Promise<NeoFeederConnection> {
+  const headers = getJsonHeaders();
+
+  if (!headers) {
+    throw new Error('Sesi login belum tersedia.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/neofeeder-connections/${connectionId}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const payload = (await response.json()) as { data: NeoFeederConnection };
 
   return payload.data;
 }

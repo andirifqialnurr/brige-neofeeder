@@ -632,6 +632,27 @@ h3 {
   font-size: 13px;
 }
 
+.table-url {
+  display: inline-block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.row-action {
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
 .table-shell {
   overflow-x: auto;
   margin-top: 16px;
@@ -777,6 +798,10 @@ td {
 
 .notice p {
   margin: 0;
+}
+
+.compact-notice {
+  margin-top: 0;
 }
 
 .public-shell,
