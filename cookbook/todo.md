@@ -30,6 +30,7 @@
 - [x] Tambahkan empty, loading, dan error state primitive.
 - [x] Tambahkan landing page publik modern.
 - [x] Refinement landing page dengan curved product canvas.
+- [x] Tambahkan konten landing page untuk fitur, workflow, dan roadmap otomatisasi.
 - [x] Tambahkan halaman login setema dashboard.
 - [x] Validasi sesi login tersimpan via `/auth/me`.
 - [x] Validasi build/lint frontend.

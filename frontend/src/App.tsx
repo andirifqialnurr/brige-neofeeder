@@ -366,6 +366,94 @@ function App() {
           </div>
         ))}
       </section>
+
+      <section className="landing-section" aria-labelledby="phase-one-title">
+        <div className="landing-section-heading">
+          <span className="section-kicker">Phase 1</span>
+          <h2 id="phase-one-title">Import Excel yang siap diaudit.</h2>
+          <p>Operator kampus bekerja dari template yang sama, sementara sistem menjaga validasi, dependency, dan response Neo Feeder tetap tercatat.</p>
+        </div>
+
+        <div className="feature-grid">
+          {[
+            ['Template Builder', 'Sheet mengikuti kanal Neo Feeder, kolom wajib, dropdown referensi, dan versi template.'],
+            ['Upload & Staging', 'File Excel masuk ke batch, diparse worker, lalu disimpan sebagai raw row dan normalized row.'],
+            ['Validation Gate', 'Cek format tanggal, numeric, enum, referensi, duplikasi, dan relasi antar sheet.'],
+            ['Dry-run Preview', 'Operator melihat payload, dependency order, dan calon insert/update sebelum approve sync.'],
+            ['Sync Audit', 'Request, response, error_code, error_desc, retry, dan ID hasil Neo Feeder tersimpan per attempt.'],
+            ['Tenant Ready', 'Credential Neo Feeder tersimpan terenkripsi dan dipisah per kampus.'],
+          ].map(([title, text], index) => (
+            <article className="feature-card" key={title}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="process-band" aria-labelledby="process-title">
+        <div className="landing-section-heading compact">
+          <span className="section-kicker">Workflow</span>
+          <h2 id="process-title">Dari file kampus sampai post bertahap.</h2>
+        </div>
+
+        <div className="process-rail">
+          {[
+            ['01', 'Admin buat tenant'],
+            ['02', 'Operator download template'],
+            ['03', 'Upload data terisi'],
+            ['04', 'Validasi dan dry-run'],
+            ['05', 'Approve sync'],
+            ['06', 'Audit hasil'],
+          ].map(([step, label]) => (
+            <div className="process-step" key={step}>
+              <strong>{step}</strong>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="automation-section" aria-labelledby="automation-title">
+        <div className="automation-copy">
+          <span className="section-kicker">Phase 2</span>
+          <h2 id="automation-title">Siap naik ke otomatisasi SIAKAD.</h2>
+          <p>
+            Setelah format Neo Feeder stabil, jalur otomatisasi bisa membaca struktur SIAKAD, membuat mapping profile, lalu memakai validator Phase 1 sebelum sync.
+          </p>
+          <div className="connector-chips" aria-label="Sumber data rencana otomatisasi">
+            {['MySQL/MariaDB', 'CSV/Excel', 'Source API', 'Mapping Profile'].map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+        </div>
+
+        <div className="automation-panel">
+          {[
+            ['Discovery', 'Baca table, field, sample value, tipe data, dan kandidat relasi.'],
+            ['Mapping', 'Petakan field SIAKAD ke kontrak Neo Feeder dengan transform rule.'],
+            ['Run Control', 'Manual run, scheduled run, retry, lock, dan reconciliation report.'],
+          ].map(([title, text]) => (
+            <div key={title}>
+              <CheckCircle2 size={18} />
+              <strong>{title}</strong>
+              <span>{text}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="landing-cta">
+        <div>
+          <span className="section-kicker">Trial Kampus</span>
+          <h2>Mulai dari tenant pertama dan koneksi Neo Feeder trial.</h2>
+        </div>
+        <button className="hero-button" onClick={() => setAppScreen('login')} type="button">
+          Masuk Dashboard
+          <ArrowRight size={18} />
+        </button>
+      </section>
     </main>
   );
 
