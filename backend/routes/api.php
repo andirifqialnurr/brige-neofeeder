@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ImportBatchSyncController;
 use App\Http\Controllers\Api\ImportBatchUploadController;
 use App\Http\Controllers\Api\NeoFeederConnectionController;
 use App\Http\Controllers\Api\ReferenceStatusController;
+use App\Http\Controllers\Api\TemplateWorkbookController;
 use App\Http\Controllers\Api\TenantController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,7 @@ Route::middleware('api.token')->group(function (): void {
     Route::apiResource('neofeeder-connections', NeoFeederConnectionController::class)
         ->parameters(['neofeeder-connections' => 'neofeederConnection'])
         ->only(['index', 'store', 'show', 'update']);
+    Route::get('templates/neofeeder-workbook', TemplateWorkbookController::class);
     Route::get('references/status', ReferenceStatusController::class);
     Route::post('import-batches/upload', ImportBatchUploadController::class);
     Route::post('import-batches/{importBatch}/dry-run', ImportBatchDryRunController::class);

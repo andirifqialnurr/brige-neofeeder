@@ -106,6 +106,8 @@
 - [x] Tambahkan notes format tanggal `yyyy-mm-dd`.
 - [x] Tambahkan dropdown untuk referensi kecil.
 - [x] Tambahkan template version dan generated timestamp.
+- [x] Buat endpoint download template Excel.
+- [x] Sambungkan UI download template Excel.
 
 ## 1.4 Upload And Staging
 

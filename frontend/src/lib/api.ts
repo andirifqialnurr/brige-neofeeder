@@ -358,6 +358,42 @@ export async function updateNeoFeederConnection(
   return payload.data;
 }
 
+function getFilenameFromDisposition(disposition: string | null) {
+  if (!disposition) {
+    return null;
+  }
+
+  const match = disposition.match(/filename="?([^"]+)"?/);
+
+  return match?.[1] ?? null;
+}
+
+export async function downloadNeoFeederTemplate(): Promise<void> {
+  const headers = getAuthHeaders();
+
+  if (!headers) {
+    throw new Error('Sesi login belum tersedia.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/templates/neofeeder-workbook`, {
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = getFilenameFromDisposition(response.headers.get('Content-Disposition')) ?? 'bridge-neofeeder-template.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function getReferenceStatus(): Promise<ReferenceStatus | null> {
   const headers = getAuthHeaders();
 

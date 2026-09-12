@@ -29,6 +29,7 @@ import {
   clearAuthSession,
   createNeoFeederConnection,
   createTenant,
+  downloadNeoFeederTemplate,
   getCurrentUser,
   getNeoFeederConnections,
   getReferenceStatus,
@@ -187,6 +188,8 @@ function App() {
   });
   const [connectionFormState, setConnectionFormState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [connectionFormError, setConnectionFormError] = useState('');
+  const [templateDownloadState, setTemplateDownloadState] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [templateDownloadError, setTemplateDownloadError] = useState('');
   const [referenceStatus, setReferenceStatus] = useState<ReferenceStatus | null>(null);
   const [referenceStatusState, setReferenceStatusState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const currentPage = pageMeta[activePage];
@@ -429,6 +432,19 @@ function App() {
     } catch (error) {
       setConnectionFormState('error');
       setConnectionFormError(error instanceof Error ? error.message : 'Koneksi Neo Feeder belum bisa disimpan.');
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    setTemplateDownloadState('loading');
+    setTemplateDownloadError('');
+
+    try {
+      await downloadNeoFeederTemplate();
+      setTemplateDownloadState('idle');
+    } catch (error) {
+      setTemplateDownloadState('error');
+      setTemplateDownloadError(error instanceof Error ? error.message : 'Template belum bisa didownload.');
     }
   };
 
@@ -1108,15 +1124,33 @@ function App() {
   const renderTemplateExcel = () => (
     <>
       <PageHeader
-        action={<AppButton icon={Download}>Download Template</AppButton>}
+        action={
+          <AppButton disabled={templateDownloadState === 'loading'} icon={Download} onClick={handleDownloadTemplate}>
+            {templateDownloadState === 'loading' ? 'Menyiapkan...' : 'Download Template'}
+          </AppButton>
+        }
         eyebrow="Phase 1"
         title="Template mengikuti kontrak field Neo Feeder."
       />
 
       <WorkspacePanel>
-        <SectionHeader title="Workbook Template" />
+        <SectionHeader description="Template ini bisa dibuat tanpa credential Neo Feeder karena memakai kontrak internal Phase 1." title="Workbook Template" />
+        {templateDownloadState === 'error' ? (
+          <div className="error-state">
+            <strong>Template belum bisa didownload.</strong>
+            <span>{templateDownloadError}</span>
+          </div>
+        ) : null}
         <DataTable
           columns={templateColumns}
+          rows={[
+            ['README', 'Instruksi operator', 'Ya', 'Tidak', <StatusBadge key="readme-status" tone="success">Siap</StatusBadge>],
+            ['mahasiswa_biodata', 'Biodata mahasiswa', 'Ya', 'Ya', <StatusBadge key="biodata-status" tone="success">Siap</StatusBadge>],
+            ['mahasiswa_riwayat_pendidikan', 'Riwayat pendidikan', 'Ya', 'Ya', <StatusBadge key="riwayat-status" tone="success">Siap</StatusBadge>],
+            ['mata_kuliah', 'Mata kuliah', 'Ya', 'Ya', <StatusBadge key="mk-status" tone="success">Siap</StatusBadge>],
+            ['kelas_kuliah', 'Kelas kuliah', 'Ya', 'Ya', <StatusBadge key="kelas-status" tone="success">Siap</StatusBadge>],
+            ['nilai_perkuliahan', 'Nilai kelas', 'Ya', 'Ya', <StatusBadge key="nilai-status" tone="success">Siap</StatusBadge>],
+          ]}
           emptyState={<EmptyState description="Generator template akan membaca kanal data yang aktif." icon={FileSpreadsheet} title="Template belum digenerate" />}
         />
       </WorkspacePanel>
