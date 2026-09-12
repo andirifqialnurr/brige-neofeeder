@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { HelpTip } from './help-tip';
 
 export function SectionHeader({
   title,
@@ -11,9 +12,9 @@ export function SectionHeader({
 }) {
   return (
     <div className="section-heading">
-      <div>
+      <div className="section-title">
         <h2>{title}</h2>
-        {description ? <p>{description}</p> : null}
+        {description ? <HelpTip text={description} label={`Tentang ${title}`} /> : null}
       </div>
       {action}
     </div>

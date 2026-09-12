@@ -8,3 +8,6 @@ export * from './phase-panel';
 export * from './section';
 export * from './status-badge';
 export * from './state';
+export * from './form-dialog';
+export * from './help-tip';
+export * from './tabs';

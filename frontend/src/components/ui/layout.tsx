@@ -5,7 +5,9 @@ export function AppShell({ sidebar, children }: { sidebar: ReactNode; children: 
   return (
     <main className="app-shell">
       {sidebar}
-      <section className="content">{children}</section>
+      <section className="content" id="main-content">
+        {children}
+      </section>
     </main>
   );
 }
@@ -14,7 +16,15 @@ export function Sidebar({ children }: { children: ReactNode }) {
   return <aside className="sidebar">{children}</aside>;
 }
 
-export function Brand({ icon: Icon, title, subtitle }: { icon: LucideIcon; title: string; subtitle: string }) {
+export function Brand({
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  icon: LucideIcon;
+  title: string;
+  subtitle: string;
+}) {
   return (
     <div className="brand">
       <span className="brand-icon">
@@ -40,8 +50,9 @@ export function Topbar({
   return (
     <header className="topbar">
       <div>
-        <p className="eyebrow">{eyebrow}</p>
-        <h1>{title}</h1>
+        <span className="breadcrumb">
+          {eyebrow} <span aria-hidden="true">/</span> {title}
+        </span>
       </div>
       {action}
     </header>
@@ -60,8 +71,8 @@ export function PageHeader({
   return (
     <section className="dashboard-header">
       <div>
-        {eyebrow ? <span className="status-pill">{eyebrow}</span> : null}
-        <h2>{title}</h2>
+        {eyebrow ? <span className="page-eyebrow">{eyebrow}</span> : null}
+        <h1>{title}</h1>
       </div>
       {action}
     </section>

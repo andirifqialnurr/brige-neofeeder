@@ -1,20 +1,18 @@
 import {
-  Activity,
   ArrowRight,
-  Bell,
   Building2,
-  CheckCircle2,
-  Clock3,
   CircleUserRound,
   Database,
   DatabaseZap,
   Download,
   FileSpreadsheet,
   LayoutDashboard,
-  LockKeyhole,
-  LogIn,
   LogOut,
   Moon,
+  Menu,
+  X,
+  Pencil,
+  PlugZap,
   Plus,
   RefreshCcw,
   Search,
@@ -24,6 +22,7 @@ import {
   Waypoints,
 } from 'lucide-react';
 import { type ChangeEvent, type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { LandingPage, LoginPage } from './components/public-pages';
 import { useTheme } from '@/hooks/use-theme';
 import {
   clearAuthSession,
@@ -61,7 +60,12 @@ import {
   Brand,
   DataTable,
   EmptyState,
-  MetricCard,
+  ErrorState,
+  LoadingState,
+  FormDialog,
+  HelpTip,
+  IconButton,
+  ViewTabs,
   PageHeader,
   SectionHeader,
   Sidebar,
@@ -97,18 +101,10 @@ const navItems: AppNavItem[] = [
   { id: 'mapping', label: 'Mapping', icon: Waypoints },
 ];
 
-const metrics = [
-  { label: 'Koneksi', value: 'Draft', helper: 'Belum test', tone: 'warning', icon: DatabaseZap },
-  { label: 'Batch Aktif', value: '0', helper: 'Menunggu upload', tone: 'muted', icon: FileSpreadsheet },
-  { label: 'Error Validasi', value: '0', helper: 'Belum ada data', tone: 'success', icon: ShieldCheck },
-  { label: 'Queue Sync', value: '0', helper: 'Idle', tone: 'info', icon: Activity },
-] as const;
-
-const batchColumns = ['Batch', 'Kampus', 'Status', 'Valid', 'Error', 'Update'];
-const campusColumns = ['Kampus', 'Kode PT', 'Status', 'Batch', 'Update'];
-const templateColumns = ['Sheet', 'Endpoint', 'Wajib', 'Referensi', 'Status'];
-const validationColumns = ['Row', 'Kanal', 'Operasi', 'Issue', 'Status'];
-const mappingColumns = ['Sumber SIAKAD', 'Target Neo Feeder', 'Confidence', 'Status'];
+const batchColumns = ['Batch', 'Kampus', 'Status', 'Valid', 'Error', 'Diperbarui'];
+const campusColumns = ['Kampus', 'Kode PT', 'Status', 'Diperbarui'];
+const templateColumns = ['Sheet', 'Isi'];
+const validationColumns = ['Baris', 'Kanal', 'Operasi', 'Temuan', 'Status'];
 
 const pageMeta: Record<PageId, { eyebrow: string; title: string }> = {
   dashboard: { eyebrow: 'Dashboard', title: 'Operasional Neo Feeder' },
@@ -139,7 +135,10 @@ const connectionStatusLabels: Record<NeoFeederConnectionStatus, string> = {
   error: 'Error',
 };
 
-const connectionStatusTones: Record<NeoFeederConnectionStatus, 'success' | 'neutral' | 'warning' | 'destructive'> = {
+const connectionStatusTones: Record<
+  NeoFeederConnectionStatus,
+  'success' | 'neutral' | 'warning' | 'destructive'
+> = {
   active: 'success',
   inactive: 'neutral',
   draft: 'warning',
@@ -147,18 +146,21 @@ const connectionStatusTones: Record<NeoFeederConnectionStatus, 'success' | 'neut
 };
 
 const importBatchStatusLabels: Record<ImportBatchStatus, string> = {
-  uploaded: 'Uploaded',
-  parsing: 'Parsing',
-  ready: 'Ready',
-  validated: 'Validated',
-  invalid: 'Invalid',
+  uploaded: 'Diupload',
+  parsing: 'Diproses',
+  ready: 'Siap validasi',
+  validated: 'Valid',
+  invalid: 'Perlu perbaikan',
   dry_run_ready: 'Dry-run',
-  syncing: 'Syncing',
-  synced: 'Synced',
-  failed: 'Failed',
+  syncing: 'Sinkronisasi',
+  synced: 'Tersinkron',
+  failed: 'Gagal',
 };
 
-const importBatchStatusTones: Record<ImportBatchStatus, 'success' | 'neutral' | 'warning' | 'destructive' | 'info'> = {
+const importBatchStatusTones: Record<
+  ImportBatchStatus,
+  'success' | 'neutral' | 'warning' | 'destructive' | 'info'
+> = {
   uploaded: 'info',
   parsing: 'info',
   ready: 'warning',
@@ -172,7 +174,7 @@ const importBatchStatusTones: Record<ImportBatchStatus, 'success' | 'neutral' | 
 
 function formatDateTime(value: string | null) {
   if (!value) {
-    return 'Belum sync';
+    return '-';
   }
 
   return new Intl.DateTimeFormat('id-ID', {
@@ -198,21 +200,45 @@ function shortId(value: string) {
 }
 
 function App() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme: theme, setTheme } = useTheme();
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
   const ThemeIcon = theme === 'dark' ? Sun : Moon;
-  const [appScreen, setAppScreen] = useState<AppScreen>(() => (hasStoredApiToken() ? 'app' : 'landing'));
-  const [authState, setAuthState] = useState<'checking' | 'ready'>(() => (hasStoredApiToken() ? 'checking' : 'ready'));
+  const [appScreen, setAppScreen] = useState<AppScreen>(() =>
+    hasStoredApiToken() ? 'app' : 'landing',
+  );
+  const [authState, setAuthState] = useState<'checking' | 'ready'>(() =>
+    hasStoredApiToken() ? 'checking' : 'ready',
+  );
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => getStoredAuthUser());
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginState, setLoginState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [loginError, setLoginError] = useState('');
   const [activePage, setActivePage] = useState<PageId>('dashboard');
+  const [dialog, setDialog] = useState<'campus' | 'connection' | 'upload' | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [connectionTab, setConnectionTab] = useState<'connections' | 'references'>('connections');
+  const [batchSearch, setBatchSearch] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const navigate = (page: PageId) => {
+    setActivePage(page);
+    setMobileNavOpen(false);
+    setFeedback('');
+  };
+  const selectBatch = (id: string) => {
+    setDryRunBatchId(id);
+    setDryRunPreview(null);
+    setDryRunState('idle');
+    setDryRunError('');
+  };
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [tenantState, setTenantState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const [tenantError, setTenantError] = useState('');
-  const [tenantForm, setTenantForm] = useState<{ name: string; code: string; status: TenantStatus }>({
+  const [tenantForm, setTenantForm] = useState<{
+    name: string;
+    code: string;
+    status: TenantStatus;
+  }>({
     name: '',
     code: '',
     status: 'draft',
@@ -220,7 +246,9 @@ function App() {
   const [tenantFormState, setTenantFormState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [tenantFormError, setTenantFormError] = useState('');
   const [connections, setConnections] = useState<NeoFeederConnection[]>([]);
-  const [connectionState, setConnectionState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [connectionState, setConnectionState] = useState<'idle' | 'loading' | 'loaded' | 'error'>(
+    'idle',
+  );
   const [connectionError, setConnectionError] = useState('');
   const [connectionForm, setConnectionForm] = useState<{
     tenantId: string;
@@ -235,21 +263,32 @@ function App() {
     password: '',
     status: 'draft',
   });
-  const [connectionFormState, setConnectionFormState] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [connectionFormState, setConnectionFormState] = useState<'idle' | 'saving' | 'error'>(
+    'idle',
+  );
   const [connectionFormError, setConnectionFormError] = useState('');
   const [connectionTestingId, setConnectionTestingId] = useState('');
-  const [connectionTestResult, setConnectionTestResult] = useState<NeoFeederConnectionTestResult | null>(null);
+  const [connectionTestResult, setConnectionTestResult] =
+    useState<NeoFeederConnectionTestResult | null>(null);
   const [connectionTestError, setConnectionTestError] = useState('');
-  const [templateDownloadState, setTemplateDownloadState] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [templateDownloadState, setTemplateDownloadState] = useState<'idle' | 'loading' | 'error'>(
+    'idle',
+  );
   const [templateDownloadError, setTemplateDownloadError] = useState('');
   const [referenceStatus, setReferenceStatus] = useState<ReferenceStatus | null>(null);
-  const [referenceStatusState, setReferenceStatusState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [referenceStatusState, setReferenceStatusState] = useState<
+    'idle' | 'loading' | 'loaded' | 'error'
+  >('idle');
   const [referenceTenantId, setReferenceTenantId] = useState('');
-  const [referenceSyncState, setReferenceSyncState] = useState<'idle' | 'loading' | 'queued' | 'error'>('idle');
+  const [referenceSyncState, setReferenceSyncState] = useState<
+    'idle' | 'loading' | 'queued' | 'error'
+  >('idle');
   const [referenceSyncError, setReferenceSyncError] = useState('');
   const [referenceQueuedCount, setReferenceQueuedCount] = useState(0);
   const [importBatches, setImportBatches] = useState<ImportBatch[]>([]);
-  const [importBatchState, setImportBatchState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [importBatchState, setImportBatchState] = useState<'idle' | 'loading' | 'loaded' | 'error'>(
+    'idle',
+  );
   const [importBatchError, setImportBatchError] = useState('');
   const [importUploadTenantId, setImportUploadTenantId] = useState('');
   const [importUploadFile, setImportUploadFile] = useState<File | null>(null);
@@ -286,7 +325,9 @@ function App() {
       setConnectionError('');
     } catch (error) {
       setConnectionState('error');
-      setConnectionError(error instanceof Error ? error.message : 'Daftar koneksi Neo Feeder belum bisa dimuat.');
+      setConnectionError(
+        error instanceof Error ? error.message : 'Daftar koneksi Neo Feeder belum bisa dimuat.',
+      );
     }
   }, []);
 
@@ -300,7 +341,9 @@ function App() {
       setImportBatchError('');
     } catch (error) {
       setImportBatchState('error');
-      setImportBatchError(error instanceof Error ? error.message : 'Daftar import batch belum bisa dimuat.');
+      setImportBatchError(
+        error instanceof Error ? error.message : 'Daftar import batch belum bisa dimuat.',
+      );
     }
   }, []);
 
@@ -429,19 +472,35 @@ function App() {
     setDryRunBatchId(importBatches[0].id);
   }, [dryRunBatchId, importBatches]);
 
-  const referencePreview = useMemo(
-    () => referenceStatus?.endpoints.slice(0, 5) ?? [],
-    [referenceStatus],
-  );
+  const referencePreview = useMemo(() => referenceStatus?.endpoints ?? [], [referenceStatus]);
   const tenantNameById = useMemo(
     () => new Map(tenants.map((tenant) => [tenant.id, tenant.name])),
     [tenants],
   );
+  const filteredBatches = useMemo(() => {
+    const query = batchSearch.trim().toLocaleLowerCase('id');
+    return importBatches.filter((batch) =>
+      [
+        batch.summary.original_name,
+        batch.id,
+        tenantNameById.get(batch.tenant_id) ?? batch.tenant_name,
+      ].some((value) => value?.toLocaleLowerCase('id').includes(query)),
+    );
+  }, [batchSearch, importBatches, tenantNameById]);
   const importBatchRows = useMemo(
     () =>
-      importBatches.map((batch) => [
+      (activePage === 'dashboard' ? importBatches.slice(0, 5) : filteredBatches).map((batch) => [
         <div className="batch-cell" key={`${batch.id}-batch`}>
-          <strong>{batch.summary.original_name ?? `Batch ${shortId(batch.id)}`}</strong>
+          <button
+            className="text-link"
+            onClick={() => {
+              selectBatch(batch.id);
+              navigate('validation');
+            }}
+            type="button"
+          >
+            {batch.summary.original_name ?? `Batch ${shortId(batch.id)}`}
+          </button>
           <span>
             {shortId(batch.id)} · {formatFileSize(batch.summary.size)}
           </span>
@@ -449,14 +508,17 @@ function App() {
         <strong className="table-primary" key={`${batch.id}-tenant`}>
           {tenantNameById.get(batch.tenant_id) ?? batch.tenant_name ?? batch.tenant_id}
         </strong>,
-        <StatusBadge key={`${batch.id}-status`} tone={importBatchStatusTones[batch.status] ?? 'neutral'}>
+        <StatusBadge
+          key={`${batch.id}-status`}
+          tone={importBatchStatusTones[batch.status] ?? 'neutral'}
+        >
           {importBatchStatusLabels[batch.status] ?? batch.status}
         </StatusBadge>,
-        <span key={`${batch.id}-valid`}>{batch.summary.valid_rows ?? 0}</span>,
-        <span key={`${batch.id}-invalid`}>{batch.summary.invalid_rows ?? 0}</span>,
+        <span key={`${batch.id}-valid`}>{batch.summary.valid_rows ?? '-'}</span>,
+        <span key={`${batch.id}-invalid`}>{batch.summary.invalid_rows ?? '-'}</span>,
         <span key={`${batch.id}-updated`}>{formatDateTime(batch.updated_at)}</span>,
       ]),
-    [importBatches, tenantNameById],
+    [activePage, filteredBatches, importBatches, tenantNameById],
   );
   const dryRunIssueRows = useMemo(() => {
     if (!dryRunPreview) {
@@ -465,24 +527,38 @@ function App() {
 
     return dryRunPreview.payload_preview.flatMap((item) => {
       const issues = [
-        ...(item.validation_result.errors ?? []).map((issue) => ({ ...issue, level: 'error' as const })),
-        ...(item.validation_result.warnings ?? []).map((issue) => ({ ...issue, level: 'warning' as const })),
-        ...(item.validation_result.info ?? []).map((issue) => ({ ...issue, level: 'info' as const })),
+        ...(item.validation_result.errors ?? []).map((issue) => ({
+          ...issue,
+          level: 'error' as const,
+        })),
+        ...(item.validation_result.warnings ?? []).map((issue) => ({
+          ...issue,
+          level: 'warning' as const,
+        })),
+        ...(item.validation_result.info ?? []).map((issue) => ({
+          ...issue,
+          level: 'info' as const,
+        })),
       ];
 
       if (issues.length === 0) {
         return [
           [
             <strong className="table-primary" key={`${item.staging_record_id}-row`}>
-              {item.sheet_name} #{item.row_number}
+              {item.row_number}
             </strong>,
             <span className="mono" key={`${item.staging_record_id}-channel`}>
               {item.channel}
             </span>,
-            <span key={`${item.staging_record_id}-operation`}>{item.action ?? item.candidate_operation}</span>,
-            <span key={`${item.staging_record_id}-issue`}>Payload siap</span>,
-            <StatusBadge key={`${item.staging_record_id}-status`} tone={item.candidate_operation === 'skip' ? 'neutral' : 'success'}>
-              {item.candidate_operation === 'skip' ? 'Skip' : 'Ready'}
+            <span key={`${item.staging_record_id}-operation`}>
+              {item.action ?? item.candidate_operation}
+            </span>,
+            <span key={`${item.staging_record_id}-issue`}>-</span>,
+            <StatusBadge
+              key={`${item.staging_record_id}-status`}
+              tone={item.candidate_operation === 'skip' ? 'neutral' : 'success'}
+            >
+              {item.candidate_operation === 'skip' ? 'Dilewati' : 'Siap'}
             </StatusBadge>,
           ],
         ];
@@ -490,17 +566,24 @@ function App() {
 
       return issues.map((issue, index) => [
         <strong className="table-primary" key={`${item.staging_record_id}-${index}-row`}>
-          {item.sheet_name} #{item.row_number}
+          {item.row_number}
         </strong>,
         <span className="mono" key={`${item.staging_record_id}-${index}-channel`}>
           {item.channel}
         </span>,
-        <span key={`${item.staging_record_id}-${index}-operation`}>{item.action ?? item.candidate_operation}</span>,
+        <span key={`${item.staging_record_id}-${index}-operation`}>
+          {item.action ?? item.candidate_operation}
+        </span>,
         <span key={`${item.staging_record_id}-${index}-issue`}>
           {issue.field ? `${issue.field}: ` : ''}
           {issue.message ?? issue.rule ?? 'Issue validasi'}
         </span>,
-        <StatusBadge key={`${item.staging_record_id}-${index}-status`} tone={issue.level === 'error' ? 'destructive' : issue.level === 'warning' ? 'warning' : 'info'}>
+        <StatusBadge
+          key={`${item.staging_record_id}-${index}-status`}
+          tone={
+            issue.level === 'error' ? 'destructive' : issue.level === 'warning' ? 'warning' : 'info'
+          }
+        >
           {issue.level === 'error' ? 'Error' : issue.level === 'warning' ? 'Warning' : 'Info'}
         </StatusBadge>,
       ]);
@@ -555,6 +638,8 @@ function App() {
       setTenantForm({ name: '', code: '', status: 'draft' });
       setTenantFormState('idle');
       setTenantState('loaded');
+      setDialog(null);
+      setFeedback('Kampus ditambahkan.');
     } catch (error) {
       setTenantFormState('error');
       setTenantFormError(error instanceof Error ? error.message : 'Kampus belum bisa disimpan.');
@@ -569,6 +654,8 @@ function App() {
   };
 
   const applyConnectionToForm = (tenantId: string) => {
+    setConnectionFormState('idle');
+    setConnectionFormError('');
     const connection = connections.find((item) => item.tenant_id === tenantId);
 
     setConnectionForm({
@@ -586,7 +673,9 @@ function App() {
     setConnectionFormError('');
 
     try {
-      const existingConnection = connections.find((item) => item.tenant_id === connectionForm.tenantId);
+      const existingConnection = connections.find(
+        (item) => item.tenant_id === connectionForm.tenantId,
+      );
       const payload = {
         base_url: connectionForm.baseUrl,
         username: connectionForm.username,
@@ -608,9 +697,13 @@ function App() {
       setConnectionForm((current) => ({ ...current, password: '' }));
       setConnectionFormState('idle');
       setConnectionState('loaded');
+      setDialog(null);
+      setFeedback('Koneksi disimpan.');
     } catch (error) {
       setConnectionFormState('error');
-      setConnectionFormError(error instanceof Error ? error.message : 'Koneksi Neo Feeder belum bisa disimpan.');
+      setConnectionFormError(
+        error instanceof Error ? error.message : 'Koneksi Neo Feeder belum bisa disimpan.',
+      );
     }
   };
 
@@ -623,9 +716,13 @@ function App() {
       const result = await testNeoFeederConnection(connectionId);
 
       setConnectionTestResult(result);
-      setConnections((current) => current.map((item) => (item.id === result.connection.id ? result.connection : item)));
+      setConnections((current) =>
+        current.map((item) => (item.id === result.connection.id ? result.connection : item)),
+      );
     } catch (error) {
-      setConnectionTestError(error instanceof Error ? error.message : 'Test koneksi Neo Feeder gagal.');
+      setConnectionTestError(
+        error instanceof Error ? error.message : 'Test koneksi Neo Feeder gagal.',
+      );
     } finally {
       setConnectionTestingId('');
     }
@@ -640,7 +737,9 @@ function App() {
       setTemplateDownloadState('idle');
     } catch (error) {
       setTemplateDownloadState('error');
-      setTemplateDownloadError(error instanceof Error ? error.message : 'Template belum bisa didownload.');
+      setTemplateDownloadError(
+        error instanceof Error ? error.message : 'Template belum bisa didownload.',
+      );
     }
   };
 
@@ -662,7 +761,9 @@ function App() {
       await loadReferenceStatus(referenceTenantId);
     } catch (error) {
       setReferenceSyncState('error');
-      setReferenceSyncError(error instanceof Error ? error.message : 'Sync referensi belum bisa diantrekan.');
+      setReferenceSyncError(
+        error instanceof Error ? error.message : 'Sync referensi belum bisa diantrekan.',
+      );
     }
   };
 
@@ -692,14 +793,20 @@ function App() {
       setImportUploadInputKey((current) => current + 1);
       setImportUploadState('idle');
       setImportBatchState('loaded');
+      setDialog(null);
+      setActivePage('import-batch');
+      setFeedback('Workbook diupload.');
       await loadImportBatches();
     } catch (error) {
       setImportUploadState('error');
-      setImportUploadError(error instanceof Error ? error.message : 'Workbook belum bisa diupload.');
+      setImportUploadError(
+        error instanceof Error ? error.message : 'Workbook belum bisa diupload.',
+      );
     }
   };
 
   const handleRunDryRun = async () => {
+    setDryRunPreview(null);
     setDryRunState('loading');
     setDryRunError('');
 
@@ -720,777 +827,357 @@ function App() {
     }
   };
 
-  const renderAuthChecking = () => (
-    <main className="auth-loading-shell">
-      <div className="auth-loading-card">
-        <Brand icon={Database} title="Bridge Neo Feeder" subtitle="PDDIKTI sync" />
-        <div className="loading-state">
-          <RefreshCcw size={18} />
-          Memeriksa sesi login
-        </div>
-      </div>
-    </main>
-  );
-
-  const renderProductPreview = (variant: 'compact' | 'hero' = 'compact') => (
-    <div className={`product-preview ${variant === 'hero' ? 'product-preview-hero' : ''}`} aria-hidden="true">
-      <div className="preview-topbar">
-        <span />
-        <span />
-        <span />
-      </div>
-      <div className="preview-grid">
-        <div className="preview-card preview-card-strong">
-          <small>Koneksi</small>
-          <strong>Draft</strong>
-          <span>Neo Feeder WS</span>
-        </div>
-        <div className="preview-card">
-          <small>Batch</small>
-          <strong>0</strong>
-          <span>Siap import</span>
-        </div>
-        <div className="preview-card">
-          <small>Validasi</small>
-          <strong>0</strong>
-          <span>Error aktif</span>
-        </div>
-      </div>
-      <div className="preview-table">
-        {['mahasiswa_biodata', 'riwayat_pendidikan', 'kelas_kuliah', 'nilai_perkuliahan'].map((item) => (
-          <div key={item}>
-            <span>{item}</span>
-            <CheckCircle2 size={16} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderLandingShowcase = () => (
-    <div className="landing-showcase" aria-hidden="true">
-      <div className="showcase-sidebar">
-        <span className="brand-icon">
-          <Database size={22} />
-        </span>
-        <div />
-        <div />
-        <div />
-      </div>
-
-      <div className="showcase-main">
-        <div className="showcase-toolbar">
-          <span>Operasional Neo Feeder</span>
-          <strong>Trial VPS</strong>
-        </div>
-
-        <div className="showcase-metrics">
-          {metrics.map((item) => (
-            <div key={item.label}>
-              <small>{item.label}</small>
-              <strong>{item.value}</strong>
-              <span>{item.helper}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="showcase-flow">
-          {[
-            ['01', 'Template Excel'],
-            ['02', 'Validasi Data'],
-            ['03', 'Dry-run Payload'],
-            ['04', 'Sync Bertahap'],
-          ].map(([step, label]) => (
-            <div key={step}>
-              <strong>{step}</strong>
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderPublicNav = () => (
-    <header className="public-nav">
-      <Brand icon={Database} title="Bridge Neo Feeder" subtitle="PDDIKTI sync" />
-      <div className="public-actions">
-        <button aria-label="Ganti tema" className="icon-button" onClick={() => setTheme(nextTheme)} type="button">
-          <ThemeIcon size={18} />
-        </button>
-        <button className="public-login-button" onClick={() => setAppScreen('login')} type="button">
-          <LogIn size={17} />
-          Masuk
-        </button>
-      </div>
-    </header>
-  );
-
-  const renderLanding = () => (
-    <main className="public-shell">
-      {renderPublicNav()}
-
-      <section className="landing-hero">
-        {renderLandingShowcase()}
-
-        <div className="landing-copy">
-          <span className="status-pill">Trial VPS aktif</span>
-          <h1>Bridge Neo Feeder</h1>
-          <p>
-            Kanal kerja untuk menyiapkan template Excel, validasi data kampus, dan sinkronisasi bertahap ke Neo Feeder.
-          </p>
-          <div className="landing-actions">
-            <button className="hero-button" onClick={() => setAppScreen('login')} type="button">
-              Masuk Dashboard
-              <ArrowRight size={18} />
-            </button>
-            <button className="hero-button secondary" onClick={() => setAppScreen('login')} type="button">
-              Login Admin
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-strip" aria-label="Alur aplikasi">
-        {[
-          ['Template', 'Workbook sesuai kanal Neo Feeder'],
-          ['Validasi', 'Cek field, referensi, dan dependency'],
-          ['Sync', 'Post bertahap dengan audit response'],
-        ].map(([title, text]) => (
-          <div key={title}>
-            <strong>{title}</strong>
-            <span>{text}</span>
-          </div>
-        ))}
-      </section>
-
-      <section className="landing-section" aria-labelledby="phase-one-title">
-        <div className="landing-section-heading">
-          <span className="section-kicker">Phase 1</span>
-          <h2 id="phase-one-title">Import Excel yang siap diaudit.</h2>
-          <p>Operator kampus bekerja dari template yang sama, sementara sistem menjaga validasi, dependency, dan response Neo Feeder tetap tercatat.</p>
-        </div>
-
-        <div className="feature-grid">
-          {[
-            ['Template Builder', 'Sheet mengikuti kanal Neo Feeder, kolom wajib, dropdown referensi, dan versi template.'],
-            ['Upload & Staging', 'File Excel masuk ke batch, diparse worker, lalu disimpan sebagai raw row dan normalized row.'],
-            ['Validation Gate', 'Cek format tanggal, numeric, enum, referensi, duplikasi, dan relasi antar sheet.'],
-            ['Dry-run Preview', 'Operator melihat payload, dependency order, dan calon insert/update sebelum approve sync.'],
-            ['Sync Audit', 'Request, response, error_code, error_desc, retry, dan ID hasil Neo Feeder tersimpan per attempt.'],
-            ['Tenant Ready', 'Credential Neo Feeder tersimpan terenkripsi dan dipisah per kampus.'],
-          ].map(([title, text], index) => (
-            <article className="feature-card" key={title}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="process-band" aria-labelledby="process-title">
-        <div className="landing-section-heading compact">
-          <span className="section-kicker">Workflow</span>
-          <h2 id="process-title">Dari file kampus sampai post bertahap.</h2>
-        </div>
-
-        <div className="process-rail">
-          {[
-            ['01', 'Admin buat tenant'],
-            ['02', 'Operator download template'],
-            ['03', 'Upload data terisi'],
-            ['04', 'Validasi dan dry-run'],
-            ['05', 'Approve sync'],
-            ['06', 'Audit hasil'],
-          ].map(([step, label]) => (
-            <div className="process-step" key={step}>
-              <strong>{step}</strong>
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="automation-section" aria-labelledby="automation-title">
-        <div className="automation-copy">
-          <span className="section-kicker">Phase 2</span>
-          <h2 id="automation-title">Siap naik ke otomatisasi SIAKAD.</h2>
-          <p>
-            Setelah format Neo Feeder stabil, jalur otomatisasi bisa membaca struktur SIAKAD, membuat mapping profile, lalu memakai validator Phase 1 sebelum sync.
-          </p>
-          <div className="connector-chips" aria-label="Sumber data rencana otomatisasi">
-            {['MySQL/MariaDB', 'CSV/Excel', 'Source API', 'Mapping Profile'].map((item) => (
-              <span key={item}>{item}</span>
-            ))}
-          </div>
-        </div>
-
-        <div className="automation-panel">
-          {[
-            ['Discovery', 'Baca table, field, sample value, tipe data, dan kandidat relasi.'],
-            ['Mapping', 'Petakan field SIAKAD ke kontrak Neo Feeder dengan transform rule.'],
-            ['Run Control', 'Manual run, scheduled run, retry, lock, dan reconciliation report.'],
-          ].map(([title, text]) => (
-            <div key={title}>
-              <CheckCircle2 size={18} />
-              <strong>{title}</strong>
-              <span>{text}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="landing-cta">
-        <div>
-          <span className="section-kicker">Trial Kampus</span>
-          <h2>Mulai dari tenant pertama dan koneksi Neo Feeder trial.</h2>
-        </div>
-        <button className="hero-button" onClick={() => setAppScreen('login')} type="button">
-          Masuk Dashboard
-          <ArrowRight size={18} />
-        </button>
-      </section>
-    </main>
-  );
-
-  const renderLogin = () => (
-    <main className="auth-shell">
-      <section className="auth-visual">
-        <Brand icon={Database} title="Bridge Neo Feeder" subtitle="PDDIKTI sync" />
-        {renderProductPreview()}
-      </section>
-
-      <section className="auth-panel">
-        <div className="auth-card">
-          <div className="auth-heading">
-            <span className="brand-icon">
-              <LockKeyhole size={22} />
-            </span>
-            <div>
-              <p className="eyebrow">Admin Area</p>
-              <h1>Masuk Dashboard</h1>
-            </div>
-          </div>
-
-          <form className="auth-form" onSubmit={handleLogin}>
-            <label>
-              Email
-              <input
-                autoComplete="email"
-                onChange={(event) => setLoginEmail(event.target.value)}
-                placeholder="admin@example.com"
-                required
-                type="email"
-                value={loginEmail}
-              />
-            </label>
-
-            <label>
-              Password
-              <input
-                autoComplete="current-password"
-                onChange={(event) => setLoginPassword(event.target.value)}
-                placeholder="Password admin"
-                required
-                type="password"
-                value={loginPassword}
-              />
-            </label>
-
-            {loginState === 'error' ? <p className="auth-error">{loginError}</p> : null}
-
-            <button className="hero-button" disabled={loginState === 'loading'} type="submit">
-              {loginState === 'loading' ? 'Memproses...' : 'Masuk'}
-              <ArrowRight size={18} />
-            </button>
-          </form>
-
-          <button className="back-button" onClick={() => setAppScreen('landing')} type="button">
-            Kembali ke landing page
-          </button>
-        </div>
-      </section>
-    </main>
-  );
-
-  const renderReferencePanel = () => (
-    <WorkspacePanel>
-      <SectionHeader
-        action={
-          <div className="section-actions">
-            <select
-              className="inline-select"
-              disabled={tenants.length === 0}
-              onChange={(event) => setReferenceTenantId(event.target.value)}
-              value={referenceTenantId}
-            >
-              {tenants.length === 0 ? <option value="">Tenant belum ada</option> : null}
-              {tenants.map((tenant) => (
-                <option key={tenant.id} value={tenant.id}>
-                  {tenant.name}
-                </option>
-              ))}
-            </select>
-            <AppButton disabled={referenceSyncState === 'loading' || !referenceTenantId} icon={RefreshCcw} onClick={handleSyncReferences} variant="secondary">
-              {referenceSyncState === 'loading' ? 'Mengantre...' : 'Sync Referensi'}
-            </AppButton>
-          </div>
-        }
-        description="Status cache lookup Neo Feeder untuk template dan validasi."
-        title="Referensi Neo Feeder"
-      />
-
-      {referenceSyncState === 'queued' ? (
-        <div className="success-state">
-          <strong>{referenceQueuedCount} endpoint referensi diantrekan.</strong>
-          <span>Worker akan mengambil data dari Neo Feeder jika credential valid.</span>
-        </div>
-      ) : null}
-      {referenceSyncState === 'error' ? (
-        <div className="error-state">
-          <strong>Sync referensi belum bisa dijalankan.</strong>
-          <span>{referenceSyncError}</span>
-        </div>
-      ) : null}
-
-      <div className="reference-summary">
-        <div>
-          <span>Total Rows</span>
-          <strong>{referenceStatus?.total_rows ?? 0}</strong>
-        </div>
-        <div>
-          <span>Endpoint Sync</span>
-          <strong>
-            {referenceStatus?.synced_endpoint_count ?? 0}/{referenceStatus?.endpoint_count ?? 0}
-          </strong>
-        </div>
-        <div>
-          <span>Belum Sync</span>
-          <strong>{referenceStatus?.failed_endpoint_count ?? 0}</strong>
-        </div>
-        <div>
-          <span>Last Refresh</span>
-          <strong>{formatDateTime(referenceStatus?.last_synced_at ?? null)}</strong>
-        </div>
-      </div>
-
-      <div className="reference-list">
-        {referencePreview.length > 0 ? (
-          referencePreview.map((item) => (
-            <div className="reference-row" key={item.endpoint}>
-              <div>
-                <strong>{item.endpoint}</strong>
-                <span>{item.total_rows} rows</span>
-              </div>
-              <StatusBadge tone={item.status === 'synced' ? 'success' : 'warning'}>
-                {item.status === 'synced' ? 'Synced' : 'Belum sync'}
-              </StatusBadge>
-            </div>
-          ))
+  const renderBatchTable = (dashboard = false) => (
+    <DataTable
+      columns={batchColumns}
+      rows={importBatchState === 'loaded' ? importBatchRows : []}
+      emptyState={
+        importBatchState === 'loading' || importBatchState === 'idle' ? (
+          <LoadingState label="Memuat batch" />
+        ) : importBatchState === 'error' ? (
+          <ErrorState title="Batch gagal dimuat" description={importBatchError} />
         ) : (
           <EmptyState
-            description={
-              referenceStatusState === 'error'
-                ? 'Status referensi belum bisa dimuat dari API.'
-                : 'Tambahkan API token untuk melihat status referensi.'
-            }
-            icon={Clock3}
-            title="Status referensi belum tersedia"
+            icon={FileSpreadsheet}
+            title={!dashboard && batchSearch ? 'Tidak ada hasil' : 'Belum ada batch'}
+            description={!dashboard && batchSearch ? 'Coba nama file atau kampus lain.' : undefined}
           />
-        )}
-      </div>
-    </WorkspacePanel>
-  );
-
-  const renderNeoFeederConnection = () => (
-    <aside className="side-panel">
-      <SectionHeader title="Neo Feeder" />
-      <dl className="connection-list">
-        <div>
-          <dt>Status</dt>
-          <dd>
-            <StatusBadge tone="warning">Draft</StatusBadge>
-          </dd>
-        </div>
-        <div>
-          <dt>Endpoint</dt>
-          <dd className="mono">Belum diset</dd>
-        </div>
-        <div>
-          <dt>Referensi</dt>
-          <dd>Belum sync</dd>
-        </div>
-      </dl>
-      <AppButton icon={DatabaseZap} variant="secondary">
-        Test Koneksi
-      </AppButton>
-    </aside>
+        )
+      }
+    />
   );
 
   const renderDashboard = () => (
     <>
       <PageHeader
+        title="Dashboard"
         action={
-          <AppButton icon={Upload} onClick={() => setActivePage('import-batch')}>
+          <AppButton icon={Upload} onClick={() => setDialog('upload')}>
             Upload Excel
           </AppButton>
         }
-        eyebrow="Local Dev"
-        title="Siapkan data kampus untuk sinkronisasi."
       />
-
-      <section className="status-grid" aria-label="Status ringkas">
-        {metrics.map((item) => (
-          <MetricCard
-            helper={item.helper}
-            icon={item.icon}
-            key={item.label}
-            label={item.label}
-            tone={item.tone}
-            value={item.value}
-          />
-        ))}
-      </section>
-
-      <section className="dashboard-grid">
-        <WorkspacePanel>
-          <SectionHeader
-            action={
-              <AppButton icon={RefreshCcw} onClick={loadTenants} variant="secondary">
-                Refresh
-              </AppButton>
-            }
-            title="Batch Import"
-          />
-
-          <DataTable
-            columns={batchColumns}
-            rows={importBatchRows.slice(0, 5)}
-            emptyState={
-              importBatchState === 'loading' ? (
-                <div className="loading-state">
-                  <RefreshCcw size={18} />
-                  Memuat import batch
-                </div>
-              ) : importBatchState === 'error' ? (
-                <div className="error-state">
-                  <strong>Import batch gagal dimuat.</strong>
-                  <span>{importBatchError}</span>
-                </div>
-              ) : (
-                <EmptyState description="Upload template Excel untuk mulai validasi." icon={FileSpreadsheet} title="Belum ada batch" />
-              )
-            }
-          />
-        </WorkspacePanel>
-
-        {renderNeoFeederConnection()}
-      </section>
-
-      {renderReferencePanel()}
+      <WorkspacePanel>
+        <SectionHeader
+          title="Batch terbaru"
+          action={
+            <AppButton variant="ghost" icon={ArrowRight} onClick={() => navigate('import-batch')}>
+              Lihat semua
+            </AppButton>
+          }
+        />
+        {renderBatchTable(true)}
+      </WorkspacePanel>
+      <div className="quick-links">
+        <button type="button" onClick={() => navigate('template-excel')}>
+          <FileSpreadsheet size={20} />
+          <span>Template Excel</span>
+          <ArrowRight size={16} />
+        </button>
+        <button type="button" onClick={() => navigate('neo-feeder')}>
+          <DatabaseZap size={20} />
+          <span>Koneksi Neo Feeder</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
     </>
   );
 
   const renderCampus = () => (
     <>
       <PageHeader
-        action={<AppButton icon={Building2}>Tambah Kampus</AppButton>}
-        eyebrow="Master Data"
-        title="Kelola tenant kampus dan koneksi sumber data."
+        title="Kampus"
+        action={
+          <AppButton icon={Plus} onClick={() => setDialog('campus')}>
+            Tambah kampus
+          </AppButton>
+        }
       />
-
-      <section className="page-grid">
-        <WorkspacePanel>
-          <SectionHeader
-            action={
-              <AppButton icon={RefreshCcw} variant="secondary">
-                Refresh
-              </AppButton>
-            }
-            title="Daftar Kampus"
+      <WorkspacePanel>
+        <div className="table-toolbar">
+          <span className="muted">
+            {tenantState === 'loaded' ? `${tenants.length} kampus` : 'Daftar kampus'}
+          </span>
+          <IconButton
+            label="Muat ulang kampus"
+            icon={RefreshCcw}
+            onClick={loadTenants}
+            disabled={tenantState === 'loading'}
           />
-          <DataTable
-            columns={campusColumns}
-            rows={tenants.map((tenant) => [
-              <strong className="table-primary" key={`${tenant.id}-name`}>
-                {tenant.name}
-              </strong>,
-              <span className="mono" key={`${tenant.id}-code`}>
-                {tenant.code}
-              </span>,
-              <StatusBadge key={`${tenant.id}-status`} tone={tenantStatusTones[tenant.status]}>
-                {tenantStatusLabels[tenant.status]}
-              </StatusBadge>,
-              <span key={`${tenant.id}-batch`}>0 batch</span>,
-              <span key={`${tenant.id}-updated`}>{formatDateTime(tenant.updated_at)}</span>,
-            ])}
-            emptyState={
-              tenantState === 'loading' ? (
-                <div className="loading-state">
-                  <RefreshCcw size={18} />
-                  Memuat kampus
-                </div>
-              ) : tenantState === 'error' ? (
-                <div className="error-state">
-                  <strong>Daftar kampus gagal dimuat.</strong>
-                  <span>{tenantError}</span>
-                </div>
-              ) : (
-                <EmptyState description="Kampus pertama akan dipakai untuk uji template Excel." icon={Building2} title="Belum ada kampus" />
-              )
-            }
-          />
-        </WorkspacePanel>
-
-        <aside className="side-panel">
-          <SectionHeader title="Tambah Kampus" />
-          <form className="stack-form" onSubmit={handleCreateTenant}>
-            <label>
-              Nama Kampus
-              <input
-                onChange={(event) => handleTenantFormChange('name', event.target.value)}
-                placeholder="Universitas Contoh"
-                required
-                type="text"
-                value={tenantForm.name}
-              />
-            </label>
-
-            <label>
-              Kode PT
-              <input
-                onChange={(event) => handleTenantFormChange('code', event.target.value)}
-                placeholder="001001"
-                required
-                type="text"
-                value={tenantForm.code}
-              />
-            </label>
-
-            <label>
-              Status
-              <select
-                onChange={(event) => handleTenantFormChange('status', event.target.value as TenantStatus)}
-                value={tenantForm.status}
-              >
-                <option value="draft">Draft</option>
-                <option value="active">Aktif</option>
-                <option value="inactive">Nonaktif</option>
-              </select>
-            </label>
-
-            {tenantFormState === 'error' ? <p className="auth-error">{tenantFormError}</p> : null}
-
-            <button className="app-button app-button-primary" disabled={tenantFormState === 'saving'} type="submit">
-              <Plus size={18} />
-              {tenantFormState === 'saving' ? 'Menyimpan...' : 'Tambah Kampus'}
-            </button>
-          </form>
-
-          <div className="task-list">
-            <span>Profil kampus</span>
-            <span>Credential Neo Feeder</span>
-            <span>Format template Excel</span>
-            <span>Rule validasi awal</span>
-          </div>
-        </aside>
-      </section>
+        </div>
+        <DataTable
+          columns={campusColumns}
+          rows={
+            tenantState === 'loaded'
+              ? tenants.map((tenant) => [
+                  <span className="table-primary" key={tenant.id}>
+                    {tenant.name}
+                  </span>,
+                  <span className="mono" key={tenant.id}>
+                    {tenant.code}
+                  </span>,
+                  <StatusBadge key={tenant.id} tone={tenantStatusTones[tenant.status]}>
+                    {tenantStatusLabels[tenant.status]}
+                  </StatusBadge>,
+                  formatDateTime(tenant.updated_at),
+                ])
+              : []
+          }
+          emptyState={
+            tenantState === 'loading' || tenantState === 'idle' ? (
+              <LoadingState label="Memuat kampus" />
+            ) : tenantState === 'error' ? (
+              <ErrorState title="Kampus gagal dimuat" description={tenantError} />
+            ) : (
+              <EmptyState icon={Building2} title="Belum ada kampus" />
+            )
+          }
+        />
+      </WorkspacePanel>
     </>
+  );
+
+  const renderReferences = () => (
+    <WorkspacePanel>
+      <div className="table-toolbar">
+        <label className="inline-field">
+          Kampus
+          <select
+            disabled={tenants.length === 0}
+            onChange={(event) => {
+              setReferenceTenantId(event.target.value);
+              setReferenceSyncState('idle');
+            }}
+            value={referenceTenantId}
+          >
+            {tenants.length === 0 ? <option value="">Belum ada kampus</option> : null}
+            {tenants.map((tenant) => (
+              <option key={tenant.id} value={tenant.id}>
+                {tenant.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="section-actions">
+          <IconButton
+            label="Muat ulang referensi"
+            icon={RefreshCcw}
+            disabled={referenceStatusState === 'loading' || !referenceTenantId}
+            onClick={() => loadReferenceStatus(referenceTenantId)}
+          />
+          <AppButton
+            disabled={referenceSyncState === 'loading' || !referenceTenantId}
+            icon={Download}
+            onClick={handleSyncReferences}
+          >
+            {referenceSyncState === 'loading' ? 'Mengantre...' : 'Sync referensi'}
+          </AppButton>
+        </div>
+      </div>
+      {referenceSyncState === 'queued' ? (
+        <p role="status" className="success-state">
+          {referenceQueuedCount} referensi diantrekan.
+        </p>
+      ) : null}
+      {referenceSyncState === 'error' ? (
+        <ErrorState title="Sync referensi gagal" description={referenceSyncError} />
+      ) : null}
+      <DataTable
+        columns={['Referensi', 'Jumlah data', 'Status', 'Diperbarui']}
+        rows={
+          referenceStatusState === 'loaded'
+            ? referencePreview.map((item) => [
+                item.name || item.endpoint,
+                item.total_rows,
+                <StatusBadge
+                  key={item.endpoint}
+                  tone={item.status === 'synced' ? 'success' : 'neutral'}
+                >
+                  {item.status === 'synced' ? 'Tersinkron' : 'Belum sync'}
+                </StatusBadge>,
+                formatDateTime(item.last_synced_at),
+              ])
+            : []
+        }
+        emptyState={
+          referenceStatusState === 'loading' ? (
+            <LoadingState label="Memuat referensi" />
+          ) : referenceStatusState === 'error' ? (
+            <ErrorState title="Referensi gagal dimuat" />
+          ) : (
+            <EmptyState icon={Database} title="Referensi belum tersedia" />
+          )
+        }
+      />
+    </WorkspacePanel>
   );
 
   const renderNeoFeeder = () => (
     <>
       <PageHeader
+        title="Neo Feeder"
         action={
-          <AppButton icon={RefreshCcw} onClick={loadConnections} variant="secondary">
-            Refresh
-          </AppButton>
+          connectionTab === 'connections' ? (
+            <AppButton
+              icon={Plus}
+              onClick={() => {
+                applyConnectionToForm(tenants[0]?.id ?? '');
+                setDialog('connection');
+              }}
+            >
+              Tambah koneksi
+            </AppButton>
+          ) : undefined
         }
-        eyebrow="Integrasi"
-        title="Simpan credential WS Neo Feeder per kampus."
       />
-
-      <section className="page-grid">
-        <WorkspacePanel>
-          <SectionHeader
-            action={
-              <AppButton icon={RefreshCcw} onClick={loadConnections} variant="secondary">
-                Refresh
-              </AppButton>
-            }
-            title="Koneksi Neo Feeder"
-          />
-          <DataTable
-            columns={['Kampus', 'Endpoint', 'Status', 'Password', 'Last Check', 'Aksi']}
-            rows={connections.map((connection) => [
-              <strong className="table-primary" key={`${connection.id}-tenant`}>
-                {tenantNameById.get(connection.tenant_id) ?? connection.tenant_id}
-              </strong>,
-              <span className="mono table-url" key={`${connection.id}-endpoint`}>
-                {connection.base_url}
-              </span>,
-              <StatusBadge key={`${connection.id}-status`} tone={connectionStatusTones[connection.status]}>
-                {connectionStatusLabels[connection.status]}
-              </StatusBadge>,
-              <span key={`${connection.id}-password`}>{connection.password_configured ? 'Tersimpan' : 'Belum'}</span>,
-              <span key={`${connection.id}-checked`}>{formatDateTime(connection.last_checked_at)}</span>,
-              <div className="row-actions" key={`${connection.id}-action`}>
-                <button className="row-action" onClick={() => applyConnectionToForm(connection.tenant_id)} type="button">
-                  Edit
-                </button>
-                <button
-                  className="row-action"
-                  disabled={connectionTestingId === connection.id || !connection.password_configured || !connection.username}
-                  onClick={() => handleTestConnection(connection.id)}
-                  type="button"
-                >
-                  {connectionTestingId === connection.id ? 'Testing' : 'Test'}
-                </button>
-              </div>,
-            ])}
-            emptyState={
-              connectionState === 'loading' ? (
-                <div className="loading-state">
-                  <RefreshCcw size={18} />
-                  Memuat koneksi
-                </div>
-              ) : connectionState === 'error' ? (
-                <div className="error-state">
-                  <strong>Daftar koneksi gagal dimuat.</strong>
-                  <span>{connectionError}</span>
-                </div>
-              ) : (
-                <EmptyState description="Tambahkan credential setelah tenant kampus tersedia." icon={DatabaseZap} title="Belum ada koneksi" />
-              )
-            }
-          />
-        </WorkspacePanel>
-
-        <aside className="side-panel">
-          <SectionHeader title="Credential WS" />
-          <form className="stack-form" onSubmit={handleSaveConnection}>
-            <label>
-              Kampus
-              <select
-                disabled={tenants.length === 0}
-                onChange={(event) => applyConnectionToForm(event.target.value)}
-                required
-                value={connectionForm.tenantId}
-              >
-                {tenants.length === 0 ? <option value="">Buat kampus dulu</option> : null}
-                {tenants.map((tenant) => (
-                  <option key={tenant.id} value={tenant.id}>
-                    {tenant.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Endpoint WS
-              <input
-                onChange={(event) => handleConnectionFormChange('baseUrl', event.target.value)}
-                placeholder="https://.../ws/live2.php"
-                required
-                type="url"
-                value={connectionForm.baseUrl}
+      <ViewTabs
+        label="Data Neo Feeder"
+        value={connectionTab}
+        onChange={setConnectionTab}
+        items={[
+          { id: 'connections', label: 'Koneksi' },
+          { id: 'references', label: 'Referensi' },
+        ]}
+      />
+      <div role="tabpanel" id={`panel-${connectionTab}`} aria-labelledby={`tab-${connectionTab}`}>
+        {connectionTab === 'references' ? (
+          renderReferences()
+        ) : (
+          <WorkspacePanel>
+            <div className="table-toolbar">
+              <span className="muted">
+                {connectionState === 'loaded' ? `${connections.length} koneksi` : 'Daftar koneksi'}
+              </span>
+              <IconButton
+                label="Muat ulang koneksi"
+                icon={RefreshCcw}
+                onClick={loadConnections}
+                disabled={connectionState === 'loading'}
               />
-            </label>
-
-            <label>
-              Username
-              <input
-                autoComplete="username"
-                onChange={(event) => handleConnectionFormChange('username', event.target.value)}
-                placeholder="Username Neo Feeder"
-                type="text"
-                value={connectionForm.username}
-              />
-            </label>
-
-            <label>
-              Password
-              <input
-                autoComplete="new-password"
-                onChange={(event) => handleConnectionFormChange('password', event.target.value)}
-                placeholder="Kosongkan jika tidak ingin ubah"
-                type="password"
-                value={connectionForm.password}
-              />
-            </label>
-
-            <label>
-              Status
-              <select
-                onChange={(event) => handleConnectionFormChange('status', event.target.value as NeoFeederConnectionStatus)}
-                value={connectionForm.status}
-              >
-                <option value="draft">Draft</option>
-                <option value="active">Aktif</option>
-                <option value="inactive">Nonaktif</option>
-                <option value="error">Error</option>
-              </select>
-            </label>
-
-            {connectionFormState === 'error' ? <p className="auth-error">{connectionFormError}</p> : null}
-            {connectionTestError ? <p className="auth-error">{connectionTestError}</p> : null}
+            </div>
+            {connectionTestError ? (
+              <ErrorState title="Test koneksi gagal" description={connectionTestError} />
+            ) : null}
             {connectionTestResult ? (
-              <div className={`connection-test-result ${connectionTestResult.ok ? 'connection-test-ok' : 'connection-test-error'}`}>
-                <strong>{connectionTestResult.ok ? 'Koneksi aktif' : 'Koneksi belum valid'}</strong>
-                <span>
-                  {connectionTestResult.token_received ? 'Token diterima' : 'Token belum diterima'}
-                  {connectionTestResult.error_desc ? ` · ${connectionTestResult.error_desc}` : ''}
-                </span>
+              <div
+                className={connectionTestResult.ok ? 'success-state' : 'error-state'}
+                role="status"
+              >
+                <strong>
+                  {tenantNameById.get(connectionTestResult.connection.tenant_id)}:{' '}
+                  {connectionTestResult.ok ? 'Koneksi berhasil' : 'Koneksi gagal'}
+                </strong>
+                {connectionTestResult.error_desc ? (
+                  <span>{connectionTestResult.error_desc}</span>
+                ) : null}
               </div>
             ) : null}
-
-            <button className="app-button app-button-primary" disabled={connectionFormState === 'saving' || tenants.length === 0} type="submit">
-              <DatabaseZap size={18} />
-              {connectionFormState === 'saving' ? 'Menyimpan...' : 'Simpan Credential'}
-            </button>
-          </form>
-
-          <div className="notice compact-notice">
-            <Clock3 size={18} />
-            <p>Test koneksi dan sync referensi menunggu credential Neo Feeder resmi.</p>
-          </div>
-        </aside>
-      </section>
+            <DataTable
+              columns={['Kampus', 'Endpoint', 'Status', 'Diperiksa', 'Aksi']}
+              rows={
+                connectionState === 'loaded'
+                  ? connections.map((connection) => [
+                      <span className="table-primary" key={connection.id}>
+                        {tenantNameById.get(connection.tenant_id) ?? connection.tenant_id}
+                      </span>,
+                      <span
+                        className="mono table-url"
+                        title={connection.base_url}
+                        key={connection.id}
+                      >
+                        {connection.base_url}
+                      </span>,
+                      <StatusBadge
+                        key={connection.id}
+                        tone={connectionStatusTones[connection.status]}
+                      >
+                        {connectionStatusLabels[connection.status]}
+                      </StatusBadge>,
+                      formatDateTime(connection.last_checked_at),
+                      <div className="row-actions" key={connection.id}>
+                        <IconButton
+                          label="Edit koneksi"
+                          icon={Pencil}
+                          onClick={() => {
+                            applyConnectionToForm(connection.tenant_id);
+                            setDialog('connection');
+                          }}
+                        />
+                        <IconButton
+                          label={
+                            connectionTestingId === connection.id
+                              ? 'Menguji koneksi'
+                              : 'Test koneksi'
+                          }
+                          icon={PlugZap}
+                          disabled={
+                            !!connectionTestingId ||
+                            !connection.password_configured ||
+                            !connection.username
+                          }
+                          onClick={() => handleTestConnection(connection.id)}
+                        />
+                      </div>,
+                    ])
+                  : []
+              }
+              emptyState={
+                connectionState === 'loading' || connectionState === 'idle' ? (
+                  <LoadingState label="Memuat koneksi" />
+                ) : connectionState === 'error' ? (
+                  <ErrorState title="Koneksi gagal dimuat" description={connectionError} />
+                ) : (
+                  <EmptyState icon={DatabaseZap} title="Belum ada koneksi" />
+                )
+              }
+            />
+          </WorkspacePanel>
+        )}
+      </div>
     </>
   );
 
   const renderTemplateExcel = () => (
     <>
       <PageHeader
+        title="Template Excel"
         action={
-          <AppButton disabled={templateDownloadState === 'loading'} icon={Download} onClick={handleDownloadTemplate}>
-            {templateDownloadState === 'loading' ? 'Menyiapkan...' : 'Download Template'}
+          <AppButton
+            disabled={templateDownloadState === 'loading'}
+            icon={Download}
+            onClick={handleDownloadTemplate}
+          >
+            {templateDownloadState === 'loading' ? 'Menyiapkan...' : 'Download template'}
           </AppButton>
         }
-        eyebrow="Phase 1"
-        title="Template mengikuti kontrak field Neo Feeder."
       />
-
+      {templateDownloadState === 'error' ? (
+        <ErrorState title="Download gagal" description={templateDownloadError} />
+      ) : null}
       <WorkspacePanel>
-        <SectionHeader description="Template ini bisa dibuat tanpa credential Neo Feeder karena memakai kontrak internal Phase 1." title="Workbook Template" />
-        {templateDownloadState === 'error' ? (
-          <div className="error-state">
-            <strong>Template belum bisa didownload.</strong>
-            <span>{templateDownloadError}</span>
-          </div>
-        ) : null}
+        <SectionHeader
+          title="Isi workbook"
+          description="Isi data pada sheet yang dibutuhkan. Petunjuk pengisian tersedia di sheet README."
+        />
         <DataTable
           columns={templateColumns}
           rows={[
-            ['README', 'Instruksi operator', 'Ya', 'Tidak', <StatusBadge key="readme-status" tone="success">Siap</StatusBadge>],
-            ['mahasiswa_biodata', 'Biodata mahasiswa', 'Ya', 'Ya', <StatusBadge key="biodata-status" tone="success">Siap</StatusBadge>],
-            ['mahasiswa_riwayat_pendidikan', 'Riwayat pendidikan', 'Ya', 'Ya', <StatusBadge key="riwayat-status" tone="success">Siap</StatusBadge>],
-            ['mata_kuliah', 'Mata kuliah', 'Ya', 'Ya', <StatusBadge key="mk-status" tone="success">Siap</StatusBadge>],
-            ['kelas_kuliah', 'Kelas kuliah', 'Ya', 'Ya', <StatusBadge key="kelas-status" tone="success">Siap</StatusBadge>],
-            ['nilai_perkuliahan', 'Nilai kelas', 'Ya', 'Ya', <StatusBadge key="nilai-status" tone="success">Siap</StatusBadge>],
+            ['README', 'Petunjuk pengisian'],
+            ...[
+              ['mahasiswa_biodata', 'Biodata mahasiswa'],
+              ['mahasiswa_riwayat_pendidikan', 'Riwayat pendidikan'],
+              ['mata_kuliah', 'Mata kuliah'],
+              ['kurikulum', 'Kurikulum'],
+              ['matkul_kurikulum', 'Mata kuliah kurikulum'],
+              ['kelas_kuliah', 'Kelas kuliah'],
+              ['peserta_kelas', 'Peserta kelas'],
+              ['dosen_pengajar_kelas', 'Dosen pengajar kelas'],
+              ['nilai_perkuliahan', 'Nilai kelas'],
+              ['perkuliahan_mahasiswa_akm', 'Aktivitas kuliah mahasiswa'],
+              ['mahasiswa_lulus_do', 'Mahasiswa lulus / DO'],
+              ['ref_*', 'Daftar referensi'],
+            ],
           ]}
-          emptyState={<EmptyState description="Generator template akan membaca kanal data yang aktif." icon={FileSpreadsheet} title="Template belum digenerate" />}
         />
       </WorkspacePanel>
     </>
@@ -1499,224 +1186,123 @@ function App() {
   const renderImportBatch = () => (
     <>
       <PageHeader
+        title="Import Batch"
         action={
-          <AppButton icon={RefreshCcw} onClick={loadImportBatches} variant="secondary">
-            Refresh
+          <AppButton icon={Upload} onClick={() => setDialog('upload')}>
+            Upload Excel
           </AppButton>
         }
-        eyebrow="Import"
-        title="Pantau upload, validasi, dan kesiapan sync."
       />
-
-      <section className="page-grid">
-        <WorkspacePanel>
-          <SectionHeader
-            action={
-              <AppButton icon={RefreshCcw} onClick={loadImportBatches} variant="secondary">
-                Refresh
-              </AppButton>
-            }
-            title="Batch Import"
+      <WorkspacePanel>
+        <div className="table-toolbar">
+          <label className="search-field">
+            <Search size={16} aria-hidden="true" />
+            <input
+              aria-label="Cari batch"
+              type="search"
+              value={batchSearch}
+              placeholder="Cari file atau kampus..."
+              onChange={(event) => setBatchSearch(event.target.value)}
+            />
+          </label>
+          <IconButton
+            label="Muat ulang batch"
+            icon={RefreshCcw}
+            disabled={importBatchState === 'loading'}
+            onClick={loadImportBatches}
           />
-          <DataTable
-            columns={batchColumns}
-            rows={importBatchRows}
-            emptyState={
-              importBatchState === 'loading' ? (
-                <div className="loading-state">
-                  <RefreshCcw size={18} />
-                  Memuat import batch
-                </div>
-              ) : importBatchState === 'error' ? (
-                <div className="error-state">
-                  <strong>Import batch gagal dimuat.</strong>
-                  <span>{importBatchError}</span>
-                </div>
-              ) : (
-                <EmptyState description="Belum ada file yang diupload." icon={Upload} title="Batch kosong" />
-              )
-            }
-          />
-        </WorkspacePanel>
-
-        <aside className="side-panel">
-          <SectionHeader title="Upload Workbook" />
-          <form className="stack-form" onSubmit={handleUploadImportBatch}>
-            <label>
-              Kampus
-              <select
-                disabled={tenants.length === 0}
-                onChange={(event) => setImportUploadTenantId(event.target.value)}
-                required
-                value={importUploadTenantId}
-              >
-                {tenants.length === 0 ? <option value="">Buat kampus dulu</option> : null}
-                {tenants.map((tenant) => (
-                  <option key={tenant.id} value={tenant.id}>
-                    {tenant.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              File Excel
-              <input
-                accept=".xlsx,.xls"
-                className="file-input"
-                key={importUploadInputKey}
-                onChange={handleImportFileChange}
-                required
-                type="file"
-              />
-            </label>
-
-            {importUploadFile ? (
-              <div className="upload-preview">
-                <strong>{importUploadFile.name}</strong>
-                <span>{formatFileSize(importUploadFile.size)}</span>
-              </div>
-            ) : null}
-
-            {importUploadState === 'error' ? <p className="auth-error">{importUploadError}</p> : null}
-
-            <button
-              className="app-button app-button-primary"
-              disabled={importUploadState === 'saving' || tenants.length === 0 || !importUploadFile}
-              type="submit"
-            >
-              <Upload size={18} />
-              {importUploadState === 'saving' ? 'Mengupload...' : 'Upload Workbook'}
-            </button>
-          </form>
-
-          <div className="notice compact-notice">
-            <Clock3 size={18} />
-            <p>Worker akan parse workbook dan mengubah status batch setelah file tersimpan.</p>
-          </div>
-        </aside>
-      </section>
+        </div>
+        {renderBatchTable()}
+      </WorkspacePanel>
     </>
   );
 
   const renderValidation = () => (
     <>
-      <PageHeader
-        action={
-          <AppButton disabled={dryRunState === 'loading' || !dryRunBatchId} icon={ShieldCheck} onClick={handleRunDryRun} variant="secondary">
-            {dryRunState === 'loading' ? 'Menjalankan...' : 'Jalankan Dry-run'}
+      <PageHeader title="Validasi" />
+      <WorkspacePanel>
+        <div className="validation-toolbar">
+          <label className="inline-field">
+            Batch
+            <select
+              disabled={importBatches.length === 0 || dryRunState === 'loading'}
+              onChange={(event) => selectBatch(event.target.value)}
+              value={dryRunBatchId}
+            >
+              {importBatches.length === 0 ? <option value="">Belum ada batch</option> : null}
+              {importBatches.map((batch) => (
+                <option key={batch.id} value={batch.id}>
+                  {batch.summary.original_name ?? `Batch ${shortId(batch.id)}`} -{' '}
+                  {tenantNameById.get(batch.tenant_id) ?? batch.tenant_name ?? 'Kampus'}
+                </option>
+              ))}
+            </select>
+          </label>
+          <AppButton
+            disabled={dryRunState === 'loading' || !dryRunBatchId}
+            icon={ShieldCheck}
+            onClick={handleRunDryRun}
+          >
+            {dryRunState === 'loading' ? 'Memvalidasi...' : 'Jalankan dry-run'}
           </AppButton>
-        }
-        eyebrow="Quality Gate"
-        title="Preview payload sebelum sinkronisasi."
-      />
-
-      <section className="page-grid">
-        <WorkspacePanel>
-          <SectionHeader
-            action={
-              <AppButton disabled={dryRunState === 'loading' || !dryRunBatchId} icon={ShieldCheck} onClick={handleRunDryRun} variant="secondary">
-                {dryRunState === 'loading' ? 'Menjalankan...' : 'Dry-run'}
-              </AppButton>
-            }
-            title="Temuan Validasi"
+          <HelpTip
+            label="Tentang dry-run"
+            text="Memeriksa data dan menyiapkan pratinjau. Data belum dikirim ke Neo Feeder."
           />
-          {dryRunState === 'error' ? (
-            <div className="error-state">
-              <strong>Dry-run gagal dijalankan.</strong>
-              <span>{dryRunError}</span>
-            </div>
-          ) : null}
-          <DataTable
-            columns={validationColumns}
-            rows={dryRunIssueRows}
-            emptyState={
-              dryRunState === 'loading' ? (
-                <div className="loading-state">
-                  <RefreshCcw size={18} />
-                  Menyiapkan payload preview
-                </div>
-              ) : (
-                <EmptyState description="Pilih batch dan jalankan dry-run untuk melihat hasil validasi." icon={ShieldCheck} title="Belum ada preview" />
-              )
-            }
-          />
-        </WorkspacePanel>
-
-        <aside className="side-panel">
-          <SectionHeader title="Dry-run Batch" />
-          <form className="stack-form">
-            <label>
-              Import Batch
-              <select
-                disabled={importBatches.length === 0}
-                onChange={(event) => setDryRunBatchId(event.target.value)}
-                value={dryRunBatchId}
-              >
-                {importBatches.length === 0 ? <option value="">Upload batch dulu</option> : null}
-                {importBatches.map((batch) => (
-                  <option key={batch.id} value={batch.id}>
-                    {(batch.summary.original_name ?? `Batch ${shortId(batch.id)}`)} · {tenantNameById.get(batch.tenant_id) ?? batch.tenant_name ?? 'Kampus'}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <button className="app-button app-button-primary" disabled={dryRunState === 'loading' || !dryRunBatchId} onClick={handleRunDryRun} type="button">
-              <ShieldCheck size={18} />
-              {dryRunState === 'loading' ? 'Menjalankan...' : 'Jalankan Dry-run'}
-            </button>
-          </form>
-
-          <div className="dry-run-summary">
-            <div>
-              <span>Total</span>
-              <strong>{dryRunPreview?.summary.total_rows ?? 0}</strong>
-            </div>
-            <div>
-              <span>Valid</span>
-              <strong>{dryRunPreview?.summary.valid_rows ?? 0}</strong>
-            </div>
-            <div>
-              <span>Error</span>
-              <strong>{dryRunPreview?.summary.invalid_rows ?? 0}</strong>
-            </div>
-            <div>
-              <span>Warning</span>
-              <strong>{dryRunPreview?.summary.warning_rows ?? 0}</strong>
-            </div>
-          </div>
-
-          <div className="notice compact-notice">
-            <Clock3 size={18} />
-            <p>
-              Approval dan sync final ditahan sampai credential Neo Feeder siap. Dry-run hanya membuat preview payload dan dependency order.
-            </p>
-          </div>
-        </aside>
-      </section>
+        </div>
+        {dryRunState === 'error' ? (
+          <ErrorState title="Dry-run gagal" description={dryRunError} />
+        ) : null}
+        {dryRunPreview ? (
+          <dl className="summary-strip">
+            {[
+              ['Total baris', dryRunPreview.summary.total_rows],
+              ['Valid', dryRunPreview.summary.valid_rows],
+              ['Error', dryRunPreview.summary.invalid_rows],
+              ['Peringatan', dryRunPreview.summary.warning_rows],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+        <DataTable
+          columns={validationColumns}
+          rows={dryRunIssueRows}
+          emptyState={
+            dryRunState === 'loading' ? (
+              <LoadingState label="Memvalidasi batch" />
+            ) : (
+              <EmptyState
+                icon={ShieldCheck}
+                title={dryRunPreview ? 'Tidak ada baris dalam batch' : 'Belum ada hasil validasi'}
+              />
+            )
+          }
+        />
+      </WorkspacePanel>
     </>
   );
 
   const renderMapping = () => (
     <>
-      <PageHeader
+      <PageHeader title="Mapping SIAKAD" />
+      <EmptyState
+        icon={Waypoints}
+        title="Otomatisasi dalam rencana"
+        description="Mapping sumber SIAKAD akan tersedia pada fase 2."
         action={
-          <AppButton icon={Waypoints} variant="secondary">
-            Buat Draft Mapping
+          <AppButton
+            variant="secondary"
+            icon={FileSpreadsheet}
+            onClick={() => navigate('template-excel')}
+          >
+            Template Excel
           </AppButton>
         }
-        eyebrow="Phase 2"
-        title="Siapkan mapping otomatis dari struktur SIAKAD."
       />
-
-      <WorkspacePanel>
-        <SectionHeader title="Draft Mapping" />
-        <DataTable
-          columns={mappingColumns}
-          emptyState={<EmptyState description="Mapping dibuat setelah koneksi database SIAKAD dipelajari." icon={Waypoints} title="Belum ada mapping" />}
-        />
-      </WorkspacePanel>
     </>
   );
 
@@ -1734,61 +1320,339 @@ function App() {
         return renderValidation();
       case 'mapping':
         return renderMapping();
-      case 'dashboard':
       default:
         return renderDashboard();
     }
   };
 
+  const themeControl = (
+    <IconButton
+      label={theme === 'dark' ? 'Gunakan tema terang' : 'Gunakan tema gelap'}
+      icon={ThemeIcon}
+      onClick={() => setTheme(nextTheme)}
+    />
+  );
+
   if (authState === 'checking') {
-    return renderAuthChecking();
+    return (
+      <main className="auth-loading-shell">
+        <LoadingState label="Memeriksa sesi" />
+      </main>
+    );
   }
-
   if (appScreen === 'landing') {
-    return renderLanding();
+    return <LandingPage onLogin={() => setAppScreen('login')} themeControl={themeControl} />;
   }
-
   if (appScreen === 'login') {
-    return renderLogin();
+    return (
+      <LoginPage
+        themeControl={themeControl}
+        onBack={() => setAppScreen('landing')}
+        email={loginEmail}
+        password={loginPassword}
+        onEmailChange={setLoginEmail}
+        onPasswordChange={setLoginPassword}
+        onSubmit={handleLogin}
+        loading={loginState === 'loading'}
+        error={loginState === 'error' ? loginError : ''}
+      />
+    );
   }
 
   return (
-    <AppShell
-      sidebar={
-        <Sidebar>
-          <Brand icon={Database} title="Bridge Neo Feeder" subtitle="PDDIKTI sync" />
-          <SidebarNav activeItem={activePage} items={navItems} onItemSelect={(item) => setActivePage(item.id as PageId)} />
-        </Sidebar>
-      }
-    >
-      <Topbar
-        action={
-          <div className="topbar-actions">
-            <button className="search-trigger" type="button">
-              <Search size={17} />
-              <span>Cari batch</span>
-              <kbd>Ctrl K</kbd>
-            </button>
-            <button aria-label="Ganti tema" className="icon-button" onClick={() => setTheme(nextTheme)} type="button">
-              <ThemeIcon size={18} />
-            </button>
-            <button aria-label="Notifikasi" className="icon-button" type="button">
-              <Bell size={18} />
-            </button>
-            <button aria-label={authUser ? `User ${authUser.name}` : 'Menu pengguna'} className="avatar-button" type="button">
-              <CircleUserRound size={20} />
-            </button>
-            <button aria-label="Keluar" className="icon-button" onClick={handleLogout} type="button">
-              <LogOut size={18} />
-            </button>
+    <>
+      <a className="skip-link" href="#main-content">
+        Ke konten utama
+      </a>
+      <div className="mobile-topbar">
+        <Brand icon={Database} title="NeoBridge" subtitle="Workspace" />
+        <button
+          className="icon-button"
+          aria-label={mobileNavOpen ? 'Tutup navigasi' : 'Buka navigasi'}
+          aria-expanded={mobileNavOpen}
+          aria-controls="app-navigation"
+          onClick={() => setMobileNavOpen(!mobileNavOpen)}
+          type="button"
+        >
+          {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+      <div className={mobileNavOpen ? 'app-layout nav-open' : 'app-layout'}>
+        <AppShell
+          sidebar={
+            <Sidebar>
+              <Brand icon={Database} title="NeoBridge" subtitle="Bridge Neo Feeder" />
+              <div id="app-navigation">
+                <SidebarNav
+                  activeItem={activePage}
+                  items={navItems}
+                  onItemSelect={(item) => navigate(item.id as PageId)}
+                />
+              </div>
+              <span className="sidebar-footer">Workspace kampus</span>
+            </Sidebar>
+          }
+        >
+          <Topbar
+            eyebrow="Workspace"
+            title={currentPage.eyebrow}
+            action={
+              <div className="topbar-actions">
+                <span className="user-identity">
+                  <CircleUserRound size={18} />
+                  <span>{authUser?.name}</span>
+                </span>
+                {themeControl}
+                <IconButton label="Keluar" icon={LogOut} onClick={handleLogout} />
+              </div>
+            }
+          />
+          <div className="page-content">
+            {feedback ? (
+              <p className="success-state" role="status">
+                {feedback}
+              </p>
+            ) : null}
+            {renderPage()}
           </div>
-        }
-        eyebrow={currentPage.eyebrow}
-        title={currentPage.title}
-      />
+        </AppShell>
+      </div>
+      <FormDialog
+        title="Tambah kampus"
+        open={dialog === 'campus'}
+        onClose={() => setDialog(null)}
+        busy={tenantFormState === 'saving'}
+      >
+        <form className="stack-form" onSubmit={handleCreateTenant}>
+          <label>
+            Nama Kampus
+            <input
+              onChange={(event) => handleTenantFormChange('name', event.target.value)}
+              placeholder="Universitas Contoh"
+              required
+              type="text"
+              value={tenantForm.name}
+            />
+          </label>
 
-      {renderPage()}
-    </AppShell>
+          <label>
+            Kode PT
+            <input
+              onChange={(event) => handleTenantFormChange('code', event.target.value)}
+              placeholder="001001"
+              required
+              type="text"
+              value={tenantForm.code}
+            />
+          </label>
+
+          <label>
+            Status
+            <select
+              onChange={(event) =>
+                handleTenantFormChange('status', event.target.value as TenantStatus)
+              }
+              value={tenantForm.status}
+            >
+              <option value="draft">Draft</option>
+              <option value="active">Aktif</option>
+              <option value="inactive">Nonaktif</option>
+            </select>
+          </label>
+
+          {tenantFormState === 'error' ? <p className="auth-error">{tenantFormError}</p> : null}
+
+          <button
+            className="app-button app-button-primary"
+            disabled={tenantFormState === 'saving'}
+            type="submit"
+          >
+            <Plus size={18} />
+            {tenantFormState === 'saving' ? 'Menyimpan...' : 'Tambah Kampus'}
+          </button>
+        </form>
+      </FormDialog>
+      <FormDialog
+        title="Koneksi Neo Feeder"
+        open={dialog === 'connection'}
+        onClose={() => setDialog(null)}
+        busy={connectionFormState === 'saving'}
+      >
+        {tenants.length === 0 ? (
+          <EmptyState
+            icon={Building2}
+            title="Tambahkan kampus terlebih dahulu"
+            action={
+              <AppButton
+                icon={Plus}
+                onClick={() => {
+                  setDialog('campus');
+                  navigate('campus');
+                }}
+              >
+                Tambah kampus
+              </AppButton>
+            }
+          />
+        ) : (
+          <>
+            <form className="stack-form" onSubmit={handleSaveConnection}>
+              <label>
+                Kampus
+                <select
+                  disabled={tenants.length === 0}
+                  onChange={(event) => applyConnectionToForm(event.target.value)}
+                  required
+                  value={connectionForm.tenantId}
+                >
+                  {tenants.length === 0 ? <option value="">Buat kampus dulu</option> : null}
+                  {tenants.map((tenant) => (
+                    <option key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Endpoint WS
+                <input
+                  onChange={(event) => handleConnectionFormChange('baseUrl', event.target.value)}
+                  placeholder="https://.../ws/live2.php"
+                  required
+                  type="url"
+                  value={connectionForm.baseUrl}
+                />
+              </label>
+
+              <label>
+                Username
+                <input
+                  autoComplete="username"
+                  onChange={(event) => handleConnectionFormChange('username', event.target.value)}
+                  placeholder="Username Neo Feeder"
+                  type="text"
+                  value={connectionForm.username}
+                />
+              </label>
+
+              <label>
+                Password
+                <input
+                  autoComplete="new-password"
+                  onChange={(event) => handleConnectionFormChange('password', event.target.value)}
+                  placeholder="Kosongkan jika tidak ingin ubah"
+                  type="password"
+                  value={connectionForm.password}
+                />
+              </label>
+
+              <label>
+                Status
+                <select
+                  onChange={(event) =>
+                    handleConnectionFormChange(
+                      'status',
+                      event.target.value as NeoFeederConnectionStatus,
+                    )
+                  }
+                  value={connectionForm.status}
+                >
+                  <option value="draft">Draft</option>
+                  <option value="active">Aktif</option>
+                  <option value="inactive">Nonaktif</option>
+                  <option value="error">Error</option>
+                </select>
+              </label>
+
+              {connectionFormState === 'error' ? (
+                <p className="auth-error">{connectionFormError}</p>
+              ) : null}
+              <button
+                className="app-button app-button-primary"
+                disabled={connectionFormState === 'saving' || tenants.length === 0}
+                type="submit"
+              >
+                <DatabaseZap size={18} />
+                {connectionFormState === 'saving' ? 'Menyimpan...' : 'Simpan Credential'}
+              </button>
+            </form>
+          </>
+        )}
+      </FormDialog>
+      <FormDialog
+        title="Upload Excel"
+        open={dialog === 'upload'}
+        onClose={() => setDialog(null)}
+        busy={importUploadState === 'saving'}
+      >
+        {tenants.length === 0 ? (
+          <EmptyState
+            icon={Building2}
+            title="Tambahkan kampus terlebih dahulu"
+            action={
+              <AppButton
+                icon={Plus}
+                onClick={() => {
+                  setDialog('campus');
+                  navigate('campus');
+                }}
+              >
+                Tambah kampus
+              </AppButton>
+            }
+          />
+        ) : (
+          <>
+            <form className="stack-form" onSubmit={handleUploadImportBatch}>
+              <label>
+                Kampus
+                <select
+                  disabled={tenants.length === 0}
+                  onChange={(event) => setImportUploadTenantId(event.target.value)}
+                  required
+                  value={importUploadTenantId}
+                >
+                  {tenants.length === 0 ? <option value="">Buat kampus dulu</option> : null}
+                  {tenants.map((tenant) => (
+                    <option key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                File Excel (.xlsx, .xls)
+                <input
+                  accept=".xlsx,.xls"
+                  className="file-input"
+                  key={importUploadInputKey}
+                  onChange={handleImportFileChange}
+                  required
+                  type="file"
+                />
+              </label>
+
+              {importUploadState === 'error' ? (
+                <p className="auth-error">{importUploadError}</p>
+              ) : null}
+
+              <button
+                className="app-button app-button-primary"
+                disabled={
+                  importUploadState === 'saving' || tenants.length === 0 || !importUploadFile
+                }
+                type="submit"
+              >
+                <Upload size={18} />
+                {importUploadState === 'saving' ? 'Mengupload...' : 'Upload Workbook'}
+              </button>
+            </form>
+          </>
+        )}
+      </FormDialog>
+    </>
   );
 }
 

@@ -7,13 +7,16 @@ type DataTableProps = {
 };
 
 export function DataTable({ columns, emptyState, rows = [] }: DataTableProps) {
+  if (rows.length === 0 && emptyState) return <div className="table-empty">{emptyState}</div>;
   return (
-    <div className="table-shell">
+    <div className="table-shell" role="region" aria-label={`Tabel ${columns[0]}`} tabIndex={0}>
       <table>
         <thead>
           <tr>
             {columns.map((column) => (
-              <th key={column}>{column}</th>
+              <th scope="col" key={column}>
+                {column}
+              </th>
             ))}
           </tr>
         </thead>
