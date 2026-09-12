@@ -36,6 +36,14 @@
 - [x] Sambungkan UI test koneksi Neo Feeder ke endpoint backend.
 - [x] Validasi build/lint frontend.
 
+## UI Refinement - September 2026
+
+- [x] Tinjau referensi shadcn/Carbon dan revisi aturan radius, typography, serta hierarki konten.
+- [ ] Rapikan shared component, layout tabel, dialog form, navigasi mobile, dan bantuan kontekstual.
+- [ ] Hilangkan aksi/data duplikat dan kontrol dummy; perjelas alur batch ke validasi.
+- [ ] Selaraskan landing/login, ringkas konten, dan ganti preview dekoratif dengan media produk.
+- [ ] Verifikasi browser desktop/mobile light/dark, build, dan lint.
+
 ## Phase 1 - Export/Import Excel
 
 ## 1.1 Contract Layer
