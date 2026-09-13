@@ -73,7 +73,7 @@ class ImportBatchDryRunTest extends TestCase
             ->assertJsonPath('data.payload_preview.1.candidate_operation', 'skip')
             ->assertJsonPath('data.missing_references.0.field', 'id_agama');
 
-        $this->assertSame('dry_run_ready', $batch->refresh()->status);
+        $this->assertSame('invalid', $batch->refresh()->status);
     }
 
     /**

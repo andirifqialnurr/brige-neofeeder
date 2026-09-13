@@ -176,7 +176,7 @@
 
 ## 1.9 Pemeriksaan Batch Dan Demo Tanpa Neo Feeder
 
-- [ ] API detail batch, filter sheet/status, dan pagination baris dengan isolasi tenant.
+- [x] API detail batch, filter sheet/status, dan pagination baris dengan isolasi tenant.
 - [ ] UI detail batch dan dialog data/payload/temuan tanpa mengirim data.
 - [ ] Download laporan temuan Excel; nilai sel aman dari formula injection.
 - [ ] Pagination dan pencarian batch di server, bukan hanya 50 batch pertama.

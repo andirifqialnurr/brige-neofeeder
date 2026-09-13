@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\ImportBatchController;
+use App\Http\Controllers\Api\ImportBatchInspectionController;
 use App\Http\Controllers\Api\ImportBatchDryRunController;
 use App\Http\Controllers\Api\ImportBatchSyncController;
 use App\Http\Controllers\Api\ImportBatchUploadController;
@@ -30,6 +31,10 @@ Route::middleware('api.token')->group(function (): void {
     Route::get('references/status', ReferenceStatusController::class);
     Route::post('references/sync', ReferenceSyncController::class);
     Route::get('import-batches', [ImportBatchController::class, 'index']);
+    Route::get('import-batches/{importBatch}', [ImportBatchInspectionController::class, 'show']);
+    Route::get('import-batches/{importBatch}/rows', [ImportBatchInspectionController::class, 'rows']);
+    Route::get('import-batches/{importBatch}/rows/{record}', [ImportBatchInspectionController::class, 'row']);
+    Route::get('import-batches/{importBatch}/report', [ImportBatchInspectionController::class, 'report']);
     Route::post('import-batches/upload', ImportBatchUploadController::class);
     Route::post('import-batches/{importBatch}/dry-run', ImportBatchDryRunController::class);
     Route::post('import-batches/{importBatch}/sync', [ImportBatchSyncController::class, 'start']);

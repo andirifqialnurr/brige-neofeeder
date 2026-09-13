@@ -19,6 +19,7 @@ final class ImportBatchDryRunService
 
     public function preview(ImportBatch $batch): array
     {
+        abort_unless(in_array($batch->status, ['validated', 'invalid', 'dry_run_ready'], true), 409, 'Batch belum selesai divalidasi.');
         $records = $batch->stagingRecords()->orderBy('channel')->orderBy('row_number')->get();
         $payloads = $records->map(fn (StagingRecord $record): array => $this->previewRecord($record))->values();
         $summary = [
@@ -39,7 +40,7 @@ final class ImportBatchDryRunService
         ];
 
         $batch->forceFill([
-            'status' => 'dry_run_ready',
+            'status' => $summary['invalid_rows'] > 0 || ($batch->summary['missing_sheets'] ?? []) !== [] ? 'invalid' : 'dry_run_ready',
             'summary' => [
                 ...($batch->summary ?? []),
                 'dry_run' => [
@@ -53,7 +54,7 @@ final class ImportBatchDryRunService
         return $dryRun;
     }
 
-    private function previewRecord(StagingRecord $record): array
+    public function previewRecord(StagingRecord $record): array
     {
         $channel = $this->registry->channel($record->channel);
         $candidate = $this->candidateOperation($record, $channel);
