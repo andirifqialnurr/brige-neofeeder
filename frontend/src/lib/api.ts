@@ -2,6 +2,53 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:2000
 const API_TOKEN_STORAGE_KEY = 'bridge-neofeeder-api-token';
 const AUTH_USER_STORAGE_KEY = 'bridge-neofeeder-auth-user';
 
+export type StatisticGroup = { status: string; total: number };
+export type DashboardStatistics = {
+  tenant_id: string | null;
+  generated_at: string;
+  timezone: string;
+  days: number;
+  totals: {
+    campuses: number;
+    active_campuses: number;
+    active_operators: number;
+    connections: number;
+    active_connections: number;
+    reference_rows: number;
+    reference_endpoints_covered: number;
+    reference_endpoints_expected: number;
+    channels: number;
+    batches: number;
+    staging_rows: number;
+    warning_rows: number;
+    sync_success_rate: number | null;
+  };
+  batch_statuses: StatisticGroup[];
+  row_statuses: StatisticGroup[];
+  sync_statuses: StatisticGroup[];
+  channels: { channel: string; total: number }[];
+  activity: { date: string; total: number }[];
+  automation_available: boolean;
+};
+export async function getDashboardStatistics(
+  days: number,
+  tenantId: string,
+  signal?: AbortSignal,
+): Promise<DashboardStatistics> {
+  const headers = getAuthHeaders();
+  if (!headers) throw new Error('Sesi login belum tersedia.');
+  const query = new URLSearchParams({
+    days: String(days),
+    ...(tenantId ? { tenant_id: tenantId } : {}),
+  });
+  const response = await fetch(`${API_BASE_URL}/dashboard/statistics?${query}`, {
+    headers,
+    signal,
+  });
+  if (!response.ok) throw new Error(await parseApiError(response));
+  return ((await response.json()) as { data: DashboardStatistics }).data;
+}
+
 export type AuthUser = {
   id: string;
   tenant_id: string | null;

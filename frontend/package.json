@@ -13,6 +13,9 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@radix-ui/react-select": "2.2.6",
+    "apexcharts": "5.10.6",
+    "react-apexcharts": "2.1.0",
     "@vitejs/plugin-react": "^5.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

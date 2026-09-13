@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { pagePaths, type PageId } from '@/lib/router';
 
 export type SidebarNavItem = {
   id: string;
@@ -34,16 +35,27 @@ export function SidebarNav({
               const isActive = item.id === activeItem;
 
               return (
-                <button
+                <a
                   aria-current={isActive ? 'page' : undefined}
                   className={isActive ? 'active' : undefined}
                   key={item.id}
-                  onClick={() => onItemSelect?.(item)}
-                  type="button"
+                  href={pagePaths[item.id as PageId]}
+                  onClick={(event) => {
+                    if (
+                      event.button !== 0 ||
+                      event.ctrlKey ||
+                      event.metaKey ||
+                      event.shiftKey ||
+                      event.altKey
+                    )
+                      return;
+                    event.preventDefault();
+                    onItemSelect?.(item);
+                  }}
                 >
                   <Icon size={18} />
                   {item.label}
-                </button>
+                </a>
               );
             })}
         </div>

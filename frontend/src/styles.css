@@ -1,6 +1,184 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.select-trigger > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-trigger > span:last-child {
+  flex-shrink: 0;
+  display: flex;
+  color: hsl(var(--muted-foreground));
+}
+.select-trigger[data-state='open'] {
+  border-color: hsl(var(--primary));
+}
+.select-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.select-content {
+  z-index: 100;
+  min-width: var(--radix-select-trigger-width);
+  max-width: min(480px, calc(100vw - 24px));
+  max-height: min(300px, var(--radix-select-content-available-height));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 8px 24px #0002;
+  overflow: hidden;
+}
+.select-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  overflow-wrap: anywhere;
+}
+.select-item[data-highlighted] {
+  background: hsl(var(--accent));
+}
+.select-item[data-state='checked'] {
+  color: hsl(var(--primary));
+}
+.select-item[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.select-scroll {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+}
+.nav-list a {
+  text-decoration: none;
+}
+.report-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.report-toolbar .inline-field {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+.report-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 24px 0;
+  gap: 24px;
+  border-block: 1px solid hsl(var(--border));
+}
+.report-metrics dt,
+.report-inventory dt {
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+}
+.report-metrics dd {
+  margin: 8px 0 0;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 36px;
+  overflow-wrap: anywhere;
+}
+.report-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 32px;
+  padding-block: 32px;
+}
+.report-chart {
+  min-width: 0;
+}
+.report-chart h2,
+.report-inventory h2 {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+.chart-canvas {
+  min-width: 0;
+  height: 280px;
+}
+.chart-empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+}
+.report-inventory {
+  border-top: 1px solid hsl(var(--border));
+  padding-block: 24px;
+}
+.report-inventory dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.report-inventory dd {
+  margin: 6px 0 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+.automation-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0 0;
+  font-size: 12px;
+}
+.automation-status > span {
+  color: hsl(var(--muted-foreground));
+}
+@media (max-width: 800px) {
+  .report-charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .report-metrics,
+  .report-inventory dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .report-toolbar .inline-field {
+    flex: 1 1 220px;
+  }
+}
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -271,7 +449,7 @@ select:focus {
   font-size: 11px;
   font-weight: 500;
 }
-.nav-list button {
+.nav-list a {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -285,11 +463,11 @@ select:focus {
   text-align: left;
   font-weight: 400;
 }
-.nav-list button:hover {
+.nav-list a:hover {
   background: hsl(var(--muted));
   color: hsl(var(--foreground));
 }
-.nav-list button.active {
+.nav-list a.active {
   background: hsl(var(--accent));
   color: hsl(var(--accent-foreground));
   font-weight: 500;
@@ -557,8 +735,7 @@ select:focus {
 }
 
 /* A single table boundary, with controls outside it. */
-.table-toolbar,
-.validation-toolbar {
+.table-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -779,26 +956,9 @@ tbody tr:hover {
   gap: 12px;
   min-width: 0;
 }
-.inline-field select {
+.inline-field .select-trigger {
   width: 280px;
   max-width: 100%;
-}
-.validation-toolbar {
-  justify-content: flex-start;
-  position: relative;
-}
-.validation-toolbar > .help-tip {
-  position: static;
-}
-.validation-toolbar .help-content {
-  left: 0;
-  right: auto;
-}
-.validation-toolbar .inline-field {
-  flex: 1;
-}
-.validation-toolbar select {
-  width: 100%;
 }
 
 /* Native dialog provides focus containment and an inert background. */
@@ -844,7 +1004,7 @@ tbody tr:hover {
   flex: 1 1 180px;
   min-width: 0;
 }
-.row-filters select {
+.row-filters .select-trigger {
   width: 100%;
   min-width: 0;
 }
@@ -952,7 +1112,7 @@ tbody tr:hover {
   font-weight: 500;
 }
 .stack-form input,
-.stack-form select,
+.stack-form .select-trigger,
 .auth-form input {
   width: 100%;
   font-weight: 400;
@@ -1274,7 +1434,7 @@ tbody tr:hover {
   .nav-list {
     gap: 16px;
   }
-  .nav-list button {
+  .nav-list a {
     min-height: 44px;
   }
   .topbar {
@@ -1324,15 +1484,9 @@ tbody tr:hover {
   .inline-field {
     width: 100%;
   }
-  .inline-field select {
+  .inline-field .select-trigger {
     flex: 1;
     width: 0;
-  }
-  .validation-toolbar {
-    flex-wrap: wrap;
-  }
-  .validation-toolbar .inline-field {
-    flex: 0 0 100%;
   }
   .summary-strip {
     gap: 16px 24px;

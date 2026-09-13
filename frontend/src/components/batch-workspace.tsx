@@ -1,3 +1,4 @@
+import { Select } from '@/components/ui/select';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -329,7 +330,7 @@ export function BatchInspection({
         <div className="table-toolbar row-filters">
           <label className="inline-field">
             Sheet
-            <select
+            <Select
               value={sheet}
               disabled={!!busy}
               onChange={(event) => {
@@ -343,11 +344,11 @@ export function BatchInspection({
                   {item.sheet_name} ({item.total_rows})
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="inline-field">
             Status
-            <select
+            <Select
               value={status}
               disabled={!!busy}
               onChange={(event) => {
@@ -370,7 +371,7 @@ export function BatchInspection({
                   {labels[item]}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
         <DataTable

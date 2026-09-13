@@ -46,12 +46,12 @@
 
 ## Navigation And Reporting Refinement
 
-- [ ] Custom select bersama: ikon, popup, keyboard, light/dark, dan dialog.
-- [ ] URL per halaman, file page terpisah, refresh deep-link, serta back/forward.
-- [ ] Detail/validasi menjadi `/import-batch/:id`; hapus Validasi dari sidebar.
+- [x] Custom select bersama: ikon, popup, keyboard, light/dark, dan dialog.
+- [x] URL per halaman, file page terpisah, refresh deep-link, serta back/forward.
+- [x] Detail/validasi menjadi `/import-batch/:id`; hapus Validasi dari sidebar.
 - [x] Endpoint statistik agregat tenant-scoped, bukan perhitungan dari 50 batch pertama.
-- [ ] Dashboard angka dan ApexCharts tanpa daftar data; tandai otomatisasi belum tersedia.
-- [ ] Verifikasi route, statistik, dropdown form/filter, responsivitas, build/lint; dokumentasi lisensi ApexCharts.
+- [x] Dashboard angka dan ApexCharts tanpa daftar data; tandai otomatisasi belum tersedia.
+- [x] Verifikasi route, statistik, dropdown form/filter, responsivitas, build/lint; dokumentasi lisensi ApexCharts (`navigation-reporting.md`).
 
 ## Phase 1 - Export/Import Excel
 

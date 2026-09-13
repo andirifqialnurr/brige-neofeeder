@@ -2,7 +2,8 @@
 
 ## Arah Visual
 
-Dashboard operasional yang tenang, ringkas, dan berpusat pada tabel. Identitas
+Workspace operasional yang tenang dan ringkas. Dashboard berisi statistik;
+halaman pengelolaan data berpusat pada tabel. Identitas
 biru dan seluruh nilai semantic color light/dark tetap mengikuti `frontend/src/styles.css`.
 Revisi September 2026 menggantikan curved canvas dan panel dekoratif sebelumnya.
 
@@ -67,6 +68,13 @@ Halaman menyusun primitive dan data, tanpa mengulang styling kontrol.
 - WorkspacePanel: section tanpa card styling.
 - DataTable: lebar penuh, scroll horizontal lokal, empty state di luar tabel
   kosong agar tidak memaksa scroll pada mobile.
+- Select: Radix Select dengan trigger/popup custom, ikon Lucide ChevronDown/Check,
+  radius 6px, fokus/seleksi/disabled yang jelas. Tidak menggunakan popup select
+  bawaan browser. Dukungan keyboard/typeahead dan label form tetap wajib.
+  Portal dropdown dalam native dialog harus menjadi anak dialog agar tidak
+  tertutup top layer; Escape pertama menutup dropdown, berikutnya dialog.
+- ReportChart: renderer ApexCharts bersama untuk area, bar, dan donut; tinggi
+  stabil 280px, tooltip nilai, warna status semantik, dan reduced motion.
 
 ## Layout Dan Navigasi
 
@@ -77,17 +85,21 @@ Halaman menyusun primitive dan data, tanpa mengulang styling kontrol.
 - Search/notifikasi/menu pengguna tidak boleh tampil sebagai tombol dummy.
 - Fitur belum tersedia memakai status rencana, bukan aksi palsu.
 - Tabel mengambil lebar utama; tambah kampus, credential, upload melalui dialog.
+- Setiap halaman memiliki URL dan file di `frontend/src/pages/`. Sidebar
+  memakai link nyata; tombol back/forward dan refresh tidak mengubah konteks halaman.
+- Detail batch berada di `/import-batch/:id`; Import Batch tetap aktif di sidebar.
+  Validasi bukan menu terpisah. URL lama `/validation` mengarah ke daftar import.
 
 ## Pola Halaman
 
 | Halaman | Isi utama | Aksi |
 | --- | --- | --- |
-| Dashboard | Batch terbaru | Upload Excel, lihat semua |
+| Dashboard | Angka agregat dan grafik, tanpa daftar batch | Filter kampus/periode aktivitas, refresh |
 | Kampus | Daftar kampus | Tambah, refresh |
 | Neo Feeder | Tab koneksi dan referensi | Tambah/edit, test, sync |
 | Template Excel | Sheet workbook | Download |
-| Import Batch | Daftar batch dan pencarian nama/kampus | Upload, refresh, validasi |
-| Validasi | Pilih batch, satu tombol dry-run, ringkasan hasil, tabel | Dry-run |
+| Import Batch | Daftar batch dan pencarian nama/kampus | Upload, refresh, buka detail |
+| Detail batch | Ringkasan, filter sheet/status, tabel baris dan temuan | Dry-run, laporan Excel, kembali ke daftar |
 | Mapping | Status fase 2 | Belum ada aksi hingga tersedia |
 
 - Angka harus berasal dari API. Jangan menampilkan hardcoded Draft/nol/Local Dev.
@@ -95,6 +107,14 @@ Halaman menyusun primitive dan data, tanpa mengulang styling kontrol.
 - Hasil dry-run dibersihkan saat pilihan batch berubah.
 - Pencarian kosong berbeda dari belum ada batch.
 - Feedback sukses/error dekat dengan aksi; tidak diulang di beberapa panel.
+- Dashboard memakai endpoint agregat seluruh data yang diizinkan, bukan jumlah
+  hasil pagination. Ringkasan total dan grafik komposisi memiliki tujuan berbeda;
+  jangan tambahkan daftar terbaru atau angka total yang sama di panel lain.
+- KPI dan grafik dipisahkan whitespace/divider, bukan card di dalam card.
+- Nol berarti tidak ada data; `-` berarti rasio belum dapat dihitung. Otomatisasi
+  belum tersedia tidak boleh ditampilkan seolah sudah menghasilkan aktivitas.
+- Definisi statistik, route, bukti QA, dan ketentuan lisensi ApexCharts ada di
+  [navigation-reporting.md](navigation-reporting.md).
 
 ## Konten Publik Dan Login
 

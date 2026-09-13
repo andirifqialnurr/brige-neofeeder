@@ -23,7 +23,9 @@ export function FormDialog({
     if (!element || !open) return;
     const trigger = document.activeElement as HTMLElement | null;
     element.showModal();
-    element.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled])')?.focus();
+    element
+      .querySelector<HTMLElement>('input:not([disabled]), [role="combobox"]:not([disabled])')
+      ?.focus();
     return () => {
       element.close();
       if (trigger?.isConnected) trigger.focus();
