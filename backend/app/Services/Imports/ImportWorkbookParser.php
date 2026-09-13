@@ -20,8 +20,7 @@ final class ImportWorkbookParser
     public function __construct(
         private readonly NeoFeederContractRegistry $registry,
         private readonly ImportBatchValidationService $validationService,
-    ) {
-    }
+    ) {}
 
     public function parse(ImportBatch $batch): void
     {
@@ -30,38 +29,39 @@ final class ImportWorkbookParser
         $path = Storage::disk('uploads')->path((string) $batch->file_path);
         $workbook = IOFactory::load($path);
         try {
-        $channels = $this->requiredChannels();
-        $missingSheets = [];
-        $totalRows = 0;
+            $channels = $this->requiredChannels();
+            $missingSheets = [];
+            $totalRows = 0;
 
-        $batch->stagingRecords()->delete();
+            $batch->stagingRecords()->delete();
 
-        foreach ($channels as $channel) {
-            $sheet = $workbook->getSheetByName($channel->sheetName);
+            foreach ($channels as $channel) {
+                $sheet = $workbook->getSheetByName($channel->sheetName);
 
-            if (! $sheet instanceof Worksheet) {
-                $missingSheets[] = $channel->sheetName;
-                continue;
+                if (! $sheet instanceof Worksheet) {
+                    $missingSheets[] = $channel->sheetName;
+
+                    continue;
+                }
+
+                $totalRows += $this->parseSheet($batch, $channel, $sheet);
             }
 
-            $totalRows += $this->parseSheet($batch, $channel, $sheet);
-        }
+            $status = $missingSheets === [] ? 'ready' : 'invalid';
 
-        $status = $missingSheets === [] ? 'ready' : 'invalid';
+            $batch->forceFill([
+                'status' => $status,
+                'summary' => [
+                    ...($batch->summary ?? []),
+                    'total_rows' => $totalRows,
+                    'missing_sheets' => $missingSheets,
+                    'available_row_statuses' => self::ROW_STATUSES,
+                ],
+            ])->save();
 
-        $batch->forceFill([
-            'status' => $status,
-            'summary' => [
-                ...($batch->summary ?? []),
-                'total_rows' => $totalRows,
-                'missing_sheets' => $missingSheets,
-                'available_row_statuses' => self::ROW_STATUSES,
-            ],
-        ])->save();
-
-        if ($missingSheets === []) {
-            $this->validationService->validate($batch->refresh());
-        }
+            if ($missingSheets === []) {
+                $this->validationService->validate($batch->refresh());
+            }
         } finally {
             $workbook->disconnectWorksheets();
         }

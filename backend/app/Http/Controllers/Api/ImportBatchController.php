@@ -37,7 +37,8 @@ class ImportBatchController extends Controller
             $query->where('tenant_id', $user->tenant_id);
         }
 
-        if ($search = trim($input['search'] ?? '')) {
+        $search = trim($input['search'] ?? '');
+        if ($search !== '') {
             $query->where(function ($query) use ($search): void {
                 $query->where('id', 'like', '%'.$search.'%')
                     ->orWhere('summary->original_name', 'like', '%'.$search.'%')

@@ -813,25 +813,118 @@ tbody tr:hover {
   border-radius: 8px;
   box-shadow: 0 20px 64px hsl(0 0% 0% / 0.18);
 }
-.pagination { display: flex; align-items: center; justify-content: space-between; padding-block: 12px; gap: 12px; color: hsl(var(--muted-foreground)); font-size: 12px; }
-.pagination > div, .batch-actions > div, .batch-caption { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.pagination > div > span { min-width: 60px; text-align: center; }
-.batch-actions { flex-wrap: wrap; }
-.row-filters { flex-wrap: wrap; }
-.row-filters .inline-field { flex: 1 1 180px; min-width: 0; }
-.row-filters select { width: 100%; min-width: 0; }
-.dependency-order { margin-block: 12px; font-size: 12px; }
-.dependency-order summary { cursor: pointer; color: hsl(var(--muted-foreground)); }
-.dependency-order ol { padding: 8px 24px; columns: 2; }
-.row-detail-panel { padding-top: 16px; min-width: 0; }
-.row-data { margin: 0; font-size: 12px; }
-.row-data > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding-block: 8px; border-bottom: 1px solid hsl(var(--border)); }
-.row-data dt { color: hsl(var(--muted-foreground)); }
-.row-data dd { margin: 0; }
-.row-data dt, .row-data dd, .dialog-header h2 { overflow-wrap: anywhere; }
-.payload-code { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.6; margin: 0; }
-.payload-action { font-size: 12px; color: hsl(var(--muted-foreground)); margin-top: 0; }
-.form-dialog:has(.row-detail-panel) { width: min(760px, calc(100vw - 32px)); }
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 12px;
+  gap: 12px;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+.pagination > div,
+.batch-actions > div,
+.batch-caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pagination > div > span {
+  min-width: 60px;
+  text-align: center;
+}
+.batch-actions {
+  flex-wrap: wrap;
+}
+.row-filters {
+  flex-wrap: wrap;
+}
+.row-filters .inline-field {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.row-filters select {
+  width: 100%;
+  min-width: 0;
+}
+.dependency-order {
+  margin-block: 12px;
+  font-size: 12px;
+}
+.dependency-order summary {
+  cursor: pointer;
+  color: hsl(var(--muted-foreground));
+}
+.dependency-order ol {
+  padding: 8px 24px;
+  columns: 2;
+}
+.row-detail-panel {
+  padding-top: 16px;
+  min-width: 0;
+}
+.row-issues {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.row-issues li {
+  padding-block: 12px;
+  border-bottom: 1px solid hsl(var(--border));
+  overflow-wrap: anywhere;
+}
+.row-issues li > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.row-issues strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.row-issues p {
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+.row-data {
+  margin: 0;
+  font-size: 12px;
+}
+.row-data > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding-block: 8px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.row-data dt {
+  color: hsl(var(--muted-foreground));
+}
+.row-data dd {
+  margin: 0;
+}
+.row-data dt,
+.row-data dd,
+.dialog-header h2 {
+  overflow-wrap: anywhere;
+}
+.payload-code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+}
+.payload-action {
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+  margin-top: 0;
+}
+.form-dialog:has(.row-detail-panel) {
+  width: min(760px, calc(100vw - 32px));
+}
 
 .form-dialog::backdrop {
   background: hsl(0 0% 0% / 0.45);

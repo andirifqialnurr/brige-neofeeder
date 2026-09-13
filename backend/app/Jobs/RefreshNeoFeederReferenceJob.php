@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\NeoFeederConnection;
+use App\Models\Tenant;
 use App\Services\NeoFeeder\NeoFeederClient;
 use App\Services\NeoFeeder\NeoFeederCredentialVault;
 use App\Services\NeoFeeder\References\NeoFeederReferenceSyncService;
@@ -17,16 +18,14 @@ class RefreshNeoFeederReferenceJob implements ShouldQueue
     public function __construct(
         public readonly string $tenantId,
         public readonly string $endpoint,
-    ) {
-    }
+    ) {}
 
     public function handle(
         NeoFeederClient $client,
         NeoFeederCredentialVault $credentialVault,
         NeoFeederReferenceSyncService $referenceSyncService,
-    ): void
-    {
-        \App\Models\Tenant::findOrFail($this->tenantId)->assertLiveIntegrationAllowed();
+    ): void {
+        Tenant::findOrFail($this->tenantId)->assertLiveIntegrationAllowed();
         $connection = NeoFeederConnection::query()
             ->where('tenant_id', $this->tenantId)
             ->where('status', '!=', 'inactive')

@@ -83,3 +83,18 @@ laporan, dan tidak adanya request HTTP/job outbound.
 akses lintas tenant/batch, audit akses, report formula-safe, dan guard parsing.
 Suite menggunakan SQLite; penerimaan MySQL/VPS dan Neo Feeder aktual tetap
 harus diuji terpisah.
+
+### Hasil Lokal 13 September 2026
+
+- Backend: 57 test / 200 assertion lulus, termasuk upload workbook melalui
+  endpoint dengan queue sync pada test, parser, validator, preview, dan report.
+- Browser menggunakan Laravel asli dengan database SQLite sementara, terpisah
+  dari `.env` dan database kerja. Login dua operator demo berhasil; kampus kosong
+  tidak menampilkan batch kampus pertama.
+- Desktop dan viewport mobile 390x844: filter sheet/status, data/payload/temuan,
+  light/dark, kembali ke daftar, pencarian server, dan dry-run diperiksa.
+  Pesan temuan mobile dibungkus sebagai daftar, bukan tabel horizontal.
+- Download melalui UI menghasilkan XLSX 22 baris (header + 21 temuan), tanpa
+  sel formula; nilai awal nol tetap utuh dalam preview payload.
+- Build TypeScript/Vite dan ESLint lulus. Pengujian tidak menghubungi Neo Feeder,
+  tidak menjalankan worker Redis persisten, dan tidak melakukan deploy VPS.

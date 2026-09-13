@@ -10,8 +10,7 @@ final class ImportBatchSyncPlanner
 {
     public function __construct(
         private readonly NeoFeederRecordSyncService $recordSyncService,
-    ) {
-    }
+    ) {}
 
     /**
      * @return Collection<int, SyncAttempt>

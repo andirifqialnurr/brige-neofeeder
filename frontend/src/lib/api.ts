@@ -450,7 +450,9 @@ export async function updateNeoFeederConnection(
   return payload.data;
 }
 
-export async function testNeoFeederConnection(connectionId: string): Promise<NeoFeederConnectionTestResult> {
+export async function testNeoFeederConnection(
+  connectionId: string,
+): Promise<NeoFeederConnectionTestResult> {
   const headers = getAuthHeaders();
 
   if (!headers) {
@@ -462,7 +464,10 @@ export async function testNeoFeederConnection(connectionId: string): Promise<Neo
     headers,
   });
 
-  const payload = (await response.json()) as { data?: NeoFeederConnectionTestResult; message?: string };
+  const payload = (await response.json()) as {
+    data?: NeoFeederConnectionTestResult;
+    message?: string;
+  };
 
   if (!payload.data) {
     throw new Error(payload.message ?? `Request gagal: ${response.status}`);
@@ -500,7 +505,9 @@ export async function downloadNeoFeederTemplate(): Promise<void> {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = getFilenameFromDisposition(response.headers.get('Content-Disposition')) ?? 'bridge-neofeeder-template.xlsx';
+  link.download =
+    getFilenameFromDisposition(response.headers.get('Content-Disposition')) ??
+    'bridge-neofeeder-template.xlsx';
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -528,7 +535,10 @@ export async function getReferenceStatus(tenantId?: string): Promise<ReferenceSt
   return payload.data;
 }
 
-export async function syncReferences(input: { tenantId: string; endpoint?: string }): Promise<ReferenceSyncResult> {
+export async function syncReferences(input: {
+  tenantId: string;
+  endpoint?: string;
+}): Promise<ReferenceSyncResult> {
   const headers = getJsonHeaders();
 
   if (!headers) {
@@ -574,7 +584,10 @@ export async function getImportBatches(tenantId?: string): Promise<ImportBatch[]
   return payload.data;
 }
 
-export async function uploadImportBatch(input: { tenantId: string; file: File }): Promise<ImportBatch> {
+export async function uploadImportBatch(input: {
+  tenantId: string;
+  file: File;
+}): Promise<ImportBatch> {
   const headers = getAuthHeaders();
 
   if (!headers) {
@@ -628,11 +641,17 @@ export type BatchDetail = Omit<ImportBatch, 'file_path'> & {
   dependency_order: string[];
 };
 export type BatchRow = {
-  id: string; channel: string; sheet_name: string; row_number: number;
-  status: string; errors: number; warnings: number;
+  id: string;
+  channel: string;
+  sheet_name: string;
+  row_number: number;
+  status: string;
+  errors: number;
+  warnings: number;
 };
 export type RowDetail = DryRunPayloadPreview & {
-  raw_row: Record<string, unknown>; normalized_row: Record<string, unknown>;
+  raw_row: Record<string, unknown>;
+  normalized_row: Record<string, unknown>;
 };
 
 async function batchRequest<T>(path: string, signal?: AbortSignal): Promise<T> {
@@ -644,13 +663,25 @@ async function batchRequest<T>(path: string, signal?: AbortSignal): Promise<T> {
 }
 
 export function getBatchPage(page: number, search: string, signal?: AbortSignal) {
-  return batchRequest<PageResult<ImportBatch>>(`?${new URLSearchParams({ page: String(page), per_page: '20', search })}`, signal);
+  return batchRequest<PageResult<ImportBatch>>(
+    `?${new URLSearchParams({ page: String(page), per_page: '20', search })}`,
+    signal,
+  );
 }
 export async function getBatchDetail(id: string, signal?: AbortSignal) {
   return (await batchRequest<{ data: BatchDetail }>(`/${id}`, signal)).data;
 }
-export function getBatchRows(id: string, page: number, sheet: string, status: string, signal?: AbortSignal) {
-  return batchRequest<PageResult<BatchRow>>(`/${id}/rows?${new URLSearchParams({ page: String(page), sheet, status })}`, signal);
+export function getBatchRows(
+  id: string,
+  page: number,
+  sheet: string,
+  status: string,
+  signal?: AbortSignal,
+) {
+  return batchRequest<PageResult<BatchRow>>(
+    `/${id}/rows?${new URLSearchParams({ page: String(page), sheet, status })}`,
+    signal,
+  );
 }
 export async function getBatchRow(id: string, row: string, signal?: AbortSignal) {
   return (await batchRequest<{ data: RowDetail }>(`/${id}/rows/${row}`, signal)).data;

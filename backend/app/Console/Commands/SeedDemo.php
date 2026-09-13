@@ -15,11 +15,13 @@ class SeedDemo extends Command
     {
         if (app()->isProduction() && ! $this->option('allow-production')) {
             $this->error('Use a local database, or explicitly pass --allow-production.');
+
             return self::FAILURE;
         }
         $password = $this->secret('Password akun demo baru (minimal 12 karakter; akun lama tidak diubah)');
         if (! is_string($password) || strlen($password) < 12) {
             $this->error('Password minimal 12 karakter.');
+
             return self::FAILURE;
         }
         config(['demo.password' => $password, 'demo.allow_production' => (bool) $this->option('allow-production')]);
@@ -27,6 +29,7 @@ class SeedDemo extends Command
             app(DemoDataSeeder::class)->run();
             $this->info('Demo tersedia: demo-operator@example.test dan demo-empty@example.test.');
             $this->info('Workbook: disk uploads / demo-v1/. Lihat cookbook/demo-data.md.');
+
             return self::SUCCESS;
         } finally {
             config(['demo.password' => null, 'demo.allow_production' => false]);

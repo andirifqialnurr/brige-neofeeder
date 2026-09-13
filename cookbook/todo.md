@@ -185,7 +185,7 @@
 - [x] Blok pengiriman Neo Feeder untuk tenant demo; tidak membuat job outbound saat seed.
 - [x] Dokumentasikan akun demo, matriks cakupan menu, dan cara menjalankan seed (`demo-data.md`).
 - [x] Verifikasi otomatis alur workbook, detail, payload, laporan, dan akses lintas tenant.
-- [ ] Verifikasi UI desktop/mobile dengan backend lokal; pisahkan hasil dari trial Neo Feeder.
+- [x] Verifikasi UI desktop/mobile dengan backend lokal; pisahkan hasil dari trial Neo Feeder (`demo-data.md`).
 
 ## 1.8 Trial VPS
 

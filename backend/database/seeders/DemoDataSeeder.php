@@ -74,6 +74,7 @@ class DemoDataSeeder extends Seeder
             foreach ($channel['fields'] as $field) {
                 if (! ($field['required'] ?? false)) {
                     $row[$field['name']] = null;
+
                     continue;
                 }
                 $value = match ($field['type']) {
@@ -107,6 +108,7 @@ class DemoDataSeeder extends Seeder
             $rows[$key] = [$row];
         }
         $rows['mahasiswa_biodata'][] = [...$rows['mahasiswa_biodata'][0], 'id_mahasiswa' => '00000000-0000-4000-8000-000000000002', 'nik' => '0000000000000002', 'nama_mahasiswa' => 'Mahasiswa Demo Update'];
+
         return $rows;
     }
 

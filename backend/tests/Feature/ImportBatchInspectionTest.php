@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\AuthenticateApiToken;
 use App\Models\AuditLog;
 use App\Models\ImportBatch;
 use App\Models\StagingRecord;
@@ -21,7 +22,7 @@ class ImportBatchInspectionTest extends TestCase
         $tenant = Tenant::create(['name' => 'Demo', 'code' => 'DEMO', 'status' => 'active']);
         $user = User::create(['tenant_id' => $tenant->id, 'name' => 'Operator', 'email' => 'demo@example.test', 'password' => 'test-password', 'role' => 'operator', 'status' => 'active']);
         // Authentication is exercised separately; these tests isolate controller authorization.
-        $this->withoutMiddleware(\App\Http\Middleware\AuthenticateApiToken::class)->actingAs($user);
+        $this->withoutMiddleware(AuthenticateApiToken::class)->actingAs($user);
         $batch = ImportBatch::create(['tenant_id' => $tenant->id, 'source_type' => 'excel', 'status' => 'invalid', 'summary' => ['original_name' => 'demo.xlsx', 'missing_sheets' => ['kelas_kuliah']]]);
         $row = StagingRecord::create([
             'tenant_id' => $tenant->id, 'import_batch_id' => $batch->id,

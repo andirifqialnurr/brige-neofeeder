@@ -531,6 +531,10 @@ function App() {
   const handleLogout = async () => {
     await logout();
     setAuthUser(null);
+    setImportBatches([]);
+    setDryRunBatchId('');
+    setDialog(null);
+    setActivePage('dashboard');
     setReferenceStatus(null);
     setReferenceStatusState('idle');
     setAppScreen('landing');
@@ -725,7 +729,6 @@ function App() {
       );
     }
   };
-
 
   const renderBatchTable = (dashboard = false) => (
     <DataTable
@@ -1084,20 +1087,33 @@ function App() {
   );
 
   const renderImportBatch = () => (
-    <BatchList revision={importBatches} onUpload={() => setDialog('upload')}
-      onSelect={(id) => { selectBatch(id); navigate('validation'); }} />
+    <BatchList
+      revision={importBatches}
+      onUpload={() => setDialog('upload')}
+      onSelect={(id) => {
+        selectBatch(id);
+        navigate('validation');
+      }}
+    />
   );
 
-  const renderValidation = () => dryRunBatchId ? (
-    <BatchInspection key={dryRunBatchId} id={dryRunBatchId}
-      onBack={() => navigate('import-batch')} onUpdated={loadImportBatches} />
-  ) : (
-    <>
-      <PageHeader title="Validasi" />
-      <EmptyState icon={ShieldCheck} title="Belum ada batch" />
-      <AppButton icon={ArrowRight} onClick={() => navigate('import-batch')}>Daftar batch</AppButton>
-    </>
-  );
+  const renderValidation = () =>
+    dryRunBatchId ? (
+      <BatchInspection
+        key={dryRunBatchId}
+        id={dryRunBatchId}
+        onBack={() => navigate('import-batch')}
+        onUpdated={loadImportBatches}
+      />
+    ) : (
+      <>
+        <PageHeader title="Validasi" />
+        <EmptyState icon={ShieldCheck} title="Belum ada batch" />
+        <AppButton icon={ArrowRight} onClick={() => navigate('import-batch')}>
+          Daftar batch
+        </AppButton>
+      </>
+    );
 
   const renderMapping = () => (
     <>

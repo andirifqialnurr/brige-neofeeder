@@ -2,16 +2,20 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\RefreshNeoFeederReferenceJob;
 use App\Models\ImportBatch;
 use App\Models\NeoFeederConnection;
 use App\Models\StagingRecord;
+use App\Models\SyncAttempt;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\Sync\NeoFeederRecordSyncService;
 use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class DemoDataSeederTest extends TestCase
@@ -54,6 +58,20 @@ class DemoDataSeederTest extends TestCase
         $this->withToken($token)->postJson('/api/references/sync', ['tenant_id' => $user->tenant_id])->assertConflict();
         $connection = NeoFeederConnection::firstOrFail();
         $this->withToken($token)->postJson("/api/neofeeder-connections/{$connection->id}/test")->assertConflict();
+        $attempt = SyncAttempt::create(['tenant_id' => $user->tenant_id, 'staging_record_id' => $row->id, 'action' => 'UpdateBiodataMahasiswa', 'status' => 'failed']);
+        $this->withToken($token)->postJson("/api/sync-attempts/{$attempt->id}/retry")->assertConflict();
+        $connection->update(['status' => 'active']);
+        foreach ([
+            fn () => app(NeoFeederRecordSyncService::class)->sync($attempt),
+            fn () => app()->call([new RefreshNeoFeederReferenceJob($user->tenant_id, 'GetProdi'), 'handle']),
+        ] as $outbound) {
+            try {
+                $outbound();
+                $this->fail('Demo worker must refuse outbound integration.');
+            } catch (HttpException $exception) {
+                $this->assertSame(409, $exception->getStatusCode());
+            }
+        }
         $this->withToken($token)->get("/api/import-batches/{$mixed->id}/report")->assertOk();
         Queue::assertNothingPushed();
         Http::assertNothingSent();

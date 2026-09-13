@@ -21,8 +21,7 @@ final class NeoFeederRecordSyncService
         private readonly NeoFeederPayloadBuilder $payloadBuilder,
         private readonly NeoFeederClient $client,
         private readonly NeoFeederCredentialVault $credentialVault,
-    ) {
-    }
+    ) {}
 
     public function sync(SyncAttempt $attempt): bool
     {

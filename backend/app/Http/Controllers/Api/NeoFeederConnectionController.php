@@ -18,8 +18,7 @@ class NeoFeederConnectionController extends Controller
     public function __construct(
         private readonly NeoFeederCredentialVault $credentialVault,
         private readonly NeoFeederClient $neoFeederClient,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {

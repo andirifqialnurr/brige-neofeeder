@@ -14,8 +14,7 @@ final class ImportBatchDryRunService
     public function __construct(
         private readonly NeoFeederContractRegistry $registry,
         private readonly NeoFeederPayloadBuilder $payloadBuilder,
-    ) {
-    }
+    ) {}
 
     public function preview(ImportBatch $batch): array
     {
