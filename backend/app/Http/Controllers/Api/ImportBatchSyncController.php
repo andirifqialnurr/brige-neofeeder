@@ -55,6 +55,7 @@ class ImportBatchSyncController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
+        $syncAttempt->stagingRecord->importBatch->tenant->assertLiveIntegrationAllowed();
         $retry = SyncAttempt::query()->create([
             'tenant_id' => $syncAttempt->tenant_id,
             'staging_record_id' => $syncAttempt->staging_record_id,

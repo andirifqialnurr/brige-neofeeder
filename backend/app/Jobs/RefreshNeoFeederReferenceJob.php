@@ -26,6 +26,7 @@ class RefreshNeoFeederReferenceJob implements ShouldQueue
         NeoFeederReferenceSyncService $referenceSyncService,
     ): void
     {
+        \App\Models\Tenant::findOrFail($this->tenantId)->assertLiveIntegrationAllowed();
         $connection = NeoFeederConnection::query()
             ->where('tenant_id', $this->tenantId)
             ->where('status', '!=', 'inactive')

@@ -18,6 +18,7 @@ final class ImportBatchSyncPlanner
      */
     public function plan(ImportBatch $batch): Collection
     {
+        $batch->tenant->assertLiveIntegrationAllowed();
         $attempts = collect();
         $records = $batch->stagingRecords()
             ->where('status', 'valid')

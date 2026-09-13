@@ -29,6 +29,7 @@ final class ImportWorkbookParser
 
         $path = Storage::disk('uploads')->path((string) $batch->file_path);
         $workbook = IOFactory::load($path);
+        try {
         $channels = $this->requiredChannels();
         $missingSheets = [];
         $totalRows = 0;
@@ -60,6 +61,9 @@ final class ImportWorkbookParser
 
         if ($missingSheets === []) {
             $this->validationService->validate($batch->refresh());
+        }
+        } finally {
+            $workbook->disconnectWorksheets();
         }
     }
 

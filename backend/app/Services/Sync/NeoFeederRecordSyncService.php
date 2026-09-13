@@ -33,6 +33,7 @@ final class NeoFeederRecordSyncService
         }
 
         $connection = $this->connection($record);
+        $connection->tenant->assertLiveIntegrationAllowed();
         $operation = $this->operationFor($record);
 
         if (! $operation instanceof OperationContract) {

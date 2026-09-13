@@ -115,6 +115,7 @@ class NeoFeederConnectionController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
+        $neofeederConnection->tenant->assertLiveIntegrationAllowed();
         if ($neofeederConnection->username === null || $neofeederConnection->encrypted_password === null) {
             return response()->json([
                 'message' => 'Username dan password Neo Feeder wajib diisi sebelum test koneksi.',

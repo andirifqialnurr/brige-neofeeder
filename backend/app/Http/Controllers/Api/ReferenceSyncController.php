@@ -37,6 +37,7 @@ class ReferenceSyncController extends Controller
             return response()->json(['message' => 'Tenant not found.'], 404);
         }
 
+        Tenant::findOrFail($tenantId)->assertLiveIntegrationAllowed();
         $selectedEndpoints = isset($payload['endpoint']) ? [$payload['endpoint']] : $endpoints;
 
         foreach ($selectedEndpoints as $endpoint) {

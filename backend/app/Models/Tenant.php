@@ -25,4 +25,9 @@ class Tenant extends Model
     {
         return $this->hasMany(NeoFeederConnection::class);
     }
+
+    public function assertLiveIntegrationAllowed(): void
+    {
+        abort_if(($this->metadata['demo'] ?? false) === true, 409, 'Tenant demo hanya untuk pengujian lokal. Integrasi Neo Feeder dinonaktifkan.');
+    }
 }
