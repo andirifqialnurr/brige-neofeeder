@@ -44,6 +44,15 @@
 - [x] Selaraskan landing/login, ringkas konten, dan ganti preview dekoratif dengan media produk.
 - [x] Verifikasi browser desktop/mobile light/dark, build, dan lint (lihat `ui-review-2026-09.md`; API contoh lokal).
 
+## Navigation And Reporting Refinement
+
+- [ ] Custom select bersama: ikon, popup, keyboard, light/dark, dan dialog.
+- [ ] URL per halaman, file page terpisah, refresh deep-link, serta back/forward.
+- [ ] Detail/validasi menjadi `/import-batch/:id`; hapus Validasi dari sidebar.
+- [x] Endpoint statistik agregat tenant-scoped, bukan perhitungan dari 50 batch pertama.
+- [ ] Dashboard angka dan ApexCharts tanpa daftar data; tandai otomatisasi belum tersedia.
+- [ ] Verifikasi route, statistik, dropdown form/filter, responsivitas, build/lint; dokumentasi lisensi ApexCharts.
+
 ## Phase 1 - Export/Import Excel
 
 ## 1.1 Contract Layer
