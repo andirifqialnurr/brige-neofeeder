@@ -152,11 +152,11 @@
 ## 1.6 Dry-Run
 
 - [x] Tampilkan ringkasan valid/invalid/warning.
-- [x] Tampilkan dependency order.
-- [x] Tampilkan payload preview per row.
+- [ ] Tampilkan dependency order di UI (sudah tersedia di API).
+- [ ] Tampilkan payload lengkap per row di UI (sudah tersedia di API).
 - [x] Tampilkan calon insert/update/skip.
 - [x] Tampilkan missing references.
-- [x] Butuh approval operator sebelum sync.
+- [ ] Enforce approval operator sebelum sync (flag dry-run belum merupakan approval).
 - [x] Sambungkan UI pilih batch dan jalankan dry-run.
 
 ## 1.7 Sync To Neo Feeder
@@ -171,8 +171,21 @@
 - [x] Simpan ID hasil Neo Feeder.
 - [x] Implement retry untuk network/timeout/token.
 - [x] Jangan retry otomatis untuk business error.
-- [x] Buat UI retry manual.
-- [x] Buat UI batch progress.
+- [ ] Buat UI retry manual (endpoint sudah tersedia).
+- [ ] Buat UI batch progress (endpoint sudah tersedia).
+
+## 1.9 Pemeriksaan Batch Dan Demo Tanpa Neo Feeder
+
+- [ ] API detail batch, filter sheet/status, dan pagination baris dengan isolasi tenant.
+- [ ] UI detail batch dan dialog data/payload/temuan tanpa mengirim data.
+- [ ] Download laporan temuan Excel; nilai sel aman dari formula injection.
+- [ ] Pagination dan pencarian batch di server, bukan hanya 50 batch pertama.
+- [ ] Seed demo opt-in dan idempotent, terpisah dari bootstrap produksi.
+- [ ] Data fiktif kecil untuk semua kanal; valid, invalid, warning, duplicate, update, dan empty state.
+- [ ] Blok pengiriman Neo Feeder untuk tenant demo; tidak membuat job outbound saat seed.
+- [ ] Dokumentasikan akun demo, matriks cakupan menu, dan cara menjalankan seed.
+- [ ] Verifikasi otomatis alur workbook, detail, payload, laporan, dan akses lintas tenant.
+- [ ] Verifikasi UI desktop/mobile dengan backend lokal; pisahkan hasil dari trial Neo Feeder.
 
 ## 1.8 Trial VPS
 
