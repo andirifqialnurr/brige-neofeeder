@@ -188,11 +188,11 @@
 - [x] Simpan ID hasil Neo Feeder.
 - [x] Retry terbatas untuk gangguan autentikasi sebelum POST; timeout sesudah POST diblokir untuk pemeriksaan.
 - [x] Jangan retry otomatis untuk business error.
-- [ ] Buat UI retry manual (endpoint sudah tersedia).
-- [ ] Buat UI batch progress (endpoint sudah tersedia).
+- [x] Buat UI retry manual dengan konfirmasi, guard attempt terakhir, dan blok hasil ambigu/demo.
+- [x] Buat UI batch progress dengan polling selama aktif, filter status, pagination, dan detail attempt.
 - [x] Kunci start/retry/worker dan simpan idempotency key untuk mencegah pengiriman ganda.
 - [x] Bedakan retry aman sebelum POST dari hasil pengiriman ambigu yang perlu pemeriksaan.
-- [ ] UI persetujuan eksplisit, progress, dan retry berada di detail Import Batch.
+- [x] UI persetujuan eksplisit, progress, dan retry berada di detail Import Batch.
 
 ## 1.9 Pemeriksaan Batch Dan Demo Tanpa Neo Feeder
 
@@ -206,6 +206,7 @@
 - [x] Dokumentasikan akun demo, matriks cakupan menu, dan cara menjalankan seed (`demo-data.md`).
 - [x] Verifikasi otomatis alur workbook, detail, payload, laporan, dan akses lintas tenant.
 - [x] Verifikasi UI desktop/mobile dengan backend lokal; pisahkan hasil dari trial Neo Feeder (`demo-data.md`).
+- [x] Tambahkan riwayat pengiriman demo kecil: berhasil, ditolak, dan hasil ambigu; tanpa request/job outbound.
 
 ## 1.8 Trial VPS
 

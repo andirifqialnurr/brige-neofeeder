@@ -48,7 +48,7 @@ Workbook demo hanya boleh diupload ke tenant demo.
 | Menu / kondisi | Contoh |
 | --- | --- |
 | Landing dan login | Login operator demo, logout, login kembali |
-| Dashboard / Import Batch | Tiga batch dengan status validated, invalid, failed |
+| Dashboard / Import Batch | Empat batch dengan status validated, invalid, failed |
 | Kampus | Dua kampus terpisah; DEMO02 kosong untuk uji isolasi dan empty state |
 | Neo Feeder / koneksi | Satu koneksi inactive tanpa credential; kampus kedua tanpa koneksi |
 | Neo Feeder / referensi | Lookup sintetis yang dipakai validator; endpoint lain tetap kosong |
@@ -56,6 +56,8 @@ Workbook demo hanya boleh diupload ke tenant demo.
 | Detail / dry-run | 12 baris pada `demo-valid.xlsx`, termasuk biodata insert/update dan nilai kelas |
 | Temuan / laporan Excel | 16 baris pada `demo-perbaikan.xlsx`: required, duplicate, date_format, enum, reference_exists, ambiguous_reference, dependency_check |
 | Parsing gagal | `demo-file-rusak.xlsx` adalah metadata simulasi kegagalan, bukan file upload nyata |
+| Pengiriman | `demo-pengiriman.xlsx`: 3 record dan 3 attempt sintetis, masing-masing berhasil, gagal, dan perlu pemeriksaan |
+| Persetujuan | Dry-run `demo-valid.xlsx`, buka tab Pengiriman, centang konfirmasi, lalu Setujui; Kirim tetap diblok untuk demo |
 | Mapping | Tetap placeholder fase 2; tidak membuat mapping atau jadwal fiktif |
 
 Workbook terisi dibangun dari contract, lalu dibaca parser dan validator yang
@@ -71,8 +73,11 @@ Laporan temuan bukan template reimport dan tidak memuat nilai data mentah.
 
 State loading, network error, pagination besar, akses ditolak, dan proses sync
 aktif diuji melalui test/fixture terkontrol, bukan seed yang sengaja dibiarkan
-seolah-olah ada worker aktif. Menu progress/retry dan otomatisasi belum selesai;
-seed ini tidak menyatakan fitur tersebut sudah tersedia.
+seolah-olah ada worker aktif. Progress dan retry tersedia dalam tab Pengiriman
+di detail Import Batch; retry demo tetap dinonaktifkan. Otomatisasi masih fase 2.
+Riwayat pengiriman merupakan metadata simulasi, bukan workbook upload maupun
+bukti penerimaan Neo Feeder. Menjalankan seed kembali menambahkan riwayat ini
+untuk demo lama tanpa mengubah tiga batch awal atau password akun.
 
 ## Verifikasi
 

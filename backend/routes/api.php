@@ -43,5 +43,6 @@ Route::middleware('api.token')->group(function (): void {
     Route::post('import-batches/{importBatch}/approve', ImportBatchApprovalController::class);
     Route::post('import-batches/{importBatch}/sync', [ImportBatchSyncController::class, 'start']);
     Route::get('import-batches/{importBatch}/sync-progress', [ImportBatchSyncController::class, 'progress']);
+    Route::get('import-batches/{importBatch}/sync-attempts', [ImportBatchSyncController::class, 'attempts']);
     Route::post('sync-attempts/{syncAttempt}/retry', [ImportBatchSyncController::class, 'retry']);
 });

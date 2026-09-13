@@ -74,3 +74,42 @@ dan hentikan worker versi lama saat upgrade. Pengujian lokal memakai SQLite dan
 HTTP/queue fakes; uji konkurensi proses MySQL/Redis dan trial remote masih perlu
 dilakukan di lingkungan terisolasi. Fingerprint seluruh batch diperiksa ulang
 untuk keamanan; performa batch besar belum diuji.
+
+## UI Detail Batch
+
+`/import-batch/:id` memiliki tab Validasi dan Pengiriman, bukan menu sidebar
+terpisah. Breadcrumb dan aksi tetap berada dalam shared PageHeader. Tab Validasi
+menampilkan data/payload/temuan; tab Pengiriman menampilkan approval, angka
+record, riwayat attempt berhalaman, filter status, dan detail hasil.
+
+Alur operator: tinjau baris/payload/temuan, jalankan dry-run, lalu Setujui pada
+tab Pengiriman. Dialog mewajibkan checkbox; hash dry-run diikat saat konfirmasi
+dibuka agar persetujuan lama tidak diam-diam menerima data baru. Kirim dan retry
+memerlukan konfirmasi terpisah. Tombol loading dan penguncian langsung mencegah
+klik berulang. API tetap otoritatif terhadap izin, hash, dan keamanan retry.
+
+`GET /api/import-batches/:id/sync-attempts` dibatasi tenant/admin, 25 attempt per
+halaman, dan tidak mengembalikan raw request/response. Progress dan riwayat memakai
+Cache-Control no-store. Progress menghitung record berdasarkan attempt terakhir;
+bar menunjukkan selesai diproses, bukan persentase keberhasilan. Filter riwayat
+tidak mengubah angka keseluruhan batch.
+
+Polling tiap 5 detik hanya berjalan ketika tab Pengiriman aktif dan masih ada
+record aktif; request dihentikan saat keluar halaman. Tab browser tersembunyi
+melewati polling. Kegagalan memuat dapat dicoba lewat tombol muat ulang. Antrekan
+ulang memakai intent queued yang sudah ada, bukan menciptakan pengiriman baru.
+Status unknown diberi label Perlu pemeriksaan dan tidak punya retry otomatis
+maupun manual. Tenant demo tidak dapat mengirim, sekalipun sudah disetujui.
+
+### Verifikasi Lokal 13 September 2026
+
+- Backend: 72 test / 357 assertion lulus (SQLite, HTTP/queue fakes).
+- Frontend: 11 test lulus; build TypeScript/Vite, ESLint, Prettier, dan Pint lulus.
+- Browser dengan Laravel asli dan SQLite sementara: filter status, detail hasil
+  ambigu, retry demo terkunci, dry-run dan persetujuan melalui checkbox berhasil.
+- Screenshot desktop 1280/1920, mobile 390, serta pemeriksaan lebar 320: light/dark,
+  dialog, breadcrumb dan kontrol tidak meluapkan lebar halaman; tabel bergulir
+  horizontal di dalam area sendiri.
+- Tidak menghubungi Neo Feeder, tidak mengubah database kerja/VPS. Pengiriman
+  aktif dan retry sukses diuji dengan HTTP fakes, belum dengan browser ke layanan
+  aktual; uji multi-worker MySQL/Redis dan penerimaan endpoint masih tertunda.

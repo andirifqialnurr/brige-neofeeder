@@ -684,6 +684,13 @@ export async function runImportBatchDryRun(importBatchId: string): Promise<DryRu
 export type PageMeta = { current_page: number; last_page: number; per_page: number; total: number };
 export type PageResult<T> = { data: T[]; meta: PageMeta };
 export type BatchDetail = Omit<ImportBatch, 'file_path'> & {
+  approval: {
+    dry_run_hash: string | null;
+    approved: boolean;
+    approved_at: string | null;
+    approved_by_name: string | null;
+  };
+  is_demo: boolean;
   sheets: { sheet_name: string; total_rows: number }[];
   dependency_order: string[];
 };
@@ -746,4 +753,65 @@ export async function downloadBatchReport(id: string) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+export type SyncProgress = {
+  import_batch_id: string;
+  status: ImportBatchStatus;
+  started_at: string | null;
+  total_attempts: number;
+  queued: number;
+  syncing: number;
+  retrying: number;
+  success: number;
+  failed: number;
+  unknown: number;
+  has_credentials: boolean;
+  is_demo: boolean;
+  records: { total: number; success: number; failed: number; unknown: number; active: number };
+};
+export type SyncAttemptView = {
+  id: string;
+  staging_record_id: string;
+  sheet_name: string;
+  row_number: number;
+  action: string;
+  status: string;
+  error_code: string | null;
+  error_desc: string | null;
+  identity_payload: Record<string, unknown> | null;
+  created_at: string;
+  attempted_at: string | null;
+  completed_at: string | null;
+  retry_of: string | null;
+  can_retry: boolean;
+};
+export async function getSyncProgress(id: string, signal?: AbortSignal) {
+  return (await batchRequest<{ data: SyncProgress }>(`/${id}/sync-progress`, signal)).data;
+}
+export function getSyncAttempts(id: string, page: number, status: string, signal?: AbortSignal) {
+  return batchRequest<PageResult<SyncAttemptView>>(
+    `/${id}/sync-attempts?${new URLSearchParams({ page: String(page), status })}`,
+    signal,
+  );
+}
+async function syncCommand(path: string, body: Record<string, unknown> = {}) {
+  const headers = getAuthHeaders();
+  if (!headers) throw new Error('Sesi login belum tersedia.');
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(await parseApiError(response));
+  return response.json();
+}
+export function approveBatch(id: string, hash: string) {
+  return syncCommand(`/import-batches/${id}/approve`, { confirmed: true, dry_run_hash: hash });
+}
+export function startBatchSync(id: string) {
+  return syncCommand(`/import-batches/${id}/sync`);
+}
+export function retrySyncAttempt(id: string) {
+  return syncCommand(`/sync-attempts/${id}/retry`);
 }

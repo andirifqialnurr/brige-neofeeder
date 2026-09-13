@@ -38,7 +38,8 @@ class DemoDataSeederTest extends TestCase
         $this->assertSame($count, StagingRecord::count());
         $this->assertDatabaseCount('tenants', 2);
         $this->assertDatabaseCount('users', 2);
-        $this->assertDatabaseCount('import_batches', 3);
+        $this->assertDatabaseCount('import_batches', 4);
+        $this->assertDatabaseCount('sync_attempts', 3);
         $this->assertSame(11, StagingRecord::distinct()->count('channel'));
         $valid = ImportBatch::where('summary->original_name', 'demo-valid.xlsx')->firstOrFail();
         $this->assertSame('validated', $valid->status, json_encode($valid->stagingRecords->pluck('validation_result')->all()));
@@ -51,6 +52,12 @@ class DemoDataSeederTest extends TestCase
         }
         $token = $this->postJson('/api/auth/login', ['email' => $user->email, 'password' => 'Local-demo-test-123'])->assertOk()->json('access_token');
         $this->withToken($token)->getJson('/api/auth/me')->assertOk();
+        $history = ImportBatch::where('summary->demo_delivery_v1', true)->firstOrFail();
+        $this->withToken($token)->getJson("/api/import-batches/{$history->id}/sync-progress")->assertOk()
+            ->assertJsonPath('data.records', ['total' => 3, 'success' => 1, 'failed' => 1, 'unknown' => 1, 'active' => 0]);
+        $attempts = $this->withToken($token)->getJson("/api/import-batches/{$history->id}/sync-attempts")->assertOk()->json('data');
+        $this->assertCount(3, $attempts);
+        $this->assertSame([false], array_values(array_unique(array_column($attempts, 'can_retry'))));
         $this->withToken($token)->postJson("/api/import-batches/{$valid->id}/dry-run")->assertOk()->assertJsonPath('data.summary.invalid_rows', 0);
         $row = $valid->stagingRecords()->where('normalized_row->nama_mahasiswa', 'Mahasiswa Demo Update')->firstOrFail();
         $this->withToken($token)->getJson("/api/import-batches/{$valid->id}/rows/{$row->id}")->assertOk()->assertJsonPath('data.candidate_operation', 'update');

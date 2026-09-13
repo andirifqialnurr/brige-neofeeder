@@ -5,9 +5,11 @@ namespace Database\Seeders;
 use App\Models\ImportBatch;
 use App\Models\NeoFeederConnection;
 use App\Models\ReferenceRecord;
+use App\Models\SyncAttempt;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Imports\ImportWorkbookParser;
+use App\Services\Sync\ImportBatchApprovalService;
 use App\Services\Templates\NeoFeederTemplateWorkbookService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +44,10 @@ class DemoDataSeeder extends Seeder
                     User::create(['tenant_id' => $tenant->id, 'name' => $code === 'DEMO01' ? 'Operator Demo' : 'Operator Demo Kosong', 'email' => $email, 'password' => $password, 'role' => 'operator', 'status' => 'active']);
                 }
                 if ($code === 'DEMO02' || ($tenant->metadata['seed_complete'] ?? false)) {
+                    if ($code === 'DEMO01') {
+                        $this->syncHistory($tenant);
+                    }
+
                     continue;
                 }
                 NeoFeederConnection::create(['tenant_id' => $tenant->id, 'base_url' => 'https://neofeeder.example.invalid/ws/live2.php', 'status' => 'inactive', 'metadata' => ['demo' => true]]);
@@ -59,8 +65,44 @@ class DemoDataSeeder extends Seeder
                 $this->workbook($tenant, 'demo-perbaikan.xlsx', $mixed);
                 ImportBatch::create(['tenant_id' => $tenant->id, 'source_type' => 'excel', 'status' => 'failed', 'summary' => ['demo' => true, 'original_name' => 'demo-file-rusak.xlsx', 'error' => 'Contoh simulasi: workbook tidak dapat dibaca.', 'total_rows' => 0]]);
                 $tenant->update(['metadata' => [...$tenant->metadata, 'seed_complete' => true]]);
+                $this->syncHistory($tenant);
             }
         });
+    }
+
+    private function syncHistory(Tenant $tenant): void
+    {
+        if (ImportBatch::where('tenant_id', $tenant->id)->where('summary->demo_delivery_v1', true)->exists()) {
+            return;
+        }
+        $source = ImportBatch::where('tenant_id', $tenant->id)->where('summary->original_name', 'demo-valid.xlsx')->firstOrFail();
+        $prototype = $source->stagingRecords()->where('channel', 'mahasiswa_biodata')->orderBy('row_number')->firstOrFail();
+        $batch = ImportBatch::create([
+            'tenant_id' => $tenant->id, 'source_type' => 'excel', 'status' => 'failed',
+            'template_version' => $source->template_version,
+            'summary' => ['demo' => true, 'demo_delivery_v1' => true, 'original_name' => 'demo-pengiriman.xlsx', 'total_rows' => 3, 'valid_rows' => 3, 'invalid_rows' => 0, 'warning_rows' => 0],
+        ]);
+        $rows = collect();
+        foreach (['success', 'failed', 'unknown'] as $index => $status) {
+            $row = $prototype->replicate();
+            $data = [...$prototype->normalized_row, 'nama_mahasiswa' => 'Mahasiswa Riwayat Demo '.($index + 1), 'nik' => str_pad((string) ($index + 10), 16, '0', STR_PAD_LEFT)];
+            $row->fill(['import_batch_id' => $batch->id, 'row_number' => $index + 2, 'status' => $status === 'success' ? 'success' : 'failed', 'normalized_row' => $data, 'raw_row' => $data])->save();
+            $rows->push([$row, $status]);
+        }
+        $hash = app(ImportBatchApprovalService::class)->fingerprint($batch);
+        $batch->forceFill(['created_at' => now()->subMinutes(6), 'dry_run_hash' => $hash, 'approved_hash' => $hash, 'approved_by' => User::where('tenant_id', $tenant->id)->where('email', 'demo-operator@example.test')->value('id'), 'approved_at' => now()->subMinutes(5), 'sync_started_at' => now()->subMinutes(4)])->save();
+        foreach ($rows as [$row, $status]) {
+            SyncAttempt::create([
+                'tenant_id' => $tenant->id, 'staging_record_id' => $row->id, 'action' => 'InsertBiodataMahasiswa',
+                'status' => $status, 'approval_hash' => $hash, 'idempotency_key' => hash('sha256', $hash.':'.$row->id),
+                'request_payload' => ['act' => 'InsertBiodataMahasiswa', 'record' => $row->normalized_row],
+                'response_payload' => ['demo' => true], 'retry_safe' => $status === 'failed',
+                'error_code' => $status === 'success' ? '0' : ($status === 'unknown' ? 'delivery_unknown' : 'demo_rejected'),
+                'error_desc' => $status === 'success' ? null : ($status === 'unknown' ? 'Simulasi: respons terputus setelah POST; periksa hasil di Neo Feeder.' : 'Simulasi: record ditolak Neo Feeder.'),
+                'identity_payload' => $status === 'success' ? ['id_mahasiswa' => '00000000-0000-4000-8000-000000000010'] : null,
+                'attempted_at' => now()->subMinutes(4), 'request_started_at' => now()->subMinutes(4), 'completed_at' => now()->subMinutes(3), 'execution_count' => 1,
+            ])->forceFill(['created_at' => now()->subMinutes(4)])->save();
+        }
     }
 
     private function contractRows(Tenant $tenant): array
