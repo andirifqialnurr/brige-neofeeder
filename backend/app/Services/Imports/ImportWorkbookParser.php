@@ -24,7 +24,8 @@ final class ImportWorkbookParser
 
     public function parse(ImportBatch $batch): void
     {
-        $batch->forceFill(['status' => 'parsing'])->save();
+        abort_if($batch->stagingRecords()->whereHas('syncAttempts')->exists(), 409, 'Batch pernah dikirim dan tidak boleh diparse ulang.');
+        $batch->forceFill(['status' => 'parsing', 'dry_run_hash' => null, 'approved_hash' => null, 'approved_at' => null, 'approved_by' => null])->save();
 
         $path = Storage::disk('uploads')->path((string) $batch->file_path);
         $workbook = IOFactory::load($path);

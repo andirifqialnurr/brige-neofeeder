@@ -22,11 +22,17 @@ class ImportBatch extends Model
 
     protected $casts = [
         'summary' => 'array',
+        'approved_at' => 'datetime',
     ];
 
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function stagingRecords(): HasMany

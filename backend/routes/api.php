@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\ImportBatchApprovalController;
 use App\Http\Controllers\Api\ImportBatchController;
 use App\Http\Controllers\Api\ImportBatchDryRunController;
 use App\Http\Controllers\Api\ImportBatchInspectionController;
@@ -39,6 +40,7 @@ Route::middleware('api.token')->group(function (): void {
     Route::get('import-batches/{importBatch}/report', [ImportBatchInspectionController::class, 'report']);
     Route::post('import-batches/upload', ImportBatchUploadController::class);
     Route::post('import-batches/{importBatch}/dry-run', ImportBatchDryRunController::class);
+    Route::post('import-batches/{importBatch}/approve', ImportBatchApprovalController::class);
     Route::post('import-batches/{importBatch}/sync', [ImportBatchSyncController::class, 'start']);
     Route::get('import-batches/{importBatch}/sync-progress', [ImportBatchSyncController::class, 'progress']);
     Route::post('sync-attempts/{syncAttempt}/retry', [ImportBatchSyncController::class, 'retry']);

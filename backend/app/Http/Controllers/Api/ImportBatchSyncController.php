@@ -7,6 +7,7 @@ use App\Jobs\SyncStagingRecordJob;
 use App\Models\ImportBatch;
 use App\Models\SyncAttempt;
 use App\Models\User;
+use App\Services\Sync\ImportBatchApprovalService;
 use App\Services\Sync\ImportBatchSyncPlanner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,7 +48,7 @@ class ImportBatchSyncController extends Controller
         ]);
     }
 
-    public function retry(Request $request, SyncAttempt $syncAttempt): JsonResponse
+    public function retry(Request $request, SyncAttempt $syncAttempt, ImportBatchApprovalService $approval): JsonResponse
     {
         $syncAttempt->load('stagingRecord.importBatch');
 
@@ -56,6 +57,7 @@ class ImportBatchSyncController extends Controller
         }
 
         $syncAttempt->stagingRecord->importBatch->tenant->assertLiveIntegrationAllowed();
+        $approval->assertApproved($syncAttempt->stagingRecord->importBatch);
         $retry = SyncAttempt::query()->create([
             'tenant_id' => $syncAttempt->tenant_id,
             'staging_record_id' => $syncAttempt->staging_record_id,

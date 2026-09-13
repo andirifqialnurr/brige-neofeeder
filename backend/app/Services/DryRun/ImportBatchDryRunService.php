@@ -8,16 +8,25 @@ use App\Services\NeoFeeder\Contracts\ChannelContract;
 use App\Services\NeoFeeder\Contracts\NeoFeederContractRegistry;
 use App\Services\NeoFeeder\Contracts\OperationContract;
 use App\Services\NeoFeeder\Payloads\NeoFeederPayloadBuilder;
+use App\Services\Sync\ImportBatchApprovalService;
+use Illuminate\Support\Facades\DB;
 
 final class ImportBatchDryRunService
 {
     public function __construct(
         private readonly NeoFeederContractRegistry $registry,
         private readonly NeoFeederPayloadBuilder $payloadBuilder,
+        private readonly ImportBatchApprovalService $approval,
     ) {}
 
     public function preview(ImportBatch $batch): array
     {
+        return DB::transaction(fn () => $this->previewLocked(ImportBatch::query()->lockForUpdate()->findOrFail($batch->id)));
+    }
+
+    private function previewLocked(ImportBatch $batch): array
+    {
+        abort_if($batch->stagingRecords()->whereHas('syncAttempts')->exists(), 409, 'Batch pernah dikirim. Buat batch baru untuk perubahan data.');
         abort_unless(in_array($batch->status, ['validated', 'invalid', 'dry_run_ready'], true), 409, 'Batch belum selesai divalidasi.');
         $records = $batch->stagingRecords()->orderBy('channel')->orderBy('row_number')->get();
         $payloads = $records->map(fn (StagingRecord $record): array => $this->previewRecord($record))->values();
@@ -36,9 +45,12 @@ final class ImportBatchDryRunService
             'missing_references' => $this->missingReferences($records->all()),
             'requires_operator_approval' => true,
             'approved' => false,
+            'dry_run_hash' => $this->approval->fingerprint($batch),
         ];
 
         $batch->forceFill([
+            'dry_run_hash' => $dryRun['dry_run_hash'],
+            'approved_hash' => null, 'approved_at' => null, 'approved_by' => null,
             'status' => $summary['invalid_rows'] > 0 || ($batch->summary['missing_sheets'] ?? []) !== [] ? 'invalid' : 'dry_run_ready',
             'summary' => [
                 ...($batch->summary ?? []),

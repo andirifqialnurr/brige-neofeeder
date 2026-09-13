@@ -22,11 +22,18 @@ class ImportBatchInspectionController extends Controller
     public function show(Request $request, ImportBatch $importBatch, NeoFeederContractRegistry $registry): JsonResponse
     {
         $this->authorizeBatch($request, $importBatch);
-        $importBatch->load('tenant')->loadCount('stagingRecords');
+        $importBatch->load('tenant', 'approver')->loadCount('stagingRecords');
 
         return response()->json(['data' => [
             ...$importBatch->only(['id', 'tenant_id', 'source_type', 'template_version', 'status', 'summary', 'staging_records_count', 'created_at', 'updated_at']),
             'tenant_name' => $importBatch->tenant?->name,
+            'approval' => [
+                'dry_run_hash' => $importBatch->dry_run_hash,
+                'approved_at' => $importBatch->approved_at,
+                'approved_by_name' => $importBatch->approver?->name,
+                'approved' => (bool) ($importBatch->approved_at && $importBatch->approved_by && $importBatch->approved_hash === $importBatch->dry_run_hash),
+            ],
+            'is_demo' => ($importBatch->tenant->metadata['demo'] ?? false) === true,
             'sheets' => $importBatch->stagingRecords()->select('sheet_name')->selectRaw('COUNT(*) AS total_rows')->groupBy('sheet_name')->orderBy('sheet_name')->get(),
             'dependency_order' => $registry->dependencyOrder(),
         ]]);

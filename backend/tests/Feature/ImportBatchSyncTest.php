@@ -56,6 +56,9 @@ class ImportBatchSyncTest extends TestCase
                 ->push(['error_code' => '0', 'error_desc' => '', 'data' => ['id_mahasiswa' => 'mhs-1']]),
         ]);
 
+        $hash = $this->withToken($plainToken)->postJson("/api/import-batches/{$batch->id}/dry-run")->assertOk()->json('data.dry_run_hash');
+        $this->withToken($plainToken)->postJson("/api/import-batches/{$batch->id}/approve", ['confirmed' => true, 'dry_run_hash' => $hash])->assertOk();
+
         $this
             ->withToken($plainToken)
             ->postJson("/api/import-batches/{$batch->id}/sync")

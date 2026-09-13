@@ -10,6 +10,7 @@ final class ImportBatchSyncPlanner
 {
     public function __construct(
         private readonly NeoFeederRecordSyncService $recordSyncService,
+        private readonly ImportBatchApprovalService $approval,
     ) {}
 
     /**
@@ -18,6 +19,8 @@ final class ImportBatchSyncPlanner
     public function plan(ImportBatch $batch): Collection
     {
         $batch->tenant->assertLiveIntegrationAllowed();
+        abort_unless($batch->status === 'dry_run_ready', 409, 'Batch belum siap dikirim.');
+        $this->approval->assertApproved($batch);
         $attempts = collect();
         $records = $batch->stagingRecords()
             ->where('status', 'valid')

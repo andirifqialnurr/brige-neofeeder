@@ -9,11 +9,11 @@ final class ImportBatchValidationService
 {
     public function __construct(
         private readonly StagingRecordValidator $validator,
-    ) {
-    }
+    ) {}
 
     public function validate(ImportBatch $batch): array
     {
+        abort_if($batch->stagingRecords()->whereHas('syncAttempts')->exists(), 409, 'Batch pernah dikirim. Validasi ulang memerlukan batch baru.');
         $records = $batch->stagingRecords()->orderBy('channel')->orderBy('row_number')->get();
         $duplicates = $this->duplicateKeys($records);
         $summary = [
@@ -52,6 +52,7 @@ final class ImportBatchValidationService
         }
 
         $batch->forceFill([
+            'dry_run_hash' => null, 'approved_hash' => null, 'approved_at' => null, 'approved_by' => null,
             'status' => $summary['invalid_rows'] > 0 ? 'invalid' : 'validated',
             'summary' => [
                 ...($batch->summary ?? []),
