@@ -26,23 +26,20 @@ export function CampusPage() {
       <PageHeader
         title="Kampus"
         action={
-          <AppButton icon={Plus} onClick={() => setDialog('campus')}>
-            Tambah kampus
-          </AppButton>
+          <>
+            <IconButton
+              label="Muat ulang kampus"
+              icon={RefreshCcw}
+              onClick={loadTenants}
+              disabled={tenantState === 'loading'}
+            />
+            <AppButton icon={Plus} onClick={() => setDialog('campus')}>
+              Tambah kampus
+            </AppButton>
+          </>
         }
       />
       <WorkspacePanel>
-        <div className="table-toolbar">
-          <span className="muted">
-            {tenantState === 'loaded' ? `${tenants.length} kampus` : 'Daftar kampus'}
-          </span>
-          <IconButton
-            label="Muat ulang kampus"
-            icon={RefreshCcw}
-            onClick={loadTenants}
-            disabled={tenantState === 'loading'}
-          />
-        </div>
         <DataTable
           columns={campusColumns}
           rows={

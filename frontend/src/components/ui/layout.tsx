@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { ChevronRight, type LucideIcon } from 'lucide-react';
+import { goTo } from '@/lib/router';
 
 export function AppShell({ sidebar, children }: { sidebar: ReactNode; children: ReactNode }) {
   return (
@@ -38,43 +39,54 @@ export function Brand({
   );
 }
 
-export function Topbar({
-  eyebrow,
-  title,
-  action,
-}: {
-  eyebrow: string;
-  title: string;
-  action?: ReactNode;
-}) {
-  return (
-    <header className="topbar">
-      <div>
-        <span className="breadcrumb">
-          {eyebrow} <span aria-hidden="true">/</span> {title}
-        </span>
-      </div>
-      {action}
-    </header>
-  );
+export function Topbar({ action }: { action?: ReactNode }) {
+  return <header className="topbar">{action}</header>;
 }
 
 export function PageHeader({
-  eyebrow,
   title,
   action,
+  parents = [],
 }: {
-  eyebrow?: string;
   title: string;
   action?: ReactNode;
+  parents?: { label: string; href: string }[];
 }) {
   return (
-    <section className="dashboard-header">
-      <div>
-        {eyebrow ? <span className="page-eyebrow">{eyebrow}</span> : null}
-        <h1>{title}</h1>
-      </div>
-      {action}
-    </section>
+    <header className="page-header">
+      <h1 className="sr-only">{title}</h1>
+      <nav className="page-breadcrumb" aria-label="Breadcrumb">
+        <ol>
+          {[{ label: 'Workspace', href: '/dashboard' }, ...parents].map((item) => (
+            <li key={item.href}>
+              <a
+                href={item.href}
+                onClick={(event) => {
+                  if (
+                    event.button !== 0 ||
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey
+                  )
+                    return;
+                  event.preventDefault();
+                  goTo(item.href);
+                }}
+              >
+                {item.label}
+              </a>
+              <ChevronRight size={14} aria-hidden="true" />
+            </li>
+          ))}
+          <li className="breadcrumb-current">
+            <span aria-current="page" title={title}>
+              {title}
+            </span>
+          </li>
+        </ol>
+      </nav>
+      {action ? <div className="page-actions">{action}</div> : null}
+    </header>
   );
 }

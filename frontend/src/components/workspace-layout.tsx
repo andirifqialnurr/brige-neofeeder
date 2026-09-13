@@ -19,7 +19,6 @@ export function WorkspaceLayout({ children }: { children: ReactNode }) {
     setMobileNavOpen,
     feedback,
     navigate,
-    currentPage,
     handleLogout,
   } = useWorkspace();
   const themeControl = (
@@ -65,8 +64,6 @@ export function WorkspaceLayout({ children }: { children: ReactNode }) {
           }
         >
           <Topbar
-            eyebrow="Workspace"
-            title={currentPage.eyebrow}
             action={
               <div className="topbar-actions">
                 <span className="user-identity">

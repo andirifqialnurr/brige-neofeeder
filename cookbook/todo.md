@@ -53,6 +53,14 @@
 - [x] Dashboard angka dan ApexCharts tanpa daftar data; tandai otomatisasi belum tersedia.
 - [x] Verifikasi route, statistik, dropdown form/filter, responsivitas, build/lint; dokumentasi lisensi ApexCharts (`navigation-reporting.md`).
 
+## Page Header Alignment
+
+- [x] Pertahankan header grup sidebar dan topbar; pindahkan breadcrumb ke posisi judul halaman.
+- [x] Shared PageHeader dengan parent link, halaman aktif, dan heading aksesibel.
+- [x] Satukan filter/search/aksi di kanan breadcrumb pada semua halaman workspace dan tab Referensi.
+- [x] Ringkas lebar dropdown/search; dukung wrap mobile dan nama file panjang.
+- [x] Verifikasi browser seluruh halaman, filter/search, breadcrumb detail, light/dark, serta test/build/lint.
+
 ## Phase 1 - Export/Import Excel
 
 ## 1.1 Contract Layer

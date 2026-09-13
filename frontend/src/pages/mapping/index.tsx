@@ -7,11 +7,8 @@ export function MappingPage() {
   const { navigate } = useWorkspace();
   return (
     <>
-      <PageHeader title="Mapping SIAKAD" />
-      <EmptyState
-        icon={Waypoints}
-        title="Otomatisasi dalam rencana"
-        description="Mapping sumber SIAKAD akan tersedia pada fase 2."
+      <PageHeader
+        title="Mapping SIAKAD"
         action={
           <AppButton
             variant="secondary"
@@ -21,6 +18,11 @@ export function MappingPage() {
             Template Excel
           </AppButton>
         }
+      />
+      <EmptyState
+        icon={Waypoints}
+        title="Otomatisasi dalam rencana"
+        description="Mapping sumber SIAKAD akan tersedia pada fase 2."
       />
     </>
   );

@@ -19,7 +19,7 @@ import {
   connectionStatusTones,
   formatDateTime,
 } from '@/hooks/use-workspace-controller';
-import { ReferencesPage } from './references';
+import { ReferenceActions, ReferencesPage } from './references';
 export function NeoFeederPage() {
   const {
     setDialog,
@@ -43,16 +43,26 @@ export function NeoFeederPage() {
         title="Neo Feeder"
         action={
           connectionTab === 'connections' ? (
-            <AppButton
-              icon={Plus}
-              onClick={() => {
-                applyConnectionToForm(tenants[0]?.id ?? '');
-                setDialog('connection');
-              }}
-            >
-              Tambah koneksi
-            </AppButton>
-          ) : undefined
+            <>
+              <IconButton
+                label="Muat ulang koneksi"
+                icon={RefreshCcw}
+                onClick={loadConnections}
+                disabled={connectionState === 'loading'}
+              />
+              <AppButton
+                icon={Plus}
+                onClick={() => {
+                  applyConnectionToForm(tenants[0]?.id ?? '');
+                  setDialog('connection');
+                }}
+              >
+                Tambah koneksi
+              </AppButton>
+            </>
+          ) : (
+            <ReferenceActions />
+          )
         }
       />
       <ViewTabs
@@ -69,17 +79,6 @@ export function NeoFeederPage() {
           <ReferencesPage />
         ) : (
           <WorkspacePanel>
-            <div className="table-toolbar">
-              <span className="muted">
-                {connectionState === 'loaded' ? `${connections.length} koneksi` : 'Daftar koneksi'}
-              </span>
-              <IconButton
-                label="Muat ulang koneksi"
-                icon={RefreshCcw}
-                onClick={loadConnections}
-                disabled={connectionState === 'loading'}
-              />
-            </div>
             {connectionTestError ? (
               <ErrorState title="Test koneksi gagal" description={connectionTestError} />
             ) : null}

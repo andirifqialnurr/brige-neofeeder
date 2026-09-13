@@ -26,7 +26,7 @@ glow, transparansi bertumpuk, dan shadow tombol.
 
 | Elemen | Ukuran / line-height | Weight |
 | --- | --- | --- |
-| Judul halaman | 24 / 32px | 600 |
+| Breadcrumb halaman | 14 / 22px | 400; halaman aktif 500 |
 | Judul section/dialog | 16 / 24px | 600 |
 | Isi, input, tabel | 14 / 22px | 400 |
 | Tombol, label | 14 / 20px | 500 |
@@ -63,7 +63,8 @@ Halaman menyusun primitive dan data, tanpa mengulang styling kontrol.
 - HelpTip: bantuan pointer/keyboard/touch untuk detail tambahan.
 - FormDialog: native dialog dengan focus containment, Escape, tombol tutup,
   dan pengembalian fokus. Bukan window.alert/confirm.
-- PageHeader: satu h1 pendek dan aksi utama.
+- PageHeader: breadcrumb menggantikan judul yang terlihat; satu h1 `sr-only`
+  dipertahankan untuk pembaca layar. Filter/search/aksi halaman dalam satu grup kanan.
 - SectionHeader: judul area data dan bantuan opsional.
 - WorkspacePanel: section tanpa card styling.
 - DataTable: lebar penuh, scroll horizontal lokal, empty state di luar tabel
@@ -80,7 +81,16 @@ Halaman menyusun primitive dan data, tanpa mengulang styling kontrol.
 
 - Sidebar desktop 224px; grup Operasional, Pengaturan, dan Otomatisasi.
 - Mobile: menu bisa dibuka/tutup, tidak selalu memenuhi layar di atas konten.
-- Topbar hanya konteks workspace, identitas pengguna, tema, logout.
+- Header grup sidebar tetap tampil. Topbar tetap ada untuk identitas pengguna,
+  tema, dan logout, tanpa breadcrumb atau judul halaman.
+- Breadcrumb berada pada awal konten halaman, sejajar dengan kontrol yang rata
+  kanan. Parent berupa link, halaman aktif memakai `aria-current="page"`.
+- Filter dropdown 152px, search 180px, gap kontrol 8px; label filter tetap
+  aksesibel melalui `sr-only`. Lebar ini khusus toolbar, bukan form dalam dialog.
+- Desktop memakai satu baris ketika ruang cukup. Pada layar sempit breadcrumb
+  berada di atas dan kontrol wrap ke kanan, tanpa mengurangi target sentuh 44px.
+- Nama file panjang di breadcrumb memakai ellipsis dan title; tidak mendorong
+  kontrol keluar layar. Pagination, aksi per baris, dan submit dialog tetap lokal.
 - Judul tidak diulang di topbar, banner, dan header tabel.
 - Search/notifikasi/menu pengguna tidak boleh tampil sebagai tombol dummy.
 - Fitur belum tersedia memakai status rencana, bukan aksi palsu.

@@ -109,34 +109,35 @@ export function BatchList({
       <PageHeader
         title="Import Batch"
         action={
-          <AppButton icon={Upload} onClick={onUpload}>
-            Upload Excel
-          </AppButton>
+          <>
+            <label className="search-field">
+              <Search size={16} />
+              <input
+                aria-label="Cari batch"
+                type="search"
+                value={search}
+                placeholder="Cari file atau kampus..."
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                  setLoading(true);
+                }}
+              />
+            </label>
+            <IconButton
+              label="Muat ulang batch"
+              icon={RefreshCcw}
+              onClick={() => setRefresh((value) => value + 1)}
+              disabled={loading}
+            />
+
+            <AppButton icon={Upload} onClick={onUpload}>
+              Upload Excel
+            </AppButton>
+          </>
         }
       />
       <WorkspacePanel>
-        <div className="table-toolbar">
-          <label className="search-field">
-            <Search size={16} />
-            <input
-              aria-label="Cari batch"
-              type="search"
-              value={search}
-              placeholder="Cari file atau kampus..."
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-                setLoading(true);
-              }}
-            />
-          </label>
-          <IconButton
-            label="Muat ulang batch"
-            icon={RefreshCcw}
-            onClick={() => setRefresh((value) => value + 1)}
-            disabled={loading}
-          />
-        </div>
         {error ? (
           <ErrorState title="Batch gagal dimuat" description={error} />
         ) : (
@@ -245,35 +246,69 @@ export function BatchInspection({
     <>
       <PageHeader
         title={batch?.summary.original_name ?? 'Detail batch'}
+        parents={[{ label: 'Import Batch', href: '/import-batch' }]}
         action={
-          <AppButton variant="ghost" icon={ArrowLeft} onClick={onBack}>
-            Daftar batch
-          </AppButton>
-        }
-      />
-      <WorkspacePanel>
-        <div className="table-toolbar batch-actions">
-          <div className="batch-caption">
-            {batch?.tenant_name} {batch && <RowStatus status={batch.status} />}
-            {batch?.summary.demo === true && <StatusBadge tone="info">Demo</StatusBadge>}
-          </div>
-          <div>
+          <>
+            <label className="inline-field">
+              <span className="sr-only">Sheet</span>
+              <Select
+                value={sheet}
+                disabled={!!busy}
+                onChange={(event) => {
+                  setSheet(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Semua sheet</option>
+                {batch?.sheets.map((item) => (
+                  <option key={item.sheet_name} value={item.sheet_name}>
+                    {item.sheet_name} ({item.total_rows})
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <label className="inline-field">
+              <span className="sr-only">Status</span>
+              <Select
+                value={status}
+                disabled={!!busy}
+                onChange={(event) => {
+                  setStatus(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Semua status</option>
+                {[
+                  'pending',
+                  'valid',
+                  'invalid',
+                  'ready',
+                  'syncing',
+                  'success',
+                  'failed',
+                  'skipped',
+                ].map((item) => (
+                  <option key={item} value={item}>
+                    {labels[item]}
+                  </option>
+                ))}
+              </Select>
+            </label>
+
             <IconButton
               label="Muat ulang detail"
               icon={RefreshCcw}
               disabled={loading || !!busy}
               onClick={() => setRefresh((value) => value + 1)}
             />
-            <AppButton
-              variant="secondary"
+            <IconButton
+              label={busy === 'report' ? 'Mengunduh laporan' : 'Laporan Excel'}
               icon={Download}
               disabled={
                 !batch || loading || !!busy || ['uploaded', 'parsing'].includes(batch.status)
               }
               onClick={() => act('report')}
-            >
-              {busy === 'report' ? 'Mengunduh...' : 'Laporan Excel'}
-            </AppButton>
+            />
             <AppButton
               icon={ShieldCheck}
               disabled={
@@ -290,6 +325,16 @@ export function BatchInspection({
               label="Tentang dry-run"
               text="Menyiapkan payload tanpa mengirim ke Neo Feeder. Baris invalid dilewati."
             />
+
+            <IconButton label="Daftar batch" icon={ArrowLeft} onClick={onBack} />
+          </>
+        }
+      />
+      <WorkspacePanel>
+        <div className="table-toolbar batch-actions">
+          <div className="batch-caption">
+            {batch?.tenant_name} {batch && <RowStatus status={batch.status} />}
+            {batch?.summary.demo === true && <StatusBadge tone="info">Demo</StatusBadge>}
           </div>
         </div>
         {error && <ErrorState title="Permintaan gagal" description={error} />}
@@ -327,53 +372,6 @@ export function BatchInspection({
             </details>
           </>
         )}
-        <div className="table-toolbar row-filters">
-          <label className="inline-field">
-            Sheet
-            <Select
-              value={sheet}
-              disabled={!!busy}
-              onChange={(event) => {
-                setSheet(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Semua sheet</option>
-              {batch?.sheets.map((item) => (
-                <option key={item.sheet_name} value={item.sheet_name}>
-                  {item.sheet_name} ({item.total_rows})
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className="inline-field">
-            Status
-            <Select
-              value={status}
-              disabled={!!busy}
-              onChange={(event) => {
-                setStatus(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Semua status</option>
-              {[
-                'pending',
-                'valid',
-                'invalid',
-                'ready',
-                'syncing',
-                'success',
-                'failed',
-                'skipped',
-              ].map((item) => (
-                <option key={item} value={item}>
-                  {labels[item]}
-                </option>
-              ))}
-            </Select>
-          </label>
-        </div>
         <DataTable
           columns={['Baris Excel', 'Sheet', 'Status', 'Error', 'Peringatan']}
           rows={

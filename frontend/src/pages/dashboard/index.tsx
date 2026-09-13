@@ -65,43 +65,47 @@ export function DashboardPage() {
       <PageHeader
         title="Dashboard"
         action={
-          <IconButton
-            label="Muat ulang statistik"
-            icon={RefreshCcw}
-            disabled={loading}
-            onClick={() => setRefresh((value) => value + 1)}
-          />
+          <>
+            {authUser?.role === 'admin' && (
+              <label className="inline-field">
+                <span className="sr-only">Kampus</span>
+                <Select value={tenant} onChange={(event) => setTenant(event.target.value)}>
+                  <option value="">Semua kampus</option>
+                  {tenants.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            )}
+            <label className="inline-field">
+              <span className="sr-only">Aktivitas import</span>
+              <Select
+                value={String(days)}
+                onChange={(event) => setDays(Number(event.target.value))}
+              >
+                {[14, 30, 90].map((day) => (
+                  <option key={day} value={String(day)}>
+                    {day} hari terakhir
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <HelpTip
+              label="Cakupan statistik"
+              text="Total dan komposisi memakai seluruh riwayat kampus terpilih. Rentang hari hanya berlaku pada grafik aktivitas import. Keberhasilan dihitung dari attempt yang selesai; retry dihitung sebagai attempt baru."
+            />
+
+            <IconButton
+              label="Muat ulang statistik"
+              icon={RefreshCcw}
+              disabled={loading}
+              onClick={() => setRefresh((value) => value + 1)}
+            />
+          </>
         }
       />
-      <div className="report-toolbar">
-        {authUser?.role === 'admin' && (
-          <label className="inline-field">
-            Kampus
-            <Select value={tenant} onChange={(event) => setTenant(event.target.value)}>
-              <option value="">Semua kampus</option>
-              {tenants.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </Select>
-          </label>
-        )}
-        <label className="inline-field">
-          Aktivitas import
-          <Select value={String(days)} onChange={(event) => setDays(Number(event.target.value))}>
-            {[14, 30, 90].map((day) => (
-              <option key={day} value={String(day)}>
-                {day} hari terakhir
-              </option>
-            ))}
-          </Select>
-        </label>
-        <HelpTip
-          label="Cakupan statistik"
-          text="Total dan komposisi memakai seluruh riwayat kampus terpilih. Rentang hari hanya berlaku pada grafik aktivitas import. Keberhasilan dihitung dari attempt yang selesai; retry dihitung sebagai attempt baru."
-        />
-      </div>
       {error ? (
         <ErrorState title="Statistik gagal dimuat" description={error} />
       ) : loading ? (

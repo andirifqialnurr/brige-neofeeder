@@ -103,3 +103,32 @@ dilanjutkan jika ukuran transfer menjadi kendala.
 - Belum merupakan verifikasi deployment VPS/MySQL pada perubahan ini, dan
   tidak ada request pengiriman ke Neo Feeder aktual. Jalankan deployment untuk
   mengaktifkan perubahan backend/frontend secara bersamaan.
+
+## Refinement Header - 2026-09-13
+
+Breadcrumb dipindahkan dari topbar ke `PageHeader`, menggantikan judul terlihat.
+Heading `sr-only` tetap tersedia untuk pembaca layar. Header grup sidebar dan
+topbar identitas/tema/logout tidak dihapus. Parent breadcrumb membuka route induk.
+
+Seluruh aksi tingkat halaman sekarang berada di kanan breadcrumb: filter
+dashboard, tambah/refresh kampus dan koneksi, filter/refresh/sync referensi,
+download template, search/upload import, filter/refresh/laporan/dry-run detail,
+serta navigasi template dari Mapping. Aksi record, pagination, dan submit dialog
+tetap berada di konteks masing-masing. Lebar filter 152px dan search 180px;
+form dialog tidak ikut dipersempit. Kontrol wrap rata kanan di mobile.
+
+Verifikasi lokal refinement ini:
+
+- Enam test frontend lulus, termasuk tiga test shared header; build/lint lulus.
+- Seluruh halaman sidebar pada desktop 1280x900 memiliki kontrol sejajar dengan
+  breadcrumb dan rata kanan. Tab Referensi juga diperiksa setelah data dimuat.
+- Semua halaman diperiksa pada mobile 390x844; tabel berisi pada Template,
+  Kampus, Neo Feeder, dan Import diperiksa lagi pada 320x740.
+- Pencarian `perbaikan` menghasilkan satu batch; filter invalid di detail
+  menghasilkan lima baris. Parent breadcrumb kembali ke Import Batch.
+- Dropdown Referensi tetap custom dan mendukung Escape. Screenshot light/dark
+  mencakup dashboard, detail batch, dan Referensi.
+- Grid konten dibatasi `minmax(0, 1fr)` dan child `min-width: 0`; tabel Referensi
+  yang lebar hanya menggulir di dalam tabel, tidak melebarkan header/halaman.
+- Preview memakai backend lokal dengan seed fiktif, bukan verifikasi deployment
+  VPS atau pengiriman ke Neo Feeder. Backend/API tidak diubah pada refinement ini.
