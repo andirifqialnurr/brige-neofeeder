@@ -620,3 +620,52 @@ export async function runImportBatchDryRun(importBatchId: string): Promise<DryRu
 
   return payload.data;
 }
+
+export type PageMeta = { current_page: number; last_page: number; per_page: number; total: number };
+export type PageResult<T> = { data: T[]; meta: PageMeta };
+export type BatchDetail = Omit<ImportBatch, 'file_path'> & {
+  sheets: { sheet_name: string; total_rows: number }[];
+  dependency_order: string[];
+};
+export type BatchRow = {
+  id: string; channel: string; sheet_name: string; row_number: number;
+  status: string; errors: number; warnings: number;
+};
+export type RowDetail = DryRunPayloadPreview & {
+  raw_row: Record<string, unknown>; normalized_row: Record<string, unknown>;
+};
+
+async function batchRequest<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const headers = getAuthHeaders();
+  if (!headers) throw new Error('Sesi login belum tersedia.');
+  const response = await fetch(`${API_BASE_URL}/import-batches${path}`, { headers, signal });
+  if (!response.ok) throw new Error(await parseApiError(response));
+  return response.json() as Promise<T>;
+}
+
+export function getBatchPage(page: number, search: string, signal?: AbortSignal) {
+  return batchRequest<PageResult<ImportBatch>>(`?${new URLSearchParams({ page: String(page), per_page: '20', search })}`, signal);
+}
+export async function getBatchDetail(id: string, signal?: AbortSignal) {
+  return (await batchRequest<{ data: BatchDetail }>(`/${id}`, signal)).data;
+}
+export function getBatchRows(id: string, page: number, sheet: string, status: string, signal?: AbortSignal) {
+  return batchRequest<PageResult<BatchRow>>(`/${id}/rows?${new URLSearchParams({ page: String(page), sheet, status })}`, signal);
+}
+export async function getBatchRow(id: string, row: string, signal?: AbortSignal) {
+  return (await batchRequest<{ data: RowDetail }>(`/${id}/rows/${row}`, signal)).data;
+}
+export async function downloadBatchReport(id: string) {
+  const headers = getAuthHeaders();
+  if (!headers) throw new Error('Sesi login belum tersedia.');
+  const response = await fetch(`${API_BASE_URL}/import-batches/${id}/report`, { headers });
+  if (!response.ok) throw new Error(await parseApiError(response));
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `temuan-${id}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}

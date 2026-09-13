@@ -152,8 +152,8 @@
 ## 1.6 Dry-Run
 
 - [x] Tampilkan ringkasan valid/invalid/warning.
-- [ ] Tampilkan dependency order di UI (sudah tersedia di API).
-- [ ] Tampilkan payload lengkap per row di UI (sudah tersedia di API).
+- [x] Tampilkan dependency order di UI.
+- [x] Tampilkan payload lengkap per row di UI.
 - [x] Tampilkan calon insert/update/skip.
 - [x] Tampilkan missing references.
 - [ ] Enforce approval operator sebelum sync (flag dry-run belum merupakan approval).
@@ -177,9 +177,9 @@
 ## 1.9 Pemeriksaan Batch Dan Demo Tanpa Neo Feeder
 
 - [x] API detail batch, filter sheet/status, dan pagination baris dengan isolasi tenant.
-- [ ] UI detail batch dan dialog data/payload/temuan tanpa mengirim data.
-- [ ] Download laporan temuan Excel; nilai sel aman dari formula injection.
-- [ ] Pagination dan pencarian batch di server, bukan hanya 50 batch pertama.
+- [x] UI detail batch dan dialog data/payload/temuan tanpa mengirim data.
+- [x] Download laporan temuan Excel; nilai sel aman dari formula injection.
+- [x] Pagination dan pencarian batch di server, bukan hanya 50 batch pertama.
 - [ ] Seed demo opt-in dan idempotent, terpisah dari bootstrap produksi.
 - [ ] Data fiktif kecil untuk semua kanal; valid, invalid, warning, duplicate, update, dan empty state.
 - [ ] Blok pengiriman Neo Feeder untuk tenant demo; tidak membuat job outbound saat seed.

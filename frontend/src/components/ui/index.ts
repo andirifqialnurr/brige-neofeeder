@@ -11,3 +11,4 @@ export * from './state';
 export * from './form-dialog';
 export * from './help-tip';
 export * from './tabs';
+export * from './pagination';

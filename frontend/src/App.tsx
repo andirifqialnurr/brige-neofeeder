@@ -15,7 +15,6 @@ import {
   PlugZap,
   Plus,
   RefreshCcw,
-  Search,
   ShieldCheck,
   Sun,
   Upload,
@@ -23,6 +22,7 @@ import {
 } from 'lucide-react';
 import { type ChangeEvent, type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { LandingPage, LoginPage } from './components/public-pages';
+import { BatchInspection, BatchList } from './components/batch-workspace';
 import { useTheme } from '@/hooks/use-theme';
 import {
   clearAuthSession,
@@ -38,13 +38,11 @@ import {
   hasStoredApiToken,
   login,
   logout,
-  runImportBatchDryRun,
   syncReferences,
   testNeoFeederConnection,
   updateNeoFeederConnection,
   uploadImportBatch,
   type AuthUser,
-  type DryRunPreview,
   type ImportBatch,
   type ImportBatchStatus,
   type NeoFeederConnection,
@@ -63,7 +61,6 @@ import {
   ErrorState,
   LoadingState,
   FormDialog,
-  HelpTip,
   IconButton,
   ViewTabs,
   PageHeader,
@@ -104,7 +101,6 @@ const navItems: AppNavItem[] = [
 const batchColumns = ['Batch', 'Kampus', 'Status', 'Valid', 'Error', 'Diperbarui'];
 const campusColumns = ['Kampus', 'Kode PT', 'Status', 'Diperbarui'];
 const templateColumns = ['Sheet', 'Isi'];
-const validationColumns = ['Baris', 'Kanal', 'Operasi', 'Temuan', 'Status'];
 
 const pageMeta: Record<PageId, { eyebrow: string; title: string }> = {
   dashboard: { eyebrow: 'Dashboard', title: 'Operasional Neo Feeder' },
@@ -218,7 +214,7 @@ function App() {
   const [dialog, setDialog] = useState<'campus' | 'connection' | 'upload' | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [connectionTab, setConnectionTab] = useState<'connections' | 'references'>('connections');
-  const [batchSearch, setBatchSearch] = useState('');
+  const batchSearch = '';
   const [feedback, setFeedback] = useState('');
   const navigate = (page: PageId) => {
     setActivePage(page);
@@ -227,9 +223,6 @@ function App() {
   };
   const selectBatch = (id: string) => {
     setDryRunBatchId(id);
-    setDryRunPreview(null);
-    setDryRunState('idle');
-    setDryRunError('');
   };
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [tenantState, setTenantState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
@@ -296,9 +289,6 @@ function App() {
   const [importUploadState, setImportUploadState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [importUploadError, setImportUploadError] = useState('');
   const [dryRunBatchId, setDryRunBatchId] = useState('');
-  const [dryRunPreview, setDryRunPreview] = useState<DryRunPreview | null>(null);
-  const [dryRunState, setDryRunState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
-  const [dryRunError, setDryRunError] = useState('');
   const currentPage = pageMeta[activePage];
 
   const loadTenants = useCallback(async () => {
@@ -520,75 +510,6 @@ function App() {
       ]),
     [activePage, filteredBatches, importBatches, tenantNameById],
   );
-  const dryRunIssueRows = useMemo(() => {
-    if (!dryRunPreview) {
-      return [];
-    }
-
-    return dryRunPreview.payload_preview.flatMap((item) => {
-      const issues = [
-        ...(item.validation_result.errors ?? []).map((issue) => ({
-          ...issue,
-          level: 'error' as const,
-        })),
-        ...(item.validation_result.warnings ?? []).map((issue) => ({
-          ...issue,
-          level: 'warning' as const,
-        })),
-        ...(item.validation_result.info ?? []).map((issue) => ({
-          ...issue,
-          level: 'info' as const,
-        })),
-      ];
-
-      if (issues.length === 0) {
-        return [
-          [
-            <strong className="table-primary" key={`${item.staging_record_id}-row`}>
-              {item.row_number}
-            </strong>,
-            <span className="mono" key={`${item.staging_record_id}-channel`}>
-              {item.channel}
-            </span>,
-            <span key={`${item.staging_record_id}-operation`}>
-              {item.action ?? item.candidate_operation}
-            </span>,
-            <span key={`${item.staging_record_id}-issue`}>-</span>,
-            <StatusBadge
-              key={`${item.staging_record_id}-status`}
-              tone={item.candidate_operation === 'skip' ? 'neutral' : 'success'}
-            >
-              {item.candidate_operation === 'skip' ? 'Dilewati' : 'Siap'}
-            </StatusBadge>,
-          ],
-        ];
-      }
-
-      return issues.map((issue, index) => [
-        <strong className="table-primary" key={`${item.staging_record_id}-${index}-row`}>
-          {item.row_number}
-        </strong>,
-        <span className="mono" key={`${item.staging_record_id}-${index}-channel`}>
-          {item.channel}
-        </span>,
-        <span key={`${item.staging_record_id}-${index}-operation`}>
-          {item.action ?? item.candidate_operation}
-        </span>,
-        <span key={`${item.staging_record_id}-${index}-issue`}>
-          {issue.field ? `${issue.field}: ` : ''}
-          {issue.message ?? issue.rule ?? 'Issue validasi'}
-        </span>,
-        <StatusBadge
-          key={`${item.staging_record_id}-${index}-status`}
-          tone={
-            issue.level === 'error' ? 'destructive' : issue.level === 'warning' ? 'warning' : 'info'
-          }
-        >
-          {issue.level === 'error' ? 'Error' : issue.level === 'warning' ? 'Warning' : 'Info'}
-        </StatusBadge>,
-      ]);
-    });
-  }, [dryRunPreview]);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -805,27 +726,6 @@ function App() {
     }
   };
 
-  const handleRunDryRun = async () => {
-    setDryRunPreview(null);
-    setDryRunState('loading');
-    setDryRunError('');
-
-    if (!dryRunBatchId) {
-      setDryRunState('error');
-      setDryRunError('Pilih import batch terlebih dahulu.');
-      return;
-    }
-
-    try {
-      const preview = await runImportBatchDryRun(dryRunBatchId);
-      setDryRunPreview(preview);
-      setDryRunState('loaded');
-      await loadImportBatches();
-    } catch (error) {
-      setDryRunState('error');
-      setDryRunError(error instanceof Error ? error.message : 'Dry-run belum bisa dijalankan.');
-    }
-  };
 
   const renderBatchTable = (dashboard = false) => (
     <DataTable
@@ -1184,105 +1084,18 @@ function App() {
   );
 
   const renderImportBatch = () => (
-    <>
-      <PageHeader
-        title="Import Batch"
-        action={
-          <AppButton icon={Upload} onClick={() => setDialog('upload')}>
-            Upload Excel
-          </AppButton>
-        }
-      />
-      <WorkspacePanel>
-        <div className="table-toolbar">
-          <label className="search-field">
-            <Search size={16} aria-hidden="true" />
-            <input
-              aria-label="Cari batch"
-              type="search"
-              value={batchSearch}
-              placeholder="Cari file atau kampus..."
-              onChange={(event) => setBatchSearch(event.target.value)}
-            />
-          </label>
-          <IconButton
-            label="Muat ulang batch"
-            icon={RefreshCcw}
-            disabled={importBatchState === 'loading'}
-            onClick={loadImportBatches}
-          />
-        </div>
-        {renderBatchTable()}
-      </WorkspacePanel>
-    </>
+    <BatchList revision={importBatches} onUpload={() => setDialog('upload')}
+      onSelect={(id) => { selectBatch(id); navigate('validation'); }} />
   );
 
-  const renderValidation = () => (
+  const renderValidation = () => dryRunBatchId ? (
+    <BatchInspection key={dryRunBatchId} id={dryRunBatchId}
+      onBack={() => navigate('import-batch')} onUpdated={loadImportBatches} />
+  ) : (
     <>
       <PageHeader title="Validasi" />
-      <WorkspacePanel>
-        <div className="validation-toolbar">
-          <label className="inline-field">
-            Batch
-            <select
-              disabled={importBatches.length === 0 || dryRunState === 'loading'}
-              onChange={(event) => selectBatch(event.target.value)}
-              value={dryRunBatchId}
-            >
-              {importBatches.length === 0 ? <option value="">Belum ada batch</option> : null}
-              {importBatches.map((batch) => (
-                <option key={batch.id} value={batch.id}>
-                  {batch.summary.original_name ?? `Batch ${shortId(batch.id)}`} -{' '}
-                  {tenantNameById.get(batch.tenant_id) ?? batch.tenant_name ?? 'Kampus'}
-                </option>
-              ))}
-            </select>
-          </label>
-          <AppButton
-            disabled={dryRunState === 'loading' || !dryRunBatchId}
-            icon={ShieldCheck}
-            onClick={handleRunDryRun}
-          >
-            {dryRunState === 'loading' ? 'Memvalidasi...' : 'Jalankan dry-run'}
-          </AppButton>
-          <HelpTip
-            label="Tentang dry-run"
-            text="Memeriksa data dan menyiapkan pratinjau. Data belum dikirim ke Neo Feeder."
-          />
-        </div>
-        {dryRunState === 'error' ? (
-          <ErrorState title="Dry-run gagal" description={dryRunError} />
-        ) : null}
-        {dryRunPreview ? (
-          <dl className="summary-strip">
-            {[
-              ['Total baris', dryRunPreview.summary.total_rows],
-              ['Valid', dryRunPreview.summary.valid_rows],
-              ['Error', dryRunPreview.summary.invalid_rows],
-              ['Peringatan', dryRunPreview.summary.warning_rows],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : null}
-        <DataTable
-          columns={validationColumns}
-          rows={dryRunIssueRows}
-          emptyState={
-            dryRunState === 'loading' ? (
-              <LoadingState label="Memvalidasi batch" />
-            ) : (
-              <EmptyState
-                icon={ShieldCheck}
-                title={dryRunPreview ? 'Tidak ada baris dalam batch' : 'Belum ada hasil validasi'}
-              />
-            )
-          }
-        />
-      </WorkspacePanel>
+      <EmptyState icon={ShieldCheck} title="Belum ada batch" />
+      <AppButton icon={ArrowRight} onClick={() => navigate('import-batch')}>Daftar batch</AppButton>
     </>
   );
 
