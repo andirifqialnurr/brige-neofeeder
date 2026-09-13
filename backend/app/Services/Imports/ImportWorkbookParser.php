@@ -8,6 +8,7 @@ use App\Services\NeoFeeder\Contracts\ChannelContract;
 use App\Services\NeoFeeder\Contracts\FieldContract;
 use App\Services\NeoFeeder\Contracts\NeoFeederContractRegistry;
 use App\Services\Validation\ImportBatchValidationService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -24,8 +25,19 @@ final class ImportWorkbookParser
 
     public function parse(ImportBatch $batch): void
     {
-        abort_if($batch->stagingRecords()->whereHas('syncAttempts')->exists(), 409, 'Batch pernah dikirim dan tidak boleh diparse ulang.');
-        $batch->forceFill(['status' => 'parsing', 'dry_run_hash' => null, 'approved_hash' => null, 'approved_at' => null, 'approved_by' => null])->save();
+        $batch = DB::transaction(function () use ($batch) {
+            $batch = ImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
+            if ($batch->status !== 'uploaded') {
+                return null;
+            }
+            abort_if($batch->stagingRecords()->whereHas('syncAttempts')->exists(), 409, 'Batch pernah dikirim dan tidak boleh diparse ulang.');
+            $batch->forceFill(['status' => 'parsing', 'dry_run_hash' => null, 'approved_hash' => null, 'approved_at' => null, 'approved_by' => null])->save();
+
+            return $batch;
+        });
+        if (! $batch) {
+            return;
+        }
 
         $path = Storage::disk('uploads')->path((string) $batch->file_path);
         $workbook = IOFactory::load($path);

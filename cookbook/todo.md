@@ -186,12 +186,12 @@
 - [x] Simpan raw response.
 - [x] Simpan `error_code` dan `error_desc`.
 - [x] Simpan ID hasil Neo Feeder.
-- [x] Implement retry untuk network/timeout/token.
+- [x] Retry terbatas untuk gangguan autentikasi sebelum POST; timeout sesudah POST diblokir untuk pemeriksaan.
 - [x] Jangan retry otomatis untuk business error.
 - [ ] Buat UI retry manual (endpoint sudah tersedia).
 - [ ] Buat UI batch progress (endpoint sudah tersedia).
-- [ ] Kunci start/retry/worker dan simpan idempotency key untuk mencegah pengiriman ganda.
-- [ ] Bedakan retry aman sebelum POST dari hasil pengiriman ambigu yang perlu pemeriksaan.
+- [x] Kunci start/retry/worker dan simpan idempotency key untuk mencegah pengiriman ganda.
+- [x] Bedakan retry aman sebelum POST dari hasil pengiriman ambigu yang perlu pemeriksaan.
 - [ ] UI persetujuan eksplisit, progress, dan retry berada di detail Import Batch.
 
 ## 1.9 Pemeriksaan Batch Dan Demo Tanpa Neo Feeder

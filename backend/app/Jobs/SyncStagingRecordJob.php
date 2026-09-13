@@ -12,12 +12,15 @@ class SyncStagingRecordJob implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 3;
+    public int $tries = 10;
+
+    public int $timeout = 75;
+
+    public bool $failOnTimeout = true;
 
     public function __construct(
         public readonly string $syncAttemptId,
-    ) {
-    }
+    ) {}
 
     public function handle(NeoFeederRecordSyncService $syncService): void
     {
@@ -26,20 +29,20 @@ class SyncStagingRecordJob implements ShouldQueue
         try {
             $retryable = $syncService->sync($attempt);
 
-            if ($retryable && $this->attempts() < $this->tries) {
-                $this->release(60);
+            if ($retryable) {
+                if ($this->attempts() < $this->tries) {
+                    $this->release(15);
+                } else {
+                    $syncService->failSafely($attempt->id);
+                }
             }
         } catch (Throwable $exception) {
-            $attempt->forceFill([
-                'status' => 'retrying',
-                'error_code' => 'runtime_error',
-                'error_desc' => $exception->getMessage(),
-                'attempted_at' => now(),
-            ])->save();
-
-            if ($this->attempts() < $this->tries) {
-                $this->release(60);
-            }
+            $syncService->failSafely($attempt->id);
         }
+    }
+
+    public function failed(?Throwable $exception): void
+    {
+        app(NeoFeederRecordSyncService::class)->failSafely($this->syncAttemptId);
     }
 }

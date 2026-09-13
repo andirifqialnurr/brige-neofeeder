@@ -7,10 +7,10 @@ use App\Jobs\SyncStagingRecordJob;
 use App\Models\ImportBatch;
 use App\Models\SyncAttempt;
 use App\Models\User;
-use App\Services\Sync\ImportBatchApprovalService;
 use App\Services\Sync\ImportBatchSyncPlanner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Bus;
 
 class ImportBatchSyncController extends Controller
 {
@@ -20,13 +20,11 @@ class ImportBatchSyncController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-        $attempts = $planner->plan($importBatch);
+        $attempts = $planner->plan($importBatch, $request->user());
 
-        foreach ($attempts as $attempt) {
-            SyncStagingRecordJob::dispatch($attempt->id);
+        if ($attempts->isNotEmpty()) {
+            Bus::chain($attempts->map(fn ($attempt) => new SyncStagingRecordJob($attempt->id))->all())->dispatch();
         }
-
-        $importBatch->forceFill(['status' => 'syncing'])->save();
 
         return response()->json([
             'data' => [
@@ -48,7 +46,7 @@ class ImportBatchSyncController extends Controller
         ]);
     }
 
-    public function retry(Request $request, SyncAttempt $syncAttempt, ImportBatchApprovalService $approval): JsonResponse
+    public function retry(Request $request, SyncAttempt $syncAttempt, ImportBatchSyncPlanner $planner): JsonResponse
     {
         $syncAttempt->load('stagingRecord.importBatch');
 
@@ -56,17 +54,10 @@ class ImportBatchSyncController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-        $syncAttempt->stagingRecord->importBatch->tenant->assertLiveIntegrationAllowed();
-        $approval->assertApproved($syncAttempt->stagingRecord->importBatch);
-        $retry = SyncAttempt::query()->create([
-            'tenant_id' => $syncAttempt->tenant_id,
-            'staging_record_id' => $syncAttempt->staging_record_id,
-            'action' => $syncAttempt->action,
-            'status' => 'queued',
-            'request_payload' => $syncAttempt->request_payload,
-        ]);
-
-        SyncStagingRecordJob::dispatch($retry->id);
+        $retry = $planner->retry($syncAttempt, $request->user());
+        if ($retry->status === 'queued') {
+            SyncStagingRecordJob::dispatch($retry->id);
+        }
 
         return response()->json([
             'data' => [

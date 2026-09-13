@@ -8,3 +8,4 @@ Artisan::command('bridge:heartbeat', function (): void {
 })->purpose('Check Bridge Neo Feeder scheduler availability');
 
 Schedule::command('bridge:heartbeat')->dailyAt('00:05');
+Schedule::command('bridge:recover-sync')->everyMinute()->withoutOverlapping();

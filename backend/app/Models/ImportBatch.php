@@ -23,6 +23,7 @@ class ImportBatch extends Model
     protected $casts = [
         'summary' => 'array',
         'approved_at' => 'datetime',
+        'sync_started_at' => 'datetime',
     ];
 
     public function tenant(): BelongsTo

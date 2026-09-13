@@ -4,6 +4,7 @@ namespace App\Services\Validation;
 
 use App\Models\ImportBatch;
 use App\Models\StagingRecord;
+use Illuminate\Support\Facades\DB;
 
 final class ImportBatchValidationService
 {
@@ -12,6 +13,11 @@ final class ImportBatchValidationService
     ) {}
 
     public function validate(ImportBatch $batch): array
+    {
+        return DB::transaction(fn () => $this->validateLocked(ImportBatch::query()->lockForUpdate()->findOrFail($batch->id)));
+    }
+
+    private function validateLocked(ImportBatch $batch): array
     {
         abort_if($batch->stagingRecords()->whereHas('syncAttempts')->exists(), 409, 'Batch pernah dikirim. Validasi ulang memerlukan batch baru.');
         $records = $batch->stagingRecords()->orderBy('channel')->orderBy('row_number')->get();

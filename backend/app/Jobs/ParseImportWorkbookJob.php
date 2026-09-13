@@ -13,13 +13,20 @@ class ParseImportWorkbookJob implements ShouldQueue
 
     public function __construct(
         public readonly string $importBatchId,
-    ) {
-    }
+    ) {}
 
     public function handle(ImportWorkbookParser $parser): void
     {
         $batch = ImportBatch::query()->findOrFail($this->importBatchId);
 
         $parser->parse($batch);
+    }
+
+    public function failed(?\Throwable $exception): void
+    {
+        $batch = ImportBatch::find($this->importBatchId);
+        if ($batch && $batch->status === 'parsing') {
+            $batch->forceFill(['status' => 'failed', 'summary' => [...($batch->summary ?? []), 'error' => 'Parsing workbook gagal. Periksa file dan unggah sebagai batch baru.']])->save();
+        }
     }
 }
