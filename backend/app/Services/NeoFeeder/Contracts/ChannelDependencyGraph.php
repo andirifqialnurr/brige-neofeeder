@@ -11,8 +11,7 @@ final class ChannelDependencyGraph
      */
     public function __construct(
         private readonly array $channels,
-    ) {
-    }
+    ) {}
 
     /**
      * @return list<string>

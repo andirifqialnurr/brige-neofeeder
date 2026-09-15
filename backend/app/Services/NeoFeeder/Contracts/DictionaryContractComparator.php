@@ -85,6 +85,7 @@ final class DictionaryContractComparator
         foreach ($payload as $key => $value) {
             if (in_array((string) $key, self::FIELD_KEYS, true) && is_scalar($value) && (string) $value !== '') {
                 $fields[] = (string) $value;
+
                 continue;
             }
 
@@ -94,6 +95,7 @@ final class DictionaryContractComparator
                 foreach ($value as $item) {
                     if ($isFieldList && is_string($item) && $item !== '') {
                         $fields[] = $item;
+
                         continue;
                     }
 

@@ -63,6 +63,20 @@ class SyncDeliveryGuardTest extends TestCase
         $this->assertSame('failed', $batch->refresh()->status);
     }
 
+    public function test_rate_pause_between_token_and_write_is_safe_without_sending_data(): void
+    {
+        config(['services.neofeeder.requests_per_minute' => 1]);
+        [, , , $attempt] = $this->planned();
+        Http::fake(['neo.test/*' => Http::response(['error_code' => '0', 'data' => ['token' => 'test-token']])]);
+        $this->assertFalse(app(NeoFeederRecordSyncService::class)->sync($attempt));
+        $this->assertSame('failed', $attempt->refresh()->status);
+        $this->assertSame('outbound_paused', $attempt->error_code);
+        $this->assertTrue($attempt->retry_safe);
+        $this->assertNull($attempt->request_started_at);
+        Http::assertSentCount(1);
+        Http::assertNotSent(fn ($request) => $request['act'] === 'InsertBiodataMahasiswa');
+    }
+
     public function test_preflight_network_retries_are_bounded_and_never_post_records(): void
     {
         [, , , $attempt] = $this->planned();

@@ -1,5 +1,19 @@
 # TODO - Bridge Neo Feeder
 
+## Pengembangan lanjutan tanpa token — 15 September 2026
+
+- [x] Pencocokan referensi nama/kode dan padanan ID per versi mapping; isolasi kampus dan guard perubahan referensi.
+- [x] Tabel padanan/enum, gabung kolom, dan pemisahan teks dengan error transformasi tersimpan.
+- [x] Rekonsiliasi batch per baris, filter, pagination, dan ekspor CSV tercatat di audit.
+- [x] Batas login/API/koneksi, timeout per koneksi, dan jeda transport failure tanpa retry POST ambigu.
+- [x] Konfigurasi CI frontend/backend/MySQL/Redis 7 dan restore terpisah; run GitHub masih menunggu push.
+- [x] Mapping mata kuliah dan kelas, pemeriksaan referensi/prodi, SKS, kapasitas, dan duplikat.
+
+Perubahan sesi ini tersimpan lokal. Commit/push tertahan akses tulis `.git` pada
+sesi approval never; patch per task disiapkan lokal. Tidak ada deployment atau
+pengiriman Neo Feeder aktual. Referensi: `mapping-extensions.md`,
+`reconciliation.md`, `connection-limits.md`, dan `continuous-integration.md`.
+
 ## Pekerjaan Tanpa Token — 15 September 2026
 
 - [x] Integration harness: MySQL/Redis nyata + HTTP simulator; start/retry bersamaan, dua worker, timeout, worker mati (`integration-testing.md`).
@@ -266,11 +280,11 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [x] Buat UI mapping source field ke contract field.
 - [x] Dukung transform rule sederhana (spasi, tanggal, gender).
 - [x] Dukung constant value.
-- [ ] Dukung lookup table lokal.
-- [ ] Dukung concatenation/split sederhana.
+- [x] Dukung lookup table lokal per versi profil.
+- [x] Dukung concatenation/split sederhana.
 - [x] Dukung date parser DMY/angka Excel dan validasi tanggal kalender.
-- [ ] Dukung enum mapping, misalnya gender/status.
-- [ ] Dukung reference resolver, misalnya kode prodi ke `id_prodi`.
+- [x] Dukung enum mapping, misalnya gender/status.
+- [x] Dukung reference resolver, misalnya kode prodi ke `id_prodi`.
 
 ## 2.3 Transform And Staging
 
@@ -291,7 +305,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [ ] Pause/resume schedule.
 - [ ] Lock agar tidak ada dua sync tenant/kanal berjalan bersamaan.
 - [ ] Alert jika error rate melewati threshold.
-- [ ] Reconciliation report.
+- [x] Reconciliation report dari catatan lokal per batch; pembacaan balik remote masih menunggu trial.
 
 ## 2.5 Pilot Kampus
 
@@ -313,10 +327,10 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [x] File retention command: preview/apply, preserve unresolved delivery and staging (local tests).
 - [x] Backup database and restore drill on a separate local MySQL service (`deploy/backup-and-retention.md`).
 - [x] Tenant-scoped audit viewer, filters, pagination, and safe CSV export.
-- [ ] Rate limit per tenant.
-- [ ] Timeout config per Neo Feeder connection.
-- [ ] Circuit breaker jika Neo Feeder tidak stabil.
-- [ ] Manual override untuk reference match ambiguous.
+- [x] Rate limit per tenant operator dan per akun admin.
+- [x] Timeout config per Neo Feeder connection.
+- [x] Circuit breaker jika Neo Feeder tidak stabil.
+- [x] Manual override untuk reference match ambiguous pada profil mapping.
 
 ## Definition Of Done MVP
 

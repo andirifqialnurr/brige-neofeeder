@@ -80,6 +80,45 @@ class FileMappingTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_reference_mapping_requires_explicit_ambiguous_choice_and_preserves_errors(): void
+    {
+        [$source, $profile, $token, $payload] = $this->fixture();
+        $tenant = $source['tenant_id'];
+        ReferenceRecord::where('tenant_id', $tenant)->where('endpoint', 'GetAgama')->delete();
+        foreach (['1', '2'] as $id) {
+            ReferenceRecord::create(['tenant_id' => $tenant, 'endpoint' => 'GetAgama', 'value_key' => 'id_agama', 'value' => $id, 'label' => 'Nama sama', 'raw_payload' => []]);
+        }
+        $payload['rules'] = array_values(array_filter($payload['rules'], fn ($rule) => $rule['target'] !== 'id_agama'));
+        $payload['rules'][] = ['target' => 'id_agama', 'kind' => 'constant', 'constant' => 'Nama sama', 'transform' => 'reference_label'];
+        $profile = $this->withToken($token)->postJson('/api/mapping/profiles', $payload)->assertOk()->json('data');
+        $url = '/api/mapping/profiles/'.$profile['id'];
+        $body = ['source_id' => $source['id'], 'version' => 1];
+        $preview = $this->withToken($token)->postJson($url.'/preview', $body)->assertOk()->assertJsonPath('data.summary.invalid_rows', 1)->json('data');
+        $batchId = $this->withToken($token)->postJson($url.'/stage', [...$body, 'preview_hash' => $preview['preview_hash']])->assertCreated()->assertJsonPath('data.status', 'invalid')->json('data.id');
+        $this->assertContains('mapping_reference', array_column(ImportBatch::findOrFail($batchId)->stagingRecords()->first()->validation_result['errors'], 'rule'));
+        $payload['rules'][count($payload['rules']) - 1]['overrides'] = [['from' => 'Nama sama', 'to' => '2']];
+        $this->withToken($token)->postJson('/api/mapping/profiles', [...$payload, 'profile_id' => $profile['id'], 'expected_version' => 1])->assertOk();
+        $this->withToken($token)->postJson($url.'/preview', [...$body, 'version' => 2])->assertOk()->assertJsonPath('data.rows.0.normalized_row.id_agama', '2')->assertJsonPath('data.summary.valid_rows', 1);
+        $this->withToken($token)->getJson('/api/mapping/references?channel=mahasiswa_biodata&field=id_agama')->assertOk()->assertJsonCount(2, 'data');
+    }
+
+    public function test_reference_changes_invalidate_preview_and_foreign_overrides_are_rejected(): void
+    {
+        [$source, , $token, $payload] = $this->fixture();
+        $payload['rules'] = [['target' => 'id_agama', 'kind' => 'constant', 'constant' => 'Referensi fiktif', 'transform' => 'reference_label']];
+        $profile = $this->withToken($token)->postJson('/api/mapping/profiles', $payload)->assertOk()->json('data');
+        $url = '/api/mapping/profiles/'.$profile['id'];
+        $body = ['source_id' => $source['id'], 'version' => 1];
+        $preview = $this->withToken($token)->postJson($url.'/preview', $body)->assertOk()->json('data');
+        ReferenceRecord::where('tenant_id', $source['tenant_id'])->where('endpoint', 'GetAgama')->update(['label' => 'Berubah']);
+        $this->withToken($token)->postJson($url.'/stage', [...$body, 'preview_hash' => $preview['preview_hash']])->assertConflict();
+        [$foreign, , , $otherToken] = $this->syncWorkspace();
+        ReferenceRecord::create(['tenant_id' => $foreign->tenant_id, 'endpoint' => 'GetAgama', 'value_key' => 'id_agama', 'value' => '999', 'label' => 'Asing']);
+        $payload['rules'][0]['overrides'] = [['from' => 'Referensi fiktif', 'to' => '999']];
+        $this->withToken($token)->postJson('/api/mapping/profiles', $payload)->assertUnprocessable();
+        $this->withToken($otherToken)->getJson('/api/mapping/references?tenant_id='.$source['tenant_id'].'&channel=mahasiswa_biodata&field=id_agama')->assertForbidden();
+    }
+
     public function test_profile_versions_and_preview_hash_reject_stale_input(): void
     {
         [$source, $profile, $token, $payload] = $this->fixture();
@@ -92,6 +131,34 @@ class FileMappingTest extends TestCase
         $this->withToken($token)->postJson($url.'/preview', $body)->assertConflict();
         $this->assertSame($payload['rules'], MappingProfile::findOrFail($profile['id'])->versions()->where('version', 1)->firstOrFail()->rules);
         $this->assertDatabaseCount('mapping_profile_versions', 2);
+    }
+
+    public function test_advanced_transforms_keep_zeroes_spaces_and_report_unmapped_values(): void
+    {
+        [$source, , $token, $payload] = $this->fixture();
+        $file = SourceConnection::findOrFail($source['id']);
+        $file->update(['headers' => ['First', 'Last', 'Code', 'Gender'], 'snapshot' => [
+            ['row_number' => 2, 'values' => ['First' => 'Andi', 'Last' => 'Fiktif', 'Code' => '001 002', 'Gender' => '0']],
+            ['row_number' => 3, 'values' => ['First' => 'Budi', 'Last' => '', 'Code' => '003', 'Gender' => 'X']],
+        ], 'row_count' => 2]);
+        $payload['rules'] = [
+            ['target' => 'nama_mahasiswa', 'kind' => 'source', 'source' => 'First', 'transform' => 'concat', 'append_sources' => ['Last'], 'separator' => ' '],
+            ['target' => 'jenis_kelamin', 'kind' => 'source', 'source' => 'Gender', 'transform' => 'lookup', 'pairs' => [['from' => '0', 'to' => 'L']]],
+            ['target' => 'nisn', 'kind' => 'source', 'source' => 'Code', 'transform' => 'split', 'separator' => ' ', 'part' => 2],
+        ];
+        $profile = $this->withToken($token)->postJson('/api/mapping/profiles', $payload)->assertOk()->assertJsonPath('data.rules.0.separator', ' ')->json('data');
+        $url = '/api/mapping/profiles/'.$profile['id'];
+        $body = ['source_id' => $file->id, 'version' => 1];
+        $preview = $this->withToken($token)->postJson($url.'/preview', $body)->assertOk()
+            ->assertJsonPath('data.rows.0.normalized_row.nama_mahasiswa', 'Andi Fiktif')
+            ->assertJsonPath('data.rows.0.normalized_row.jenis_kelamin', 'L')
+            ->assertJsonPath('data.rows.0.normalized_row.nisn', '002')->json('data');
+        $this->assertCount(2, array_filter($preview['rows'][1]['validation_result']['errors'], fn ($issue) => $issue['rule'] === 'mapping_transform'));
+        $id = $this->withToken($token)->postJson($url.'/stage', [...$body, 'preview_hash' => $preview['preview_hash']])->assertCreated()->json('data.id');
+        $errors = ImportBatch::findOrFail($id)->stagingRecords()->where('row_number', 3)->first()->validation_result['errors'];
+        $this->assertCount(2, array_filter($errors, fn ($issue) => $issue['rule'] === 'mapping_transform'));
+        $payload['rules'][1]['pairs'][] = ['from' => '0', 'to' => 'P'];
+        $this->withToken($token)->postJson('/api/mapping/profiles', $payload)->assertUnprocessable();
     }
 
     public function test_mapping_apis_deny_foreign_tenants_and_sources(): void

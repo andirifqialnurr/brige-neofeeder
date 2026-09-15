@@ -201,8 +201,7 @@ final class NeoFeederPayloadBuilder
         bool $skipPrimary,
         bool $enforceRequired,
         array $excludeFields = [],
-    ): array
-    {
+    ): array {
         if (! array_is_list($records) || $records === []) {
             throw new InvalidArgumentException("Record array is empty or invalid for channel [{$channel->key}].");
         }
@@ -224,8 +223,7 @@ final class NeoFeederPayloadBuilder
         bool $skipPrimary,
         bool $enforceRequired,
         array $excludeFields = [],
-    ): array
-    {
+    ): array {
         $record = [];
 
         foreach ($channel->fields as $fieldPayload) {

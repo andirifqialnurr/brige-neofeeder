@@ -10,7 +10,7 @@ class DictionaryContractComparatorTest extends TestCase
 {
     public function test_it_compares_channel_contract_against_dictionary_payload(): void
     {
-        $result = (new DictionaryContractComparator())->compare($this->courseChannel(), [
+        $result = (new DictionaryContractComparator)->compare($this->courseChannel(), [
             'data' => [
                 [
                     'act' => 'GetListMataKuliah',
@@ -41,7 +41,7 @@ class DictionaryContractComparatorTest extends TestCase
 
     public function test_it_supports_dictionary_field_lists_as_strings(): void
     {
-        $result = (new DictionaryContractComparator())->compare($this->courseChannel(), [
+        $result = (new DictionaryContractComparator)->compare($this->courseChannel(), [
             'data' => [
                 [
                     'nama_fungsi' => 'GetListMataKuliah',

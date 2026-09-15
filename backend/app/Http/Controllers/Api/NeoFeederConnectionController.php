@@ -45,6 +45,7 @@ class NeoFeederConnectionController extends Controller
             'password' => ['nullable', 'string', 'max:255'],
             'status' => ['sometimes', 'string', 'in:draft,active,inactive,error'],
             'metadata' => ['sometimes', 'array'],
+            'timeout_ms' => ['sometimes', 'integer', 'min:1000', 'max:30000'],
         ]);
 
         if (! $this->canManageTenant($request, $payload['tenant_id'])) {
@@ -58,6 +59,7 @@ class NeoFeederConnectionController extends Controller
             'encrypted_password' => $this->credentialVault->encryptPassword($payload['password'] ?? null),
             'status' => $payload['status'] ?? 'draft',
             'metadata' => $payload['metadata'] ?? [],
+            'timeout_ms' => $payload['timeout_ms'] ?? 30000,
         ]);
 
         return response()->json([
@@ -87,11 +89,12 @@ class NeoFeederConnectionController extends Controller
             'username' => ['sometimes', 'nullable', 'string', 'max:255'],
             'password' => ['sometimes', 'nullable', 'string', 'max:255'],
             'clear_password' => ['sometimes', 'boolean'],
+            'timeout_ms' => ['sometimes', 'integer', 'min:1000', 'max:30000'],
             'status' => ['sometimes', 'string', 'in:draft,active,inactive,error'],
             'metadata' => ['sometimes', 'array'],
         ]);
 
-        $updates = collect($payload)->only(['base_url', 'username', 'status', 'metadata'])->all();
+        $updates = collect($payload)->only(['base_url', 'username', 'status', 'metadata', 'timeout_ms'])->all();
 
         if (array_key_exists('password', $payload)) {
             $updates['encrypted_password'] = $this->credentialVault->encryptPassword($payload['password']);
@@ -133,6 +136,7 @@ class NeoFeederConnectionController extends Controller
                 $neofeederConnection->base_url,
                 $neofeederConnection->username,
                 $password,
+                $neofeederConnection,
             );
 
             $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
@@ -257,6 +261,7 @@ class NeoFeederConnectionController extends Controller
             'base_url' => $connection->base_url,
             'username' => $connection->username,
             'password_configured' => $connection->encrypted_password !== null,
+            'timeout_ms' => $connection->timeout_ms,
             'status' => $connection->status,
             'last_token_refreshed_at' => $connection->last_token_refreshed_at,
             'last_checked_at' => $connection->last_checked_at,

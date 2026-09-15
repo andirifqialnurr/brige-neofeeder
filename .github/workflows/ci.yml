@@ -1,0 +1,121 @@
+name: Bridge checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: frontend/package.json
+      - run: bun install --frozen-lockfile
+        working-directory: frontend
+      - run: bun run --cwd frontend lint
+      - run: bun run --cwd frontend test
+      - run: bun run --cwd frontend build
+
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      APP_ENV: testing
+      LOG_CHANNEL: stderr
+      LARAVEL_STORAGE_PATH: ${{ github.workspace }}/backend/storage
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, gd, zip, pdo_sqlite, bcmath
+          coverage: none
+          tools: composer:v2
+      - run: mkdir -p backend/storage/framework/{cache,sessions,views} backend/storage/logs backend/bootstrap/cache
+      - run: composer install --no-interaction --prefer-dist --no-progress
+        working-directory: backend
+      - run: php vendor/bin/pint --test
+        working-directory: backend
+      - run: php artisan test --do-not-cache-result
+        working-directory: backend
+
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: integration-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['13316:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pintegration-only"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+      restore:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: restore-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['13317:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -prestore-only"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+      redis:
+        image: redis:7-alpine
+        ports: ['16386:6379']
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=3s --health-retries=10
+    env:
+      APP_ENV: testing
+      LOG_CHANNEL: stderr
+      INTEGRATION_MYSQL_HOST: 127.0.0.1
+      INTEGRATION_MYSQL_PORT: '13316'
+      INTEGRATION_MYSQL_USER: root
+      INTEGRATION_MYSQL_PASSWORD: integration-only
+      INTEGRATION_REDIS_HOST: 127.0.0.1
+      INTEGRATION_REDIS_PORT: '16386'
+      RESTORE_MYSQL_HOST: 127.0.0.1
+      RESTORE_MYSQL_PORT: '13317'
+      RESTORE_MYSQL_USER: root
+      RESTORE_MYSQL_PASSWORD: restore-only
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: frontend/package.json
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, gd, zip, pdo_mysql, bcmath, pcntl
+          coverage: none
+          tools: composer:v2
+      - run: mkdir -p backend/storage/framework/{cache,sessions,views} backend/storage/logs backend/bootstrap/cache
+      - run: composer install --no-interaction --prefer-dist --no-progress
+        working-directory: backend
+      - name: MySQL client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+          mysql --version
+          mysqldump --version
+      - name: Delivery concurrency and isolated backup restore
+        run: bun run test:integration --with-backup

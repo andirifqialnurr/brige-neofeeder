@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\AuditLog;
 use App\Models\MappingProfile;
+use App\Models\ReferenceRecord;
 use App\Models\SourceConnection;
 use App\Services\Mapping\FileMappingService;
+use App\Services\Mapping\MappingReferenceResolver;
 use App\Services\Mapping\SourceFileReader;
 use App\Services\NeoFeeder\Contracts\NeoFeederContractRegistry;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +19,21 @@ use Throwable;
 
 class FileMappingController
 {
+    public function references(Request $request, NeoFeederContractRegistry $registry): JsonResponse
+    {
+        $input = $request->validate(['tenant_id' => 'nullable|uuid|exists:tenants,id',
+            'channel' => ['required', Rule::in(FileMappingService::CHANNELS)], 'field' => 'required|string', 'search' => 'nullable|string|max:100']);
+        $tenant = $this->tenant($request);
+        $field = collect($registry->channel($input['channel'])->fields)->firstWhere('name', $input['field']);
+        abort_unless($field['reference'] ?? null, 422);
+        $query = ReferenceRecord::where('tenant_id', $tenant)->where('endpoint', $field['reference']);
+        if ($search = trim($input['search'] ?? '')) {
+            $query->where(fn ($q) => $q->where('label', 'like', '%'.$search.'%')->orWhere('value', 'like', '%'.$search.'%'));
+        }
+
+        return response()->json(['data' => $query->orderBy('label')->orderBy('value')->limit(100)->get(['value', 'label'])], 200, ['Cache-Control' => 'no-store']);
+    }
+
     public function workspace(Request $request, NeoFeederContractRegistry $registry): JsonResponse
     {
         $request->validate(['tenant_id' => 'nullable|uuid|exists:tenants,id']);
@@ -58,7 +75,12 @@ class FileMappingController
             'channel' => ['required', Rule::in(FileMappingService::CHANNELS)], 'rules' => 'required|array|min:1|max:100',
             'rules.*.target' => 'required|string', 'rules.*.kind' => ['required', Rule::in(['source', 'constant'])],
             'rules.*.source' => 'nullable|string|max:100', 'rules.*.constant' => 'nullable|string|max:255',
-            'rules.*.transform' => ['required', Rule::in(['trim', 'date_dmy', 'excel_date', 'gender'])]]);
+            'rules.*.transform' => ['required', Rule::in(['trim', 'date_dmy', 'excel_date', 'gender', 'reference_label', 'reference_code', 'lookup', 'concat', 'split'])],
+            'rules.*.pairs' => 'sometimes|array|max:100', 'rules.*.pairs.*.from' => 'required|string|max:255', 'rules.*.pairs.*.to' => 'required|string|max:255',
+            'rules.*.separator' => 'sometimes|nullable|string|max:20', 'rules.*.part' => 'sometimes|integer|min:1|max:64',
+            'rules.*.append_sources' => 'sometimes|array|max:7', 'rules.*.append_sources.*' => 'required|string|max:100',
+            'rules.*.overrides' => 'sometimes|array|max:100', 'rules.*.overrides.*.from' => 'required|string|max:255',
+            'rules.*.overrides.*.to' => 'required|string|max:255']);
         $tenantId = $this->tenant($request);
         $fields = array_column($registry->channel($input['channel'])->fields, 'name');
         $targets = array_column($input['rules'], 'target');
@@ -69,7 +91,36 @@ class FileMappingController
             if ($rule['kind'] === 'source' && empty($rule['source'])) {
                 throw ValidationException::withMessages(['rules' => 'Pilih kolom sumber untuk setiap aturan sumber.']);
             }
+            $field = collect($registry->channel($input['channel'])->fields)->firstWhere('name', $rule['target']);
+            if ($rule['transform'] === 'lookup') {
+                abort_if(empty($rule['pairs']), 422, 'Isi tabel padanan terlebih dahulu.');
+                $keys = array_map(fn ($pair) => trim($pair['from']), $rule['pairs']);
+                abort_if(count(array_unique($keys)) !== count($keys) || in_array('', $keys, true), 422, 'Nilai asal padanan harus unik dan terisi.');
+            }
+            if ($rule['transform'] === 'concat') {
+                abort_if(empty($rule['append_sources']), 422, 'Pilih kolom tambahan untuk digabungkan.');
+            }
+            if ($rule['transform'] === 'split') {
+                abort_if(! isset($rule['separator']) || $rule['separator'] === '' || empty($rule['part']), 422, 'Isi pemisah dan nomor bagian.');
+            }
+            if (str_starts_with($rule['transform'], 'reference_')) {
+                abort_unless($field['reference'] ?? null, 422, 'Field ini tidak mempunyai referensi.');
+                abort_if($rule['transform'] === 'reference_code' && ! isset(MappingReferenceResolver::CODE_FIELDS[$field['reference']]), 422, 'Pencocokan kode belum tersedia untuk referensi ini.');
+                $seen = [];
+                foreach ($rule['overrides'] ?? [] as $pair) {
+                    $from = trim($pair['from']);
+                    abort_if($from === '' || isset($seen[$from]), 422, 'Nilai asal padanan harus unik dan terisi.');
+                    $seen[$from] = true;
+                    abort_unless(ReferenceRecord::where('tenant_id', $tenantId)->where('endpoint', $field['reference'])->where('value', $pair['to'])->exists(), 422, 'ID padanan tidak ada pada referensi kampus.');
+                }
+            }
         }
+        foreach ($input['rules'] as &$rule) {
+            if ($rule['transform'] === 'concat') {
+                $rule['separator'] = $rule['separator'] ?? '';
+            }
+        }
+        unset($rule);
         $profile = DB::transaction(function () use ($input, $tenantId, $request) {
             if ($input['profile_id'] ?? null) {
                 $profile = MappingProfile::query()->lockForUpdate()->findOrFail($input['profile_id']);

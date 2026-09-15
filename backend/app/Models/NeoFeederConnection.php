@@ -21,6 +21,7 @@ class NeoFeederConnection extends Model
         'last_token_refreshed_at',
         'last_checked_at',
         'metadata',
+        'timeout_ms',
     ];
 
     protected $hidden = [
@@ -31,6 +32,7 @@ class NeoFeederConnection extends Model
         'last_token_refreshed_at' => 'datetime',
         'last_checked_at' => 'datetime',
         'metadata' => 'array',
+        'timeout_ms' => 'integer',
     ];
 
     public function tenant(): BelongsTo

@@ -153,6 +153,25 @@ export function WorkspaceDialogs() {
               </label>
 
               <label>
+                Batas waktu request (detik)
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  step={1}
+                  required
+                  value={connectionForm.timeoutSeconds}
+                  disabled={connectionFormState === 'saving'}
+                  onChange={(event) =>
+                    handleConnectionFormChange('timeoutSeconds', event.target.value)
+                  }
+                />
+                <small>
+                  1–30 detik. Timeout setelah pengiriman tetap memerlukan pemeriksaan hasil.
+                </small>
+              </label>
+
+              <label>
                 Password
                 <input
                   autoComplete="new-password"

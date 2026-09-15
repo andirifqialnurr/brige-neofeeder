@@ -140,9 +140,10 @@ class DeliveryConcurrencyTest extends TestCase
     public function test_http_timeout_stays_unknown_and_cannot_be_retried(): void
     {
         [$batch, $row, , $token] = $this->fixture();
+        NeoFeederConnection::where('tenant_id', $batch->tenant_id)->update(['timeout_ms' => 1000]);
         Http::post($this->simulator.'/scenario', ['mode' => 'timeout'])->throw();
         $this->withToken($token)->postJson('/api/import-batches/'.$batch->id.'/sync')->assertOk();
-        $worker = $this->start([PHP_BINARY, 'artisan', 'queue:work', 'redis', '--once', '--sleep=0'], ['NEOFEEDER_DEFAULT_TIMEOUT_MS' => '1000']);
+        $worker = $this->start([PHP_BINARY, 'artisan', 'queue:work', 'redis', '--once', '--sleep=0']);
         $this->assertSame(0, $worker->wait());
         $attempt = $row->syncAttempts()->firstOrFail();
         $this->assertSame('unknown', $attempt->status);

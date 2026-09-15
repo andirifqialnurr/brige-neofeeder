@@ -9,8 +9,7 @@ final readonly class NeoFeederResponse
         public string $errorDesc,
         public mixed $data,
         public array $raw,
-    ) {
-    }
+    ) {}
 
     public static function fromArray(array $payload): self
     {

@@ -17,6 +17,8 @@ import { Select } from '@/components/ui/select';
 import { useWorkspace } from '@/hooks/workspace-context';
 import { requestApi } from '@/lib/api';
 import { goTo } from '@/lib/router';
+import { ReferenceRule } from './reference-rule';
+import { TransformRule } from './transform-rule';
 import {
   matchMappingHeaders,
   type MappingField,
@@ -31,6 +33,8 @@ import {
 const channelLabels: Record<string, string> = {
   mahasiswa_biodata: 'Biodata mahasiswa',
   mahasiswa_riwayat_pendidikan: 'Riwayat pendidikan mahasiswa',
+  mata_kuliah: 'Mata kuliah',
+  kelas_kuliah: 'Kelas kuliah',
 };
 const jsonPost = (body: unknown): RequestInit => ({
   method: 'POST',
@@ -245,6 +249,12 @@ function FileMappingWorkspace({
   return (
     <>
       {error && <ErrorState title="Permintaan gagal" description={error} />}
+      {channel === 'kelas_kuliah' && (
+        <p className="muted">
+          Siapkan referensi prodi, semester, dan mata kuliah terlebih dahulu. Mata kuliah baru harus
+          memperoleh ID Neo Feeder sebelum dipakai untuk kelas.
+        </p>
+      )}
       <WorkspacePanel>
         <SectionHeader
           title="Sumber data"
@@ -447,21 +457,50 @@ function FileMappingWorkspace({
                       />
                     )}
                   </div>,
-                  <Select
-                    aria-label={`Normalisasi ${field.name}`}
-                    disabled={!!busy || !rule}
-                    value={rule?.transform ?? 'trim'}
-                    onChange={(event) =>
-                      changeRule(field, {
-                        transform: event.target.value as MappingRule['transform'],
-                      })
-                    }
-                  >
-                    <option value="trim">Rapikan spasi</option>
-                    <option value="date_dmy">Tanggal dd/mm/yyyy</option>
-                    <option value="excel_date">Tanggal angka Excel</option>
-                    <option value="gender">Gender → L/P</option>
-                  </Select>,
+                  <div className="mapping-rule-cell">
+                    <Select
+                      aria-label={`Normalisasi ${field.name}`}
+                      disabled={!!busy || !rule}
+                      value={rule?.transform ?? 'trim'}
+                      onChange={(event) =>
+                        changeRule(field, {
+                          transform: event.target.value as MappingRule['transform'],
+                          part: rule?.part ?? 1,
+                        })
+                      }
+                    >
+                      <option value="trim">Rapikan spasi</option>
+                      <option value="lookup">Tabel padanan / enum</option>
+                      <option value="concat">Gabung kolom</option>
+                      <option value="split">Ambil bagian teks</option>
+                      <option value="date_dmy">Tanggal dd/mm/yyyy</option>
+                      <option value="excel_date">Tanggal angka Excel</option>
+                      <option value="gender">Gender → L/P</option>
+                      {field.reference && (
+                        <option value="reference_label">Nama referensi → ID</option>
+                      )}
+                      {['GetProdi', 'GetListMataKuliah'].includes(field.reference ?? '') && (
+                        <option value="reference_code">Kode referensi → ID</option>
+                      )}
+                    </Select>
+                    {rule && ['lookup', 'concat', 'split'].includes(rule.transform) && (
+                      <TransformRule
+                        rule={rule}
+                        headers={source.headers}
+                        disabled={!!busy}
+                        onChange={(changes) => changeRule(field, changes)}
+                      />
+                    )}
+                    {rule?.transform.startsWith('reference_') && (
+                      <ReferenceRule
+                        tenantId={tenantId}
+                        channel={channel}
+                        rule={rule}
+                        disabled={!!busy}
+                        onChange={(changes) => changeRule(field, changes)}
+                      />
+                    )}
+                  </div>,
                 ];
               })}
           />

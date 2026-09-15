@@ -11,6 +11,7 @@ use App\Services\NeoFeeder\Contracts\NeoFeederContractRegistry;
 use App\Services\NeoFeeder\Contracts\OperationContract;
 use App\Services\NeoFeeder\NeoFeederClient;
 use App\Services\NeoFeeder\NeoFeederCredentialVault;
+use App\Services\NeoFeeder\OutboundPaused;
 use App\Services\NeoFeeder\Payloads\NeoFeederPayloadBuilder;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Client\ConnectionException;
@@ -77,6 +78,10 @@ final class NeoFeederRecordSyncService
         try {
             $connection = $this->connection($record);
             $token = $this->token($connection);
+        } catch (OutboundPaused $exception) {
+            $this->finish($attempt, 'failed', 'outbound_paused', $exception->getMessage(), true);
+
+            return false;
         } catch (ConnectionException|RequestException $exception) {
             if ($attempt->execution_count < 3) {
                 $attempt->forceFill(['status' => 'retrying', 'error_code' => 'token_network', 'error_desc' => 'Koneksi autentikasi gagal; data belum dikirim.'])->save();
@@ -102,7 +107,13 @@ final class NeoFeederRecordSyncService
         $payload = $attempt->request_payload;
         unset($payload['act'], $payload['token']);
         try {
-            $response = $this->client->post($connection->base_url, $attempt->action, ['token' => $token, ...$payload]);
+            $response = $this->client->post($connection->base_url, $attempt->action, ['token' => $token, ...$payload], $connection);
+        } catch (OutboundPaused $exception) {
+            // The client guarantees this exception is raised before any HTTP request.
+            SyncAttempt::whereKey($attempt->id)->where('status', 'syncing')->update(['request_started_at' => null]);
+            $this->finish($attempt, 'failed', 'outbound_paused', $exception->getMessage(), true);
+
+            return false;
         } catch (Throwable $exception) {
             $this->finish($attempt, 'unknown', 'delivery_unknown', 'Hasil pengiriman belum diketahui. Periksa Neo Feeder sebelum mengambil tindakan.', false);
 
@@ -230,7 +241,7 @@ final class NeoFeederRecordSyncService
             throw new RuntimeException('Neo Feeder credential is incomplete.');
         }
 
-        $response = $this->client->getToken($connection->base_url, $connection->username, $password);
+        $response = $this->client->getToken($connection->base_url, $connection->username, $password, $connection);
         $token = is_array($response->data) ? ($response->data['token'] ?? null) : null;
 
         if (! $response->successful() || ! is_string($token) || $token === '') {

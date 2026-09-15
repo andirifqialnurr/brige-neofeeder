@@ -13,7 +13,21 @@ export type MappingRule = {
   kind: 'source' | 'constant';
   source?: string | null;
   constant?: string | null;
-  transform: 'trim' | 'date_dmy' | 'excel_date' | 'gender';
+  transform:
+    | 'trim'
+    | 'date_dmy'
+    | 'excel_date'
+    | 'gender'
+    | 'reference_label'
+    | 'reference_code'
+    | 'lookup'
+    | 'concat'
+    | 'split';
+  pairs?: { from: string; to: string }[];
+  separator?: string;
+  part?: number;
+  append_sources?: string[];
+  overrides?: { from: string; to: string }[];
 };
 export type MappingProfile = {
   id: string;
@@ -22,7 +36,13 @@ export type MappingProfile = {
   version: number;
   rules: MappingRule[];
 };
-export type MappingField = { name: string; label: string; required?: boolean; type: string };
+export type MappingField = {
+  name: string;
+  label: string;
+  required?: boolean;
+  type: string;
+  reference?: string | null;
+};
 export type MappingWorkspaceData = {
   sources: SourceFile[];
   profiles: MappingProfile[];

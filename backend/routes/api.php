@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BatchReconciliationController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FileMappingController;
 use App\Http\Controllers\Api\HealthController;
@@ -21,9 +22,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class);
 
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:bridge-login');
 
-Route::middleware('api.token')->group(function (): void {
+Route::middleware(['api.token', 'throttle:bridge-tenant'])->group(function (): void {
+    Route::get('import-batches/{importBatch}/reconciliation', BatchReconciliationController::class);
+    Route::get('mapping/references', [FileMappingController::class, 'references']);
     Route::get('mapping/workspace', [FileMappingController::class, 'workspace']);
     Route::post('mapping/sources', [FileMappingController::class, 'upload']);
     Route::post('mapping/profiles', [FileMappingController::class, 'save']);

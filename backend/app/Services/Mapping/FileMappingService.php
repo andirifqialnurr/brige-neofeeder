@@ -21,7 +21,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class FileMappingService
 {
-    public const CHANNELS = ['mahasiswa_biodata', 'mahasiswa_riwayat_pendidikan'];
+    public const CHANNELS = ['mahasiswa_biodata', 'mahasiswa_riwayat_pendidikan', 'mata_kuliah', 'kelas_kuliah'];
 
     public function __construct(private NeoFeederContractRegistry $registry, private StagingRecordValidator $validator) {}
 
@@ -30,7 +30,7 @@ class FileMappingService
         $records = $this->records($profile, $source, $version);
         $valid = collect($records)->where('status', 'valid')->count();
 
-        return ['preview_hash' => $this->hash($profile, $source), 'version' => $profile->version,
+        return ['preview_hash' => $this->hash($profile, $source, $records), 'version' => $profile->version,
             'summary' => ['total_rows' => count($records), 'valid_rows' => $valid, 'invalid_rows' => count($records) - $valid],
             'rows' => app(SensitiveData::class)->present(array_map(fn ($record) => ['row_number' => $record['row_number'],
                 'normalized_row' => $record['normalized_row'], 'status' => $record['status'], 'validation_result' => $record['validation_result']], array_slice($records, 0, 10)))];
@@ -42,7 +42,7 @@ class FileMappingService
             $profile = MappingProfile::query()->lockForUpdate()->findOrFail($profile->id);
             $source = SourceConnection::query()->lockForUpdate()->findOrFail($source->id);
             $records = $this->records($profile, $source, $version);
-            abort_unless(hash_equals($this->hash($profile, $source), $hash), 409, 'Mapping atau contract berubah. Tinjau preview ulang.');
+            abort_unless(hash_equals($this->hash($profile, $source, $records), $hash), 409, 'Mapping, referensi, atau contract berubah. Tinjau preview ulang.');
             $mappingVersion = $profile->versions()->where('version', $version)->firstOrFail();
             $existing = DB::table('mapping_runs')->where('source_connection_id', $source->id)->where('mapping_profile_version_id', $mappingVersion->id)->first();
             if ($existing) {
@@ -57,7 +57,7 @@ class FileMappingService
             foreach ($records as $record) {
                 $row = new StagingRecord;
                 $row->forceFill([...$record, 'tenant_id' => $source->tenant_id, 'import_batch_id' => $batch->id,
-                    'source_lineage' => ['source_id' => $source->id, 'source_name' => $source->name, 'source_sheet' => $source->sheet_name,
+                    'source_lineage' => [...($record['source_lineage'] ?? []), 'source_id' => $source->id, 'source_name' => $source->name, 'source_sheet' => $source->sheet_name,
                         'source_row' => $record['row_number'], 'mapping_profile_id' => $profile->id, 'mapping_version' => $version]])->save();
             }
             app(ImportBatchValidationService::class)->validate($batch);
@@ -81,16 +81,39 @@ class FileMappingService
             }
         }
         $channel = $this->registry->channel($profile->channel);
+        foreach ($rules as $rule) {
+            foreach ($rule['transform'] === 'concat' ? $rule['append_sources'] : [] as $header) {
+                if (! in_array($header, $source->headers, true)) {
+                    throw ValidationException::withMessages(['source_id' => 'Kolom gabungan tidak tersedia: '.$header]);
+                }
+            }
+        }
+        $resolver = new MappingReferenceResolver;
         $records = [];
         foreach ($source->snapshot as $sourceRow) {
             $normalized = array_fill_keys(array_column($channel->fields, 'name'), null);
+            $mappingErrors = [];
             foreach ($rules as $rule) {
                 $value = $rule['kind'] === 'constant' ? ($rule['constant'] ?? null) : ($sourceRow['values'][$rule['source']] ?? null);
                 $normalized[$rule['target']] = $this->transform($value, $rule['transform']);
+                $transformed = app(MappingValueTransformer::class)->apply($normalized[$rule['target']], $sourceRow['values'], $rule);
+                $normalized[$rule['target']] = $transformed['value'];
+                if ($transformed['error']) {
+                    $mappingErrors[] = $transformed['error'];
+                }
+                if (str_starts_with($rule['transform'], 'reference_') && $normalized[$rule['target']] !== null) {
+                    $field = collect($channel->fields)->firstWhere('name', $rule['target']);
+                    $resolved = $resolver->resolve($source->tenant_id, $field['reference'], $normalized[$rule['target']], $rule);
+                    $normalized[$rule['target']] = $resolved['value'];
+                    if ($resolved['error']) {
+                        $mappingErrors[] = $resolved['error'];
+                    }
+                }
             }
             $key = implode('|', array_map(fn ($field) => $field.'='.($normalized[$field] ?? ''), $channel->naturalKey));
             $record = ['channel' => $profile->channel, 'sheet_name' => $channel->sheetName, 'row_number' => $sourceRow['row_number'],
-                'operation' => 'insert', 'natural_key' => $key ?: null, 'raw_row' => $sourceRow['values'], 'normalized_row' => $normalized];
+                'operation' => 'insert', 'natural_key' => $key ?: null, 'raw_row' => $sourceRow['values'], 'normalized_row' => $normalized,
+                'source_lineage' => ['mapping_errors' => $mappingErrors]];
             $result = $this->validator->validate(new StagingRecord([...$record, 'tenant_id' => $source->tenant_id]));
             $records[] = [...$record, 'validation_result' => $result, 'status' => $result['errors'] === [] ? 'valid' : 'invalid'];
         }
@@ -105,10 +128,10 @@ class FileMappingService
         return $records;
     }
 
-    private function hash(MappingProfile $profile, SourceConnection $source): string
+    private function hash(MappingProfile $profile, SourceConnection $source, array $records): string
     {
         return hash('sha256', json_encode([$profile->id, $profile->version, $source->id, $source->sha256,
-            $profile->versions()->where('version', $profile->version)->value('rules'), config('neofeeder-contracts')], JSON_THROW_ON_ERROR));
+            $profile->versions()->where('version', $profile->version)->value('rules'), config('neofeeder-contracts'), $records], JSON_THROW_ON_ERROR));
     }
 
     private function transform(mixed $value, string $transform): mixed

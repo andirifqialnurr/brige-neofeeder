@@ -10,7 +10,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 {
     public function test_it_normalizes_get_profil_pt_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetProfilPT', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetProfilPT', [
             'data' => [
                 'id_perguruan_tinggi' => 'pt-1',
                 'kode_perguruan_tinggi' => '001001',
@@ -35,7 +35,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_prodi_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetProdi', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetProdi', [
             'data' => [
                 [
                     'id_prodi' => 'prodi-1',
@@ -78,7 +78,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_semester_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetSemester', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetSemester', [
             'data' => [
                 [
                     'id_semester' => '20241',
@@ -103,7 +103,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_agama_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetAgama', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetAgama', [
             'data' => [
                 [
                     'id_agama' => 1,
@@ -128,7 +128,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_negara_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetNegara', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetNegara', [
             'data' => [
                 [
                     'id_negara' => 'ID',
@@ -153,7 +153,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_wilayah_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetWilayah', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetWilayah', [
             'data' => [
                 [
                     'id_wilayah' => '016000',
@@ -178,7 +178,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_jenis_tinggal_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetJenisTinggal', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetJenisTinggal', [
             'data' => [
                 [
                     'id_jenis_tinggal' => 1,
@@ -203,7 +203,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_alat_transportasi_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetAlatTransportasi', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetAlatTransportasi', [
             'data' => [
                 [
                     'id_alat_transportasi' => 3,
@@ -228,7 +228,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_jenis_pendaftaran_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetJenisPendaftaran', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetJenisPendaftaran', [
             'data' => [
                 [
                     'id_jenis_daftar' => 1,
@@ -253,7 +253,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_jalur_masuk_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetJalurMasuk', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetJalurMasuk', [
             'data' => [
                 [
                     'id_jalur_masuk' => 12,
@@ -278,7 +278,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_pembiayaan_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetPembiayaan', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetPembiayaan', [
             'data' => [
                 [
                     'id_pembiayaan' => 1,
@@ -303,7 +303,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_status_mahasiswa_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetStatusMahasiswa', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetStatusMahasiswa', [
             'data' => [
                 [
                     'id_status_mahasiswa' => 'A',
@@ -328,7 +328,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_jenis_keluar_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetJenisKeluar', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetJenisKeluar', [
             'data' => [
                 [
                     'id_jenis_keluar' => '1',
@@ -353,7 +353,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_jenis_evaluasi_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetJenisEvaluasi', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetJenisEvaluasi', [
             'data' => [
                 [
                     'id_jenis_evaluasi' => 1,
@@ -378,7 +378,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_kategori_kegiatan_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetKategoriKegiatan', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetKategoriKegiatan', [
             'data' => [
                 [
                     'id_kategori_kegiatan' => 110100,
@@ -403,7 +403,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_basis_evaluasi_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetBasisEvaluasi', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetBasisEvaluasi', [
             'data' => [
                 [
                     'id_basis_evaluasi' => 1,
@@ -428,7 +428,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_list_dosen_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetListDosen', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetListDosen', [
             'data' => [
                 [
                     'id_dosen' => 'dosen-1',
@@ -455,7 +455,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_list_penugasan_dosen_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetListPenugasanDosen', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetListPenugasanDosen', [
             'data' => [
                 [
                     'id_registrasi_dosen' => 'reg-dosen-1',
@@ -482,7 +482,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_list_mata_kuliah_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetListMataKuliah', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetListMataKuliah', [
             'data' => [
                 [
                     'id_matkul' => 'matkul-1',
@@ -509,7 +509,7 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
 
     public function test_it_normalizes_get_list_kelas_kuliah_response(): void
     {
-        $rows = (new NeoFeederReferenceSyncService())->normalize('GetListKelasKuliah', [
+        $rows = (new NeoFeederReferenceSyncService)->normalize('GetListKelasKuliah', [
             'data' => [
                 [
                     'id_kelas_kuliah' => 'kelas-1',
@@ -538,6 +538,6 @@ class NeoFeederReferenceSyncServiceTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        (new NeoFeederReferenceSyncService())->normalize('GetUnknownEndpoint', []);
+        (new NeoFeederReferenceSyncService)->normalize('GetUnknownEndpoint', []);
     }
 }

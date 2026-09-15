@@ -156,12 +156,14 @@ export function useWorkspaceController() {
   const [connectionForm, setConnectionForm] = useState<{
     tenantId: string;
     baseUrl: string;
+    timeoutSeconds: string;
     username: string;
     password: string;
     status: NeoFeederConnectionStatus;
   }>({
     tenantId: '',
     baseUrl: '',
+    timeoutSeconds: '30',
     username: '',
     password: '',
     status: 'draft',
@@ -361,7 +363,14 @@ export function useWorkspaceController() {
     setConnections([]);
     setTenantState('idle');
     setConnectionState('idle');
-    setConnectionForm({ tenantId: '', baseUrl: '', username: '', password: '', status: 'draft' });
+    setConnectionForm({
+      tenantId: '',
+      baseUrl: '',
+      username: '',
+      password: '',
+      status: 'draft',
+      timeoutSeconds: '30',
+    });
     setConnectionTestResult(null);
     setConnectionTestError('');
     setReferenceTenantId('');
@@ -422,6 +431,7 @@ export function useWorkspaceController() {
     setConnectionForm({
       tenantId,
       baseUrl: connection?.base_url ?? '',
+      timeoutSeconds: String((connection?.timeout_ms ?? 30000) / 1000),
       username: connection?.username ?? '',
       password: '',
       status: connection?.status ?? 'draft',
@@ -439,6 +449,7 @@ export function useWorkspaceController() {
       );
       const payload = {
         base_url: connectionForm.baseUrl,
+        timeout_ms: Number(connectionForm.timeoutSeconds) * 1000,
         username: connectionForm.username,
         status: connectionForm.status,
         ...(connectionForm.password ? { password: connectionForm.password } : {}),

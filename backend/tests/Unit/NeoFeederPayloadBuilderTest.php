@@ -12,7 +12,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
 {
     public function test_it_builds_filter_from_read_list_key_fields(): void
     {
-        $payload = (new NeoFeederPayloadBuilder())->buildReadList(
+        $payload = (new NeoFeederPayloadBuilder)->buildReadList(
             new OperationContract(
                 name: 'get_detail',
                 action: 'GetDetailNilaiPerkuliahanKelas',
@@ -33,7 +33,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
 
     public function test_it_keeps_raw_filter_and_pagination_options(): void
     {
-        $payload = (new NeoFeederPayloadBuilder())->buildReadList(
+        $payload = (new NeoFeederPayloadBuilder)->buildReadList(
             new OperationContract(
                 name: 'get',
                 action: 'GetListMataKuliah',
@@ -61,7 +61,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        (new NeoFeederPayloadBuilder())->buildReadList(
+        (new NeoFeederPayloadBuilder)->buildReadList(
             new OperationContract(
                 name: 'insert',
                 action: 'InsertMataKuliah',
@@ -73,7 +73,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
 
     public function test_it_builds_insert_record_from_channel_fields(): void
     {
-        $payload = (new NeoFeederPayloadBuilder())->buildInsert(
+        $payload = (new NeoFeederPayloadBuilder)->buildInsert(
             $this->courseChannel(),
             new OperationContract(
                 name: 'insert',
@@ -108,7 +108,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Required field [nama_mata_kuliah] is missing');
 
-        (new NeoFeederPayloadBuilder())->buildInsert(
+        (new NeoFeederPayloadBuilder)->buildInsert(
             $this->courseChannel(),
             new OperationContract(
                 name: 'insert',
@@ -126,7 +126,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
 
     public function test_it_builds_update_key_record_payload(): void
     {
-        $payload = (new NeoFeederPayloadBuilder())->buildUpdate(
+        $payload = (new NeoFeederPayloadBuilder)->buildUpdate(
             $this->courseChannel(),
             new OperationContract(
                 name: 'update',
@@ -158,7 +158,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Required key field [id_matkul] is missing');
 
-        (new NeoFeederPayloadBuilder())->buildUpdate(
+        (new NeoFeederPayloadBuilder)->buildUpdate(
             $this->courseChannel(),
             new OperationContract(
                 name: 'update',
@@ -178,7 +178,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Update record is empty');
 
-        (new NeoFeederPayloadBuilder())->buildUpdate(
+        (new NeoFeederPayloadBuilder)->buildUpdate(
             $this->courseChannel(),
             new OperationContract(
                 name: 'update',
@@ -195,7 +195,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
 
     public function test_it_builds_delete_key_payload(): void
     {
-        $payload = (new NeoFeederPayloadBuilder())->buildDelete(
+        $payload = (new NeoFeederPayloadBuilder)->buildDelete(
             new OperationContract(
                 name: 'delete',
                 action: 'DeleteMataKuliah',
@@ -221,7 +221,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Required key field [id_matkul] is missing');
 
-        (new NeoFeederPayloadBuilder())->buildDelete(
+        (new NeoFeederPayloadBuilder)->buildDelete(
             new OperationContract(
                 name: 'delete',
                 action: 'DeleteMataKuliah',
@@ -235,7 +235,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
 
     public function test_it_builds_record_array_insert_payload(): void
     {
-        $payload = (new NeoFeederPayloadBuilder())->buildRecordArrayInsert(
+        $payload = (new NeoFeederPayloadBuilder)->buildRecordArrayInsert(
             $this->evaluationChannel(),
             new OperationContract(
                 name: 'insert',
@@ -279,7 +279,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
 
     public function test_it_builds_key_record_array_update_payload(): void
     {
-        $payload = (new NeoFeederPayloadBuilder())->buildRecordArrayUpdate(
+        $payload = (new NeoFeederPayloadBuilder)->buildRecordArrayUpdate(
             $this->evaluationChannel(),
             new OperationContract(
                 name: 'update',
@@ -318,7 +318,7 @@ class NeoFeederPayloadBuilderTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Record array is empty or invalid');
 
-        (new NeoFeederPayloadBuilder())->buildRecordArrayInsert(
+        (new NeoFeederPayloadBuilder)->buildRecordArrayInsert(
             $this->evaluationChannel(),
             new OperationContract(
                 name: 'insert',

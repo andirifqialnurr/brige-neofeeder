@@ -46,7 +46,7 @@ class RefreshNeoFeederReferenceJob implements ShouldQueue
             throw new RuntimeException('Neo Feeder password is not configured.');
         }
 
-        $tokenResponse = $client->getToken($connection->base_url, $connection->username, $password);
+        $tokenResponse = $client->getToken($connection->base_url, $connection->username, $password, $connection);
 
         if (! $tokenResponse->successful()) {
             throw new RuntimeException($tokenResponse->errorDesc ?: 'Neo Feeder token request failed.');
@@ -60,7 +60,7 @@ class RefreshNeoFeederReferenceJob implements ShouldQueue
 
         $referenceResponse = $client->post($connection->base_url, $this->endpoint, [
             'token' => $token,
-        ]);
+        ], $connection);
 
         if (! $referenceResponse->successful()) {
             throw new RuntimeException($referenceResponse->errorDesc ?: "Reference sync failed for {$this->endpoint}.");

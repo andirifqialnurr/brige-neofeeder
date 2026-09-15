@@ -2,6 +2,7 @@ import { Select } from '@/components/ui/select';
 import { BatchSyncActions, BatchSyncDialogs, BatchSyncPanel } from './batch-sync';
 import { useBatchSync } from '@/hooks/use-batch-sync';
 import { useEffect, useRef, useState } from 'react';
+import { BatchReconciliation } from './batch-reconciliation';
 import {
   ArrowLeft,
   Download,
@@ -206,7 +207,7 @@ export function BatchInspection({
   const [busy, setBusy] = useState<'report' | 'dry-run' | null>(null);
   const lock = useRef(false);
   const [rowId, setRowId] = useState('');
-  const [tab, setTab] = useState<'validation' | 'delivery'>('validation');
+  const [tab, setTab] = useState<'validation' | 'delivery' | 'reconciliation'>('validation');
   const sync = useBatchSync(id, tab === 'delivery', () => {
     setRefresh((value) => value + 1);
     onUpdated();
@@ -270,7 +271,7 @@ export function BatchInspection({
           <>
             {tab === 'delivery' ? (
               <BatchSyncActions batch={batch} sync={sync} />
-            ) : (
+            ) : tab === 'validation' ? (
               <>
                 <label className="inline-field">
                   <span className="sr-only">Sheet</span>
@@ -349,7 +350,7 @@ export function BatchInspection({
                   text="Menyiapkan payload tanpa mengirim ke Neo Feeder. Baris invalid dilewati."
                 />
               </>
-            )}
+            ) : null}
             <IconButton label="Daftar batch" icon={ArrowLeft} onClick={onBack} />
           </>
         }
@@ -368,10 +369,13 @@ export function BatchInspection({
         items={[
           { id: 'validation', label: 'Validasi' },
           { id: 'delivery', label: 'Pengiriman' },
+          { id: 'reconciliation', label: 'Rekonsiliasi' },
         ]}
       />
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'delivery' ? (
+        {tab === 'reconciliation' ? (
+          <BatchReconciliation id={id} />
+        ) : tab === 'delivery' ? (
           <BatchSyncPanel batch={batch} sync={sync} />
         ) : (
           <WorkspacePanel>

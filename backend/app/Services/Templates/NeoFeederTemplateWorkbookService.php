@@ -7,7 +7,6 @@ use App\Services\NeoFeeder\Contracts\FieldContract;
 use App\Services\NeoFeeder\Contracts\NeoFeederContractRegistry;
 use App\Services\NeoFeeder\Contracts\OperationContract;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
-use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -19,12 +18,11 @@ final class NeoFeederTemplateWorkbookService
 
     public function __construct(
         private readonly NeoFeederContractRegistry $registry,
-    ) {
-    }
+    ) {}
 
     public function generate(): Spreadsheet
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $spreadsheet->getProperties()
             ->setCreator('Bridge Neo Feeder')
             ->setTitle('Bridge Neo Feeder Import Template')

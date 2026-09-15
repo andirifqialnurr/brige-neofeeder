@@ -18,7 +18,7 @@ final class StagingRecordValidator
     {
         $channel = $this->registry->channel($record->channel);
         $row = $this->normalizeEmptyValues($record->normalized_row ?? []);
-        $result = ['errors' => [], 'warnings' => [], 'info' => []];
+        $result = ['errors' => $record->source_lineage['mapping_errors'] ?? [], 'warnings' => [], 'info' => []];
 
         if (! $channel instanceof ChannelContract) {
             $result['errors'][] = $this->issue(null, 'unknown_channel', "Channel [{$record->channel}] tidak dikenal.");
@@ -38,7 +38,38 @@ final class StagingRecordValidator
             $this->validateReference($record, $field, $value, $result);
         }
 
+        $this->validateAcademicMapping($record, $row, $result);
+
         return $result;
+    }
+
+    private function validateAcademicMapping(StagingRecord $record, array $row, array &$result): void
+    {
+        if ($record->source_lineage === null || ! in_array($record->channel, ['mata_kuliah', 'kelas_kuliah'], true)) {
+            return;
+        }
+        if ($record->channel === 'mata_kuliah' && isset($row['sks_mata_kuliah'])) {
+            $sks = (string) $row['sks_mata_kuliah'];
+            if (! preg_match('/^\d{1,3}(\.\d{1,2})?$/', $sks) || (float) $sks < 1) {
+                $result['errors'][] = $this->issue('sks_mata_kuliah', 'academic_sks', 'SKS minimal 1, maksimal 999.99 dengan dua angka desimal.');
+            }
+        }
+        if ($record->channel !== 'kelas_kuliah') {
+            return;
+        }
+        if (isset($row['kapasitas']) && ! preg_match('/^\d{1,5}$/', (string) $row['kapasitas'])) {
+            $result['errors'][] = $this->issue('kapasitas', 'academic_capacity', 'Kapasitas harus bilangan bulat 0 sampai 99999.');
+        }
+        $course = ReferenceRecord::where('tenant_id', $record->tenant_id)->where('endpoint', 'GetListMataKuliah')->where('value', $row['id_matkul'] ?? null)->first();
+        if (! $course) {
+            return;
+        } // Normal reference validation supplies the missing-ID error.
+        $program = $course->raw_payload['id_prodi'] ?? null;
+        if ($program !== null && (string) $program !== (string) ($row['id_prodi'] ?? '')) {
+            $result['errors'][] = $this->issue('id_matkul', 'course_program', 'Mata kuliah berada pada prodi lain. Periksa pilihan mata kuliah dan prodi.');
+        } elseif ($program === null) {
+            $result['warnings'][] = $this->issue('id_matkul', 'course_program_unverified', 'Referensi mata kuliah belum menyertakan prodi. Verifikasi hubungan prodi sebelum pengiriman.');
+        }
     }
 
     public function normalizeEmptyValues(array $row): array
@@ -138,7 +169,8 @@ final class StagingRecordValidator
             ->count();
 
         if ($labelMatches > 1) {
-            $result['warnings'][] = $this->issue($field->name, 'ambiguous_reference', 'Label referensi ambigu, gunakan value/id referensi.');
+            $severity = $record->source_lineage !== null ? 'errors' : 'warnings';
+            $result[$severity][] = $this->issue($field->name, 'ambiguous_reference', 'Label referensi ambigu, gunakan value/id referensi.');
 
             return;
         }

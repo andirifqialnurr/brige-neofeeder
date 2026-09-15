@@ -99,6 +99,7 @@ export type Tenant = {
 export type NeoFeederConnectionStatus = 'draft' | 'active' | 'inactive' | 'error';
 
 export type NeoFeederConnection = {
+  timeout_ms?: number;
   id: string;
   tenant_id: string;
   base_url: string;
@@ -465,6 +466,7 @@ export async function getNeoFeederConnections(): Promise<NeoFeederConnection[]> 
 }
 
 export async function createNeoFeederConnection(input: {
+  timeout_ms?: number;
   tenant_id: string;
   base_url: string;
   username?: string;
@@ -495,6 +497,7 @@ export async function createNeoFeederConnection(input: {
 export async function updateNeoFeederConnection(
   connectionId: string,
   input: {
+    timeout_ms?: number;
     base_url?: string;
     username?: string;
     password?: string;
