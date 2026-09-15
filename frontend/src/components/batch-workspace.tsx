@@ -520,6 +520,14 @@ function RowDialog({
               { id: 'issues', label: 'Temuan' },
             ]}
           />
+          {row.source_lineage && (
+            <p className="muted">
+              Sumber: {row.source_lineage.source_name}
+              {row.source_lineage.source_sheet ? ` / ${row.source_lineage.source_sheet}` : ''} ·
+              baris {row.source_lineage.source_row} · mapping versi{' '}
+              {row.source_lineage.mapping_version}
+            </p>
+          )}
           {!row.sensitive_revealed && (
             <p className="muted">NIK, NPWP, dan nomor telepon disamarkan.</p>
           )}

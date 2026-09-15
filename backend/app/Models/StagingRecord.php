@@ -23,12 +23,14 @@ class StagingRecord extends Model
         'normalized_row',
         'validation_result',
         'status',
+        'source_lineage',
     ];
 
     protected $casts = [
         'raw_row' => 'array',
         'normalized_row' => 'array',
         'validation_result' => 'array',
+        'source_lineage' => 'array',
     ];
 
     public function importBatch(): BelongsTo

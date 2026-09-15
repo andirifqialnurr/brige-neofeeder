@@ -1,6 +1,31 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+.mapping-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+.mapping-field, .mapping-rule-cell {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.mapping-rule-cell { min-width: 180px; }
+.mapping-field-code {
+  display: block;
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+}
+.mapping-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+}
+
 .select-trigger {
   display: flex;
   align-items: center;

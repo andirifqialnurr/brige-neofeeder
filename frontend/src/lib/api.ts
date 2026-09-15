@@ -730,6 +730,12 @@ export type BatchRow = {
   warnings: number;
 };
 export type RowDetail = DryRunPayloadPreview & {
+  source_lineage?: {
+    source_name: string;
+    source_sheet: string | null;
+    source_row: number;
+    mapping_version: number;
+  } | null;
   raw_row: Record<string, unknown> | null;
   normalized_row: Record<string, unknown>;
   can_reveal_sensitive: boolean;

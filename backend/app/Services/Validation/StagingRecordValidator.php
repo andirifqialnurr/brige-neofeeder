@@ -12,8 +12,7 @@ final class StagingRecordValidator
 {
     public function __construct(
         private readonly NeoFeederContractRegistry $registry,
-    ) {
-    }
+    ) {}
 
     public function validate(StagingRecord $record): array
     {
@@ -70,6 +69,8 @@ final class StagingRecordValidator
 
         if (! is_string($value) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
             $result['errors'][] = $this->issue($field->name, 'date_format', 'Format tanggal harus yyyy-mm-dd.');
+        } elseif (! checkdate((int) substr($value, 5, 2), (int) substr($value, 8, 2), (int) substr($value, 0, 4))) {
+            $result['errors'][] = $this->issue($field->name, 'date_format', 'Tanggal tidak valid.');
         }
     }
 

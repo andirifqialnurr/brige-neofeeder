@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\FileMappingController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\ImportBatchApprovalController;
 use App\Http\Controllers\Api\ImportBatchController;
@@ -23,6 +24,11 @@ Route::get('/health', HealthController::class);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
 Route::middleware('api.token')->group(function (): void {
+    Route::get('mapping/workspace', [FileMappingController::class, 'workspace']);
+    Route::post('mapping/sources', [FileMappingController::class, 'upload']);
+    Route::post('mapping/profiles', [FileMappingController::class, 'save']);
+    Route::post('mapping/profiles/{mappingProfile}/preview', [FileMappingController::class, 'preview']);
+    Route::post('mapping/profiles/{mappingProfile}/stage', [FileMappingController::class, 'stage']);
     Route::get('audit-logs', [AuditLogController::class, 'index']);
     Route::get('audit-logs/export', [AuditLogController::class, 'export']);
     Route::post('import-batches/{importBatch}/rows/{record}/reveal', [ImportBatchInspectionController::class, 'reveal']);

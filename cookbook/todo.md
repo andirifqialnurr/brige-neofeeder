@@ -233,8 +233,8 @@
 
 ## 2.1 Source Discovery
 
-- [ ] Buat model `source_connection`.
-- [ ] Dukung source file CSV/Excel sebagai langkah awal.
+- [x] Buat model `source_connection` untuk snapshot file tenant.
+- [x] Dukung source file CSV/Excel sebagai langkah awal (biodata/riwayat, `file-mapping.md`).
 - [ ] Dukung source database read-only.
 - [ ] Dukung source API.
 - [ ] Buat worker schema discovery.
@@ -247,26 +247,26 @@
 
 ## 2.2 Mapping Profile
 
-- [ ] Buat model `mapping_profile`.
-- [ ] Buat versioning mapping.
-- [ ] Buat UI mapping source field ke contract field.
-- [ ] Dukung transform rule sederhana.
-- [ ] Dukung constant value.
+- [x] Buat model `mapping_profile`.
+- [x] Buat versioning mapping immutable dan guard versi stale.
+- [x] Buat UI mapping source field ke contract field.
+- [x] Dukung transform rule sederhana (spasi, tanggal, gender).
+- [x] Dukung constant value.
 - [ ] Dukung lookup table lokal.
 - [ ] Dukung concatenation/split sederhana.
-- [ ] Dukung date parser.
+- [x] Dukung date parser DMY/angka Excel dan validasi tanggal kalender.
 - [ ] Dukung enum mapping, misalnya gender/status.
 - [ ] Dukung reference resolver, misalnya kode prodi ke `id_prodi`.
 
 ## 2.3 Transform And Staging
 
-- [ ] Extract source data ke snapshot.
-- [ ] Transform source row menjadi normalized staging row.
-- [ ] Simpan transform output.
-- [ ] Simpan mapping version yang dipakai.
-- [ ] Jalankan validator Phase 1.
-- [ ] Tampilkan error/warning seperti upload Excel.
-- [ ] Tampilkan source lineage per staging row.
+- [x] Extract source file ke snapshot (database/API menyusul).
+- [x] Transform source row menjadi normalized staging row.
+- [x] Simpan transform output.
+- [x] Simpan mapping version yang dipakai.
+- [x] Jalankan validator Phase 1.
+- [x] Tampilkan error/warning seperti upload Excel.
+- [x] Tampilkan source lineage per staging row.
 
 ## 2.4 Automation Sync
 

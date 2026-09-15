@@ -75,6 +75,7 @@ final class ImportBatchDryRunService
             'channel' => $record->channel,
             'sheet_name' => $record->sheet_name,
             'row_number' => $record->row_number,
+            'source_lineage' => $record->source_lineage,
             'status' => $record->status,
             'candidate_operation' => $candidate,
             'action' => $candidate === 'skip' || ! $channel instanceof ChannelContract ? null : $this->operation($channel, $candidate)?->action,
