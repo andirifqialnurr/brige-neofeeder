@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { FileSpreadsheet, RefreshCcw, Save, Upload, Waypoints } from 'lucide-react';
+import { Download, FileSpreadsheet, RefreshCcw, Save, Upload, Waypoints } from 'lucide-react';
 import {
   AppButton,
   DataTable,
@@ -9,13 +9,14 @@ import {
   IconButton,
   LoadingState,
   PageHeader,
+  Pagination,
   SectionHeader,
   StatusBadge,
   WorkspacePanel,
 } from '@/components/ui';
 import { Select } from '@/components/ui/select';
 import { useWorkspace } from '@/hooks/workspace-context';
-import { requestApi } from '@/lib/api';
+import { downloadApiFile, requestApi } from '@/lib/api';
 import { goTo } from '@/lib/router';
 import { ReferenceRule } from './reference-rule';
 import { TransformRule } from './transform-rule';
@@ -115,6 +116,9 @@ function FileMappingWorkspace({
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<MappingPreview | null>(null);
   const [previewRow, setPreviewRow] = useState<MappingPreviewRow | null>(null);
+  const [previewStatus, setPreviewStatus] = useState('');
+  const [previewSearch, setPreviewSearch] = useState('');
+  const [previewPage, setPreviewPage] = useState(1);
   const lock = useRef(false);
   const alive = useRef(true);
   useEffect(() => {
@@ -140,6 +144,7 @@ function FileMappingWorkspace({
   const edit = () => {
     setDirty(true);
     setPreview(null);
+    setPreviewPage(1);
   };
   function changeRule(field: MappingField, changes: Partial<MappingRule>) {
     setRules((current) => ({
@@ -156,13 +161,17 @@ function FileMappingWorkspace({
     setProfile(selected);
     setName(selected?.name ?? '');
     setPreview(null);
+    setPreviewPage(1);
     setDirty(!selected);
     if (selected) {
       setChannel(selected.channel);
       setRules(Object.fromEntries(selected.rules.map((rule) => [rule.target, rule])));
     } else setRules(matchMappingHeaders(source?.headers ?? [], fields));
   }
-  async function act(action: 'upload' | 'save' | 'preview' | 'stage') {
+  async function act(
+    action: 'upload' | 'save' | 'preview' | 'stage',
+    previewOptions: { page?: number; status?: string; search?: string } = {},
+  ) {
     if (lock.current) return;
     lock.current = true;
     setBusy(action);
@@ -216,11 +225,23 @@ function FileMappingWorkspace({
             },
         );
       } else if (action === 'preview' && profile && source) {
+        const page = previewOptions.page ?? previewPage;
+        const status = previewOptions.status ?? previewStatus;
+        const search = previewOptions.search ?? previewSearch;
+        const query = new URLSearchParams({
+          page: String(page),
+          per_page: '25',
+          ...(status ? { status } : {}),
+          ...(search ? { search } : {}),
+        });
         const result = await requestApi<{ data: MappingPreview }>(
-          `mapping/profiles/${profile.id}/preview`,
+          `mapping/profiles/${profile.id}/preview?${query}`,
           jsonPost({ source_id: source.id, version: profile.version }),
         );
-        if (alive.current) setPreview(result.data);
+        if (alive.current) {
+          setPreview(result.data);
+          setPreviewPage(result.data.meta.current_page);
+        }
       } else if (action === 'stage' && profile && source && preview) {
         const result = await requestApi<{ data: { id: string } }>(
           `mapping/profiles/${profile.id}/stage`,
@@ -234,6 +255,31 @@ function FileMappingWorkspace({
       }
     } catch (err) {
       if (alive.current) setError(err instanceof Error ? err.message : 'Permintaan gagal.');
+    } finally {
+      lock.current = false;
+      onBusy(false);
+      if (alive.current) setBusy('');
+    }
+  }
+  async function exportPreview() {
+    if (lock.current || !profile || !source || !preview) return;
+    lock.current = true;
+    setBusy('export');
+    onBusy(true);
+    setError('');
+    try {
+      const query = new URLSearchParams({
+        source_id: source.id,
+        version: String(profile.version),
+        ...(previewStatus ? { status: previewStatus } : {}),
+        ...(previewSearch ? { search: previewSearch } : {}),
+      });
+      await downloadApiFile(
+        `mapping/profiles/${profile.id}/preview-report?${query}`,
+        `mapping-preview-${profile.id}.csv`,
+      );
+    } catch (err) {
+      if (alive.current) setError(err instanceof Error ? err.message : 'Ekspor gagal.');
     } finally {
       lock.current = false;
       onBusy(false);
@@ -528,7 +574,7 @@ function FileMappingWorkspace({
         <WorkspacePanel>
           <SectionHeader
             title="Preview hasil mapping"
-            description="Menampilkan sepuluh baris pertama. Validasi mencakup seluruh file dan memakai referensi kampus yang tersimpan."
+            description="Validasi mencakup seluruh file. Telusuri baris dengan filter status atau pencarian, lalu ekspor hasil yang sedang ditampilkan."
           />
           <dl className="summary-strip">
             {[
@@ -542,6 +588,60 @@ function FileMappingWorkspace({
               </div>
             ))}
           </dl>
+          <div className="mapping-form-grid">
+            <label className="mapping-field">
+              Status preview
+              <Select
+                value={previewStatus}
+                disabled={!!busy}
+                onChange={(event) => setPreviewStatus(event.target.value)}
+              >
+                <option value="">Semua status</option>
+                <option value="valid">Valid</option>
+                <option value="invalid">Perlu perbaikan</option>
+              </Select>
+            </label>
+            <label className="mapping-field">
+              Cari baris, field, atau pesan
+              <input
+                value={previewSearch}
+                maxLength={100}
+                disabled={!!busy}
+                placeholder="Contoh: NIK atau tanggal"
+                onChange={(event) => setPreviewSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    setPreviewPage(1);
+                    void act('preview', {
+                      page: 1,
+                      status: previewStatus,
+                      search: event.currentTarget.value,
+                    });
+                  }
+                }}
+              />
+            </label>
+          </div>
+          <div className="mapping-actions">
+            <AppButton
+              variant="secondary"
+              disabled={!!busy}
+              onClick={() => {
+                setPreviewPage(1);
+                void act('preview', { page: 1 });
+              }}
+            >
+              Terapkan filter
+            </AppButton>
+            <AppButton
+              icon={Download}
+              disabled={!!busy || !preview.meta.total}
+              onClick={() => void exportPreview()}
+            >
+              {busy === 'export' ? 'Mengekspor...' : 'Ekspor CSV'}
+            </AppButton>
+            <span className="muted">{preview.meta.total} baris cocok</span>
+          </div>
           <DataTable
             columns={['Baris sumber', 'Status', 'Temuan']}
             rows={preview.rows.map((row) => [
@@ -551,7 +651,7 @@ function FileMappingWorkspace({
               <StatusBadge tone={row.status === 'valid' ? 'success' : 'warning'}>
                 {row.status === 'valid' ? 'Valid' : 'Perlu perbaikan'}
               </StatusBadge>,
-              row.validation_result.errors
+              [...row.validation_result.errors, ...row.validation_result.warnings]
                 .map((issue) => `${issue.field ?? 'Baris'}: ${issue.message}`)
                 .join('; ') || '—',
             ])}
@@ -565,6 +665,14 @@ function FileMappingWorkspace({
               {busy === 'stage' ? 'Membuat batch...' : 'Buat batch validasi'}
             </AppButton>
           </div>
+          <Pagination
+            meta={preview.meta}
+            disabled={!!busy}
+            onChange={(page) => {
+              setPreviewPage(page);
+              void act('preview', { page });
+            }}
+          />
         </WorkspacePanel>
       )}
       {previewRow && (

@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class FileMappingController
@@ -143,8 +144,45 @@ class FileMappingController
     public function preview(Request $request, MappingProfile $mappingProfile, FileMappingService $service): JsonResponse
     {
         [$source, $input] = $this->source($request, $mappingProfile);
+        $filters = $request->validate([
+            'page' => 'sometimes|integer|min:1',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'status' => ['nullable', Rule::in(['valid', 'invalid'])],
+            'search' => 'nullable|string|max:100',
+        ]);
 
-        return response()->json(['data' => $service->preview($mappingProfile, $source, $input['version'])], 200, ['Cache-Control' => 'no-store']);
+        return response()->json(['data' => $service->preview($mappingProfile, $source, $input['version'],
+            $filters['page'] ?? 1, $filters['per_page'] ?? 25, $filters['status'] ?? null, $filters['search'] ?? null)], 200, ['Cache-Control' => 'no-store']);
+    }
+
+    public function previewReport(Request $request, MappingProfile $mappingProfile, FileMappingService $service): StreamedResponse
+    {
+        [$source, $input] = $this->source($request, $mappingProfile);
+        $filters = $request->validate([
+            'status' => ['nullable', Rule::in(['valid', 'invalid'])],
+            'search' => 'nullable|string|max:100',
+        ]);
+        $preview = $service->preview($mappingProfile, $source, $input['version'], 1, SourceFileReader::MAX_ROWS,
+            $filters['status'] ?? null, $filters['search'] ?? null);
+        $this->audit($request, $mappingProfile->tenant_id, 'mapping.preview_report.downloaded', $mappingProfile->id);
+
+        return response()->streamDownload(function () use ($preview): void {
+            $output = fopen('php://output', 'wb');
+            fputcsv($output, ['Baris sumber', 'Status', 'Hasil normalisasi', 'Error', 'Peringatan']);
+            foreach ($preview['rows'] as $row) {
+                fputcsv($output, [
+                    $row['row_number'],
+                    $this->safeCsv($row['status']),
+                    $this->safeCsv(json_encode($row['normalized_row'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+                    $this->safeCsv(implode(' | ', array_map(fn ($issue) => ($issue['field'] ?? 'Baris').': '.($issue['message'] ?? ''), $row['validation_result']['errors'] ?? []))),
+                    $this->safeCsv(implode(' | ', array_map(fn ($issue) => ($issue['field'] ?? 'Baris').': '.($issue['message'] ?? ''), $row['validation_result']['warnings'] ?? []))),
+                ]);
+            }
+            fclose($output);
+        }, 'mapping-preview-'.$mappingProfile->id.'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Cache-Control' => 'no-store',
+        ]);
     }
 
     public function stage(Request $request, MappingProfile $mappingProfile, FileMappingService $service): JsonResponse
@@ -185,5 +223,12 @@ class FileMappingController
     private function audit(Request $request, string $tenantId, string $event, string $subject): void
     {
         AuditLog::create(['tenant_id' => $tenantId, 'actor_id' => $request->user()->id, 'event' => $event, 'subject_id' => $subject]);
+    }
+
+    private function safeCsv(mixed $value): string
+    {
+        $text = (string) ($value ?? '');
+
+        return preg_match('/^[=+\-@]/', $text) === 1 ? "'".$text : $text;
     }
 }

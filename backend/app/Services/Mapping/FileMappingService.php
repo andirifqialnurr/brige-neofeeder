@@ -25,15 +25,45 @@ class FileMappingService
 
     public function __construct(private NeoFeederContractRegistry $registry, private StagingRecordValidator $validator) {}
 
-    public function preview(MappingProfile $profile, SourceConnection $source, int $version): array
-    {
+    public function preview(
+        MappingProfile $profile,
+        SourceConnection $source,
+        int $version,
+        int $page = 1,
+        int $perPage = 25,
+        ?string $status = null,
+        ?string $search = null,
+    ): array {
         $records = $this->records($profile, $source, $version);
         $valid = collect($records)->where('status', 'valid')->count();
+        $filtered = array_values(array_filter($records, function (array $record) use ($status, $search): bool {
+            if ($status !== null && $record['status'] !== $status) {
+                return false;
+            }
+            if ($search === null || trim($search) === '') {
+                return true;
+            }
+
+            $haystack = implode(' ', [
+                $record['row_number'],
+                $record['status'],
+                json_encode($record['normalized_row'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                json_encode($record['validation_result'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+
+            return str_contains(mb_strtolower($haystack), mb_strtolower(trim($search)));
+        }));
+        $total = count($filtered);
+        $page = max(1, $page);
+        $perPage = max(1, $perPage);
+        $rows = array_slice($filtered, ($page - 1) * $perPage, $perPage);
 
         return ['preview_hash' => $this->hash($profile, $source, $records), 'version' => $profile->version,
             'summary' => ['total_rows' => count($records), 'valid_rows' => $valid, 'invalid_rows' => count($records) - $valid],
             'rows' => app(SensitiveData::class)->present(array_map(fn ($record) => ['row_number' => $record['row_number'],
-                'normalized_row' => $record['normalized_row'], 'status' => $record['status'], 'validation_result' => $record['validation_result']], array_slice($records, 0, 10)))];
+                'normalized_row' => $record['normalized_row'], 'status' => $record['status'], 'validation_result' => $record['validation_result']], $rows)),
+            'meta' => ['current_page' => $page, 'last_page' => max(1, (int) ceil($total / $perPage)), 'total' => $total, 'per_page' => $perPage],
+            'filters' => ['status' => $status, 'search' => $search]];
     }
 
     public function stage(MappingProfile $profile, SourceConnection $source, int $version, string $hash, User $actor): ImportBatch

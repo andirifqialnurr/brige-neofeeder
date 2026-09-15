@@ -59,6 +59,8 @@ export type MappingPreview = {
   version: number;
   summary: { total_rows: number; valid_rows: number; invalid_rows: number };
   rows: MappingPreviewRow[];
+  meta: { current_page: number; last_page: number; total: number; per_page: number };
+  filters: { status: string | null; search: string | null };
 };
 
 export function matchMappingHeaders(

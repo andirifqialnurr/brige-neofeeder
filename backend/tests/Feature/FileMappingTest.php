@@ -133,6 +133,39 @@ class FileMappingTest extends TestCase
         $this->assertDatabaseCount('mapping_profile_versions', 2);
     }
 
+    public function test_mapping_preview_can_filter_paginate_and_export_all_rows(): void
+    {
+        [$source, $profile, $token] = $this->fixture();
+        $stored = SourceConnection::findOrFail($source['id']);
+        $first = $stored->snapshot[0];
+        $stored->update(['snapshot' => array_map(function (int $index) use ($first): array {
+            $row = $first;
+            $row['row_number'] = $index + 2;
+            $row['values']['Nama'] = 'Mahasiswa '.$index;
+
+            return $row;
+        }, range(0, 29)), 'row_count' => 30]);
+        $url = '/api/mapping/profiles/'.$profile['id'].'/preview';
+        $base = ['source_id' => $source['id'], 'version' => 1];
+
+        $page = $this->withToken($token)->postJson($url.'?'.http_build_query([...$base, 'page' => 2, 'per_page' => 10]), $base)
+            ->assertOk()->assertJsonPath('data.summary.total_rows', 30)->assertJsonPath('data.meta.current_page', 2)
+            ->assertJsonPath('data.meta.last_page', 3)->assertJsonPath('data.meta.total', 30)->assertJsonCount(10, 'data.rows')->json('data');
+        $this->assertSame(12, $page['rows'][0]['row_number']);
+        $this->assertSame(64, strlen($page['preview_hash']));
+
+        $this->withToken($token)->postJson($url.'?'.http_build_query([...$base, 'status' => 'invalid', 'search' => 'Mahasiswa 7']), $base)
+            ->assertOk()->assertJsonPath('data.meta.total', 1)->assertJsonPath('data.rows.0.row_number', 9)
+            ->assertJsonPath('data.rows.0.status', 'invalid');
+
+        $csv = $this->withToken($token)->get('/api/mapping/profiles/'.$profile['id'].'/preview-report?'.http_build_query([...$base, 'search' => 'Mahasiswa 7']))
+            ->assertOk()->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString('Baris sumber', $csv->streamedContent());
+        $this->assertStringContainsString('Mahasiswa 7', $csv->streamedContent());
+        $this->assertStringNotContainsString('0000000000000000', $csv->streamedContent());
+        $this->assertDatabaseHas('audit_logs', ['tenant_id' => $stored->tenant_id, 'event' => 'mapping.preview_report.downloaded', 'subject_id' => $profile['id']]);
+    }
+
     public function test_advanced_transforms_keep_zeroes_spaces_and_report_unmapped_values(): void
     {
         [$source, , $token, $payload] = $this->fixture();
