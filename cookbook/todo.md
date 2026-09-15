@@ -1,5 +1,19 @@
 # TODO - Bridge Neo Feeder
 
+## Pekerjaan Tanpa Token — 15 September 2026
+
+- [x] Integration harness: MySQL/Redis nyata + HTTP simulator; start/retry bersamaan, dua worker, timeout, worker mati (`integration-testing.md`).
+- [x] Monitoring admin: database, Redis, antrean, worker/scheduler heartbeat, job gagal (`operations.md`).
+- [x] Backup SQL, checksum, restore drill pada instance MySQL terpisah, retensi preview/apply (`../deploy/backup-and-retention.md`).
+- [x] Masking data, admin reveal tercatat, audit viewer/export tenant-scoped (`audit-and-privacy.md`).
+- [x] Mapping CSV/XLSX biodata/riwayat ke staging dengan versi dan lineage (`file-mapping.md`).
+- [x] Generator paket trial: dua workbook satu record, CSV mapping, baseline contract dan log hasil (`../deploy/trial-preparation.md`).
+
+Semua hasil di atas adalah implementasi dan validasi lokal. Pengiriman Neo Feeder
+aktual dan penerapan perubahan ini ke VPS belum dilakukan. Redis lokal versi 5;
+runtime deployment memakai Redis 7. Upload melalui Browser ditolak kontrol izin,
+sehingga alur browser mapping upload/preview/stage belum diverifikasi.
+
 ## Phase 0 - Foundation
 
 - [x] Buat struktur project: `frontend`, `backend`, `cookbook`.
