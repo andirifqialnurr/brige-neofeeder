@@ -226,6 +226,29 @@ class FileMappingTest extends TestCase
         $this->assertSame(2, $report['summary']['source_rows']);
     }
 
+    public function test_mapping_preview_processes_the_full_two_thousand_row_limit(): void
+    {
+        [$source, $profile, $token] = $this->fixture();
+        $stored = SourceConnection::findOrFail($source['id']);
+        $template = $stored->snapshot[0];
+        $rows = array_map(function (int $index) use ($template): array {
+            $row = $template;
+            $row['row_number'] = $index + 2;
+            $row['values']['Nama'] = 'Mahasiswa kapasitas '.$index;
+            $row['values']['nik'] = str_pad((string) ($index + 1), 16, '0', STR_PAD_LEFT);
+
+            return $row;
+        }, range(0, 1999));
+        $stored->update(['snapshot' => $rows, 'row_count' => count($rows)]);
+
+        $preview = $this->withToken($token)->postJson('/api/mapping/profiles/'.$profile['id'].'/preview?per_page=100', [
+            'source_id' => $source['id'], 'version' => 1,
+        ])->assertOk()->assertJsonPath('data.summary.total_rows', 2000)->assertJsonPath('data.summary.valid_rows', 2000)
+            ->assertJsonPath('data.meta.total', 2000)->assertJsonPath('data.meta.last_page', 20)->assertJsonCount(100, 'data.rows')->json('data');
+        $this->assertSame(2, $preview['rows'][0]['row_number']);
+        $this->assertSame(101, $preview['rows'][99]['row_number']);
+    }
+
     public function test_advanced_transforms_keep_zeroes_spaces_and_report_unmapped_values(): void
     {
         [$source, , $token, $payload] = $this->fixture();

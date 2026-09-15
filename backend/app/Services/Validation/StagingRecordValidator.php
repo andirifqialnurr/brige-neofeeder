@@ -10,6 +10,12 @@ use App\Services\NeoFeeder\Contracts\NeoFeederContractRegistry;
 
 final class StagingRecordValidator
 {
+    /** @var array<string, bool> */
+    private array $referenceExists = [];
+
+    /** @var array<string, int> */
+    private array $referenceLabelCounts = [];
+
     public function __construct(
         private readonly NeoFeederContractRegistry $registry,
     ) {}
@@ -168,21 +174,29 @@ final class StagingRecordValidator
             return;
         }
 
-        $exists = ReferenceRecord::query()
-            ->where('tenant_id', $record->tenant_id)
-            ->where('endpoint', $field->reference)
-            ->where('value', (string) $value)
-            ->exists();
+        $valueKey = $record->tenant_id.'|'.$field->reference.'|'.(string) $value;
+        if (! array_key_exists($valueKey, $this->referenceExists)) {
+            $this->referenceExists[$valueKey] = ReferenceRecord::query()
+                ->where('tenant_id', $record->tenant_id)
+                ->where('endpoint', $field->reference)
+                ->where('value', (string) $value)
+                ->exists();
+        }
+        $exists = $this->referenceExists[$valueKey];
 
         if ($exists) {
             return;
         }
 
-        $labelMatches = ReferenceRecord::query()
-            ->where('tenant_id', $record->tenant_id)
-            ->where('endpoint', $field->reference)
-            ->where('label', (string) $value)
-            ->count();
+        $labelKey = $record->tenant_id.'|'.$field->reference.'|'.(string) $value;
+        if (! array_key_exists($labelKey, $this->referenceLabelCounts)) {
+            $this->referenceLabelCounts[$labelKey] = ReferenceRecord::query()
+                ->where('tenant_id', $record->tenant_id)
+                ->where('endpoint', $field->reference)
+                ->where('label', (string) $value)
+                ->count();
+        }
+        $labelMatches = $this->referenceLabelCounts[$labelKey];
 
         if ($labelMatches > 1) {
             $severity = $record->source_lineage !== null ? 'errors' : 'warnings';
