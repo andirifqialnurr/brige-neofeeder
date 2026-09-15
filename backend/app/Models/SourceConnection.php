@@ -11,7 +11,7 @@ class SourceConnection extends Model
 
     protected $guarded = [];
 
-    protected $hidden = ['snapshot'];
+    protected $hidden = ['snapshot', 'connection_config'];
 
-    protected $casts = ['headers' => 'array', 'snapshot' => 'array', 'row_count' => 'integer'];
+    protected $casts = ['headers' => 'array', 'snapshot' => 'array', 'row_count' => 'integer', 'connection_config' => 'encrypted:array'];
 }

@@ -3,6 +3,7 @@ import type { DryRunIssue } from './api';
 export type SourceFile = {
   id: string;
   tenant_id: string;
+  type: 'file' | 'database';
   name: string;
   headers: string[];
   sheet_name: string | null;

@@ -29,6 +29,7 @@ Route::middleware(['api.token', 'throttle:bridge-tenant'])->group(function (): v
     Route::get('mapping/references', [FileMappingController::class, 'references']);
     Route::get('mapping/workspace', [FileMappingController::class, 'workspace']);
     Route::post('mapping/sources', [FileMappingController::class, 'upload']);
+    Route::post('mapping/sources/database', [FileMappingController::class, 'databaseSource']);
     Route::post('mapping/profiles', [FileMappingController::class, 'save']);
     Route::get('mapping/profiles/{mappingProfile}/versions', [FileMappingController::class, 'versions']);
     Route::post('mapping/profiles/{mappingProfile}/duplicate', [FileMappingController::class, 'duplicate']);

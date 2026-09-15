@@ -263,7 +263,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 
 - [x] Buat model `source_connection` untuk snapshot file tenant.
 - [x] Dukung source file CSV/Excel sebagai langkah awal (biodata/riwayat, `file-mapping.md`).
-- [ ] Dukung source database read-only.
+- [x] Dukung source database read-only untuk snapshot MySQL dengan tabel/kolom terpilih (`database-source.md`).
 - [ ] Dukung source API.
 - [ ] Buat worker schema discovery.
 - [ ] Simpan source tables.

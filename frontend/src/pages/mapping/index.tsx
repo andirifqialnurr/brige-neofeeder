@@ -143,6 +143,15 @@ function FileMappingWorkspace({
   const [file, setFile] = useState<File | null>(null);
   const [sheet, setSheet] = useState('');
   const [delimiter, setDelimiter] = useState(',');
+  const [database, setDatabase] = useState({
+    host: '127.0.0.1',
+    port: '3306',
+    database: '',
+    username: '',
+    password: '',
+    table: '',
+    columns: '',
+  });
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<MappingPreview | null>(null);
@@ -320,7 +329,7 @@ function FileMappingWorkspace({
     }
   }
   async function act(
-    action: 'upload' | 'save' | 'preview' | 'stage',
+    action: 'upload' | 'database' | 'save' | 'preview' | 'stage',
     previewOptions: { page?: number; status?: string; search?: string } = {},
   ) {
     if (lock.current) return;
@@ -345,6 +354,28 @@ function FileMappingWorkspace({
         );
         setSourceId(result.data.id);
         setFile(null);
+        setPreview(null);
+        if (!profile) {
+          setRules(matchMappingHeaders(result.data.headers, fields));
+          setDirty(true);
+        }
+      } else if (action === 'database') {
+        const columns = database.columns
+          .split(',')
+          .map((column) => column.trim())
+          .filter(Boolean);
+        const result = await requestApi<{ data: SourceFile }>(
+          'mapping/sources/database',
+          jsonPost({
+            tenant_id: tenantId,
+            connection: { ...database, port: Number(database.port), columns },
+          }),
+        );
+        if (!alive.current) return;
+        setWorkspace(
+          (current) => current && { ...current, sources: [result.data, ...current.sources] },
+        );
+        setSourceId(result.data.id);
         setPreview(null);
         if (!profile) {
           setRules(matchMappingHeaders(result.data.headers, fields));
@@ -542,6 +573,88 @@ function FileMappingWorkspace({
             {busy === 'structure' ? 'Memeriksa...' : 'Periksa struktur'}
           </AppButton>
         </div>
+        <details>
+          <summary>Ambil snapshot database SIAKAD (read-only)</summary>
+          <p className="muted">
+            Gunakan akun database khusus baca. Sistem hanya menjalankan SELECT dan menyimpan
+            snapshot terenkripsi; password tidak ditampilkan kembali.
+          </p>
+          <div className="mapping-form-grid">
+            <label className="mapping-field">
+              Host
+              <input
+                value={database.host}
+                disabled={!!busy}
+                onChange={(event) => setDatabase({ ...database, host: event.target.value })}
+              />
+            </label>
+            <label className="mapping-field">
+              Port
+              <input
+                value={database.port}
+                inputMode="numeric"
+                disabled={!!busy}
+                onChange={(event) => setDatabase({ ...database, port: event.target.value })}
+              />
+            </label>
+            <label className="mapping-field">
+              Database
+              <input
+                value={database.database}
+                disabled={!!busy}
+                onChange={(event) => setDatabase({ ...database, database: event.target.value })}
+              />
+            </label>
+            <label className="mapping-field">
+              Username read-only
+              <input
+                value={database.username}
+                disabled={!!busy}
+                onChange={(event) => setDatabase({ ...database, username: event.target.value })}
+              />
+            </label>
+            <label className="mapping-field">
+              Password
+              <input
+                type="password"
+                value={database.password}
+                disabled={!!busy}
+                onChange={(event) => setDatabase({ ...database, password: event.target.value })}
+              />
+            </label>
+            <label className="mapping-field">
+              Tabel
+              <input
+                value={database.table}
+                disabled={!!busy}
+                placeholder="mahasiswa"
+                onChange={(event) => setDatabase({ ...database, table: event.target.value })}
+              />
+            </label>
+            <label className="mapping-field">
+              Kolom (pisahkan koma)
+              <input
+                value={database.columns}
+                disabled={!!busy}
+                placeholder="nim,nama_mahasiswa"
+                onChange={(event) => setDatabase({ ...database, columns: event.target.value })}
+              />
+            </label>
+          </div>
+          <AppButton
+            variant="secondary"
+            disabled={
+              !!busy ||
+              !database.database ||
+              !database.username ||
+              !database.table ||
+              !database.columns
+            }
+            onClick={() => void act('database')}
+          >
+            {busy === 'database' ? 'Membaca database...' : 'Buat snapshot database'}
+          </AppButton>
+        </details>
       </WorkspacePanel>
       <WorkspacePanel>
         <SectionHeader

@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\MappingProfile;
 use App\Models\ReferenceRecord;
 use App\Models\SourceConnection;
+use App\Services\Mapping\DatabaseSourceReader;
 use App\Services\Mapping\FileMappingService;
 use App\Services\Mapping\MappingReferenceResolver;
 use App\Services\Mapping\SourceFileReader;
@@ -42,7 +43,7 @@ class FileMappingController
 
         return response()->json(['data' => [
             'sources' => SourceConnection::where('tenant_id', $tenantId)->latest()->limit(100)
-                ->get(['id', 'tenant_id', 'name', 'headers', 'sheet_name', 'row_count', 'created_at']),
+                ->get(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name', 'row_count', 'created_at']),
             'profiles' => MappingProfile::with('currentVersion')->where('tenant_id', $tenantId)->latest()->limit(100)->get()->map(fn ($profile) => $this->profile($profile)),
             'channels' => array_map(fn ($key) => ['key' => $key, 'fields' => $registry->channel($key)->fields], FileMappingService::CHANNELS),
         ]], 200, ['Cache-Control' => 'no-store']);
@@ -109,7 +110,37 @@ class FileMappingController
             'name' => mb_substr($file->getClientOriginalName(), 0, 255), 'sha256' => hash_file('sha256', $file->getRealPath()), ...$snapshot]);
         $this->audit($request, $tenantId, 'source.uploaded', $source->id);
 
-        return response()->json(['data' => $source->only(['id', 'tenant_id', 'name', 'headers', 'sheet_name', 'row_count', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
+        return response()->json(['data' => $source->only(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name', 'row_count', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
+    }
+
+    public function databaseSource(Request $request, DatabaseSourceReader $reader): JsonResponse
+    {
+        $input = $request->validate([
+            'tenant_id' => 'nullable|uuid|exists:tenants,id',
+            'connection' => 'required|array',
+            'connection.host' => 'required|string|max:253',
+            'connection.port' => 'required|integer|min:1|max:65535',
+            'connection.database' => 'required|string|max:128',
+            'connection.username' => 'required|string|max:128',
+            'connection.password' => 'nullable|string|max:255',
+            'connection.table' => 'required|string|max:128',
+            'connection.columns' => 'required|array|min:1|max:64',
+            'connection.columns.*' => 'required|string|max:128',
+        ]);
+        $tenantId = $this->tenant($request);
+        $config = $input['connection'];
+        $snapshot = $reader->read($config);
+        $source = SourceConnection::create([
+            'tenant_id' => $tenantId,
+            'type' => 'database',
+            'name' => $config['database'].'.'.$config['table'],
+            'sha256' => hash('sha256', json_encode([$config['host'], $config['port'], $config['database'], $config['username'], $config['table'], $config['columns'], $snapshot], JSON_THROW_ON_ERROR)),
+            'connection_config' => $config,
+            ...$snapshot,
+        ]);
+        $this->audit($request, $tenantId, 'source.database_snapshot_created', $source->id);
+
+        return response()->json(['data' => $source->only(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name', 'row_count', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
     }
 
     public function structure(Request $request, SourceConnection $sourceConnection, FileMappingService $service): JsonResponse
