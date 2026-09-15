@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ImportBatchInspectionController;
 use App\Http\Controllers\Api\ImportBatchSyncController;
 use App\Http\Controllers\Api\ImportBatchUploadController;
 use App\Http\Controllers\Api\NeoFeederConnectionController;
+use App\Http\Controllers\Api\OperationsController;
 use App\Http\Controllers\Api\ReferenceStatusController;
 use App\Http\Controllers\Api\ReferenceSyncController;
 use App\Http\Controllers\Api\TemplateWorkbookController;
@@ -21,6 +22,7 @@ Route::get('/health', HealthController::class);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
 Route::middleware('api.token')->group(function (): void {
+    Route::get('operations/health', OperationsController::class);
     Route::get('dashboard/statistics', DashboardController::class);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);

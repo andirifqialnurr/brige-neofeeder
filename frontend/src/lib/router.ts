@@ -7,6 +7,7 @@ export const pagePaths = {
   'template-excel': '/template-excel',
   'import-batch': '/import-batch',
   mapping: '/mapping',
+  operations: '/operations',
 } as const;
 export type PageId = keyof typeof pagePaths;
 export function resolveRoute(url: string) {

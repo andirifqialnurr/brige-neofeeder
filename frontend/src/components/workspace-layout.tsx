@@ -55,7 +55,9 @@ export function WorkspaceLayout({ children }: { children: ReactNode }) {
               <div id="app-navigation">
                 <SidebarNav
                   activeItem={activePage}
-                  items={navItems}
+                  items={navItems.filter(
+                    (item) => item.id !== 'operations' || authUser?.role === 'admin',
+                  )}
                   onItemSelect={(item) => navigate(item.id as PageId)}
                 />
               </div>

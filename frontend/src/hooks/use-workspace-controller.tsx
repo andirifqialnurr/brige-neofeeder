@@ -1,5 +1,6 @@
 import {
   Building2,
+  Activity,
   DatabaseZap,
   FileSpreadsheet,
   LayoutDashboard,
@@ -50,6 +51,7 @@ export const navItems: AppNavItem[] = [
   { id: 'template-excel', label: 'Template Excel', icon: FileSpreadsheet },
   { id: 'import-batch', label: 'Import Batch', icon: Upload },
   { id: 'mapping', label: 'Mapping', icon: Waypoints },
+  { id: 'operations', label: 'Operasional', icon: Activity },
 ];
 
 export const campusColumns = ['Kampus', 'Kode PT', 'Status', 'Diperbarui'];
@@ -62,6 +64,7 @@ export const pageMeta: Record<PageId, { eyebrow: string; title: string }> = {
   'template-excel': { eyebrow: 'Template', title: 'Template Excel' },
   'import-batch': { eyebrow: 'Import', title: 'Import Batch' },
   mapping: { eyebrow: 'Otomatisasi', title: 'Mapping SIAKAD' },
+  operations: { eyebrow: 'Sistem', title: 'Operasional' },
 };
 
 export const tenantStatusLabels: Record<TenantStatus, string> = {

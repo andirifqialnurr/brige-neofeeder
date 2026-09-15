@@ -16,6 +16,7 @@ import { TemplatePage } from '@/pages/template-excel';
 import { ImportBatchPage } from '@/pages/import-batch';
 import { ImportBatchDetailPage } from '@/pages/import-batch/detail';
 import { MappingPage } from '@/pages/mapping';
+import { OperationsPage } from '@/pages/operations';
 
 function Redirect({ to }: { to: string }) {
   useEffect(() => {
@@ -61,6 +62,7 @@ function ApplicationRoutes() {
       <ImportBatchPage />
     ),
     mapping: <MappingPage />,
+    operations: <OperationsPage />,
   };
   return (
     <WorkspaceLayout>

@@ -2,6 +2,32 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:2000
 const API_TOKEN_STORAGE_KEY = 'bridge-neofeeder-api-token';
 const AUTH_USER_STORAGE_KEY = 'bridge-neofeeder-auth-user';
 
+export async function requestApi<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const authHeaders = getAuthHeaders();
+  if (!authHeaders) throw new Error('Sesi login belum tersedia.');
+  const response = await fetch(`${API_BASE_URL}/${path}`, {
+    ...options,
+    cache: 'no-store',
+    headers: { ...authHeaders, ...options.headers },
+  });
+  if (!response.ok) throw new Error(await parseApiError(response));
+  return response.json() as Promise<T>;
+}
+
+export type OperationalSnapshot = {
+  status: 'ok' | 'degraded';
+  checked_at: string;
+  checks: {
+    key: string;
+    label: string;
+    status: 'ok' | 'unavailable' | 'stale' | 'missing';
+    last_seen_at?: string | null;
+    pending_jobs?: number;
+  }[];
+  failed_jobs_count: number | null;
+  recent_failed_jobs: { uuid: string; connection: string; queue: string; failed_at: string }[];
+};
+
 export type StatisticGroup = { status: string; total: number };
 export type DashboardStatistics = {
   tenant_id: string | null;
