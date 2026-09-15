@@ -36,6 +36,12 @@ export type MappingProfile = {
   version: number;
   rules: MappingRule[];
 };
+export type MappingProfileVersion = {
+  id: string;
+  version: number;
+  rules: MappingRule[];
+  created_at: string;
+};
 export type MappingField = {
   name: string;
   label: string;

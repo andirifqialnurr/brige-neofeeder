@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { Download, FileSpreadsheet, RefreshCcw, Save, Upload, Waypoints } from 'lucide-react';
+import {
+  Copy,
+  Download,
+  FileSpreadsheet,
+  History,
+  RefreshCcw,
+  RotateCcw,
+  Save,
+  Upload,
+  Waypoints,
+} from 'lucide-react';
 import {
   AppButton,
   DataTable,
@@ -26,6 +36,7 @@ import {
   type MappingPreview,
   type MappingPreviewRow,
   type MappingProfile,
+  type MappingProfileVersion,
   type MappingRule,
   type MappingWorkspaceData,
   type SourceFile,
@@ -42,6 +53,23 @@ const jsonPost = (body: unknown): RequestInit => ({
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(body),
 });
+
+function changedTargets(
+  current: MappingProfileVersion,
+  previous?: MappingProfileVersion,
+): string[] {
+  if (!previous) return ['Baseline'];
+  const before = Object.fromEntries(
+    previous.rules.map((rule) => [rule.target, JSON.stringify(rule)]),
+  );
+  const after = Object.fromEntries(
+    current.rules.map((rule) => [rule.target, JSON.stringify(rule)]),
+  );
+
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(
+    (target) => before[target] !== after[target],
+  );
+}
 
 export function MappingPage() {
   const { authUser, tenants } = useWorkspace();
@@ -119,6 +147,9 @@ function FileMappingWorkspace({
   const [previewStatus, setPreviewStatus] = useState('');
   const [previewSearch, setPreviewSearch] = useState('');
   const [previewPage, setPreviewPage] = useState(1);
+  const [versions, setVersions] = useState<MappingProfileVersion[]>([]);
+  const [showVersions, setShowVersions] = useState(false);
+  const [duplicateName, setDuplicateName] = useState('');
   const lock = useRef(false);
   const alive = useRef(true);
   useEffect(() => {
@@ -167,6 +198,90 @@ function FileMappingWorkspace({
       setChannel(selected.channel);
       setRules(Object.fromEntries(selected.rules.map((rule) => [rule.target, rule])));
     } else setRules(matchMappingHeaders(source?.headers ?? [], fields));
+  }
+  async function loadVersions(profileId: string) {
+    if (lock.current) return;
+    lock.current = true;
+    setBusy('versions');
+    onBusy(true);
+    setError('');
+    try {
+      const result = await requestApi<{ data: MappingProfileVersion[] }>(
+        `mapping/profiles/${profileId}/versions`,
+      );
+      if (alive.current) setVersions(result.data);
+    } catch (err) {
+      if (alive.current)
+        setError(err instanceof Error ? err.message : 'Riwayat versi gagal dimuat.');
+    } finally {
+      lock.current = false;
+      onBusy(false);
+      if (alive.current) setBusy('');
+    }
+  }
+  function openVersions() {
+    if (!profile) return;
+    setShowVersions(true);
+    void loadVersions(profile.id);
+  }
+  async function duplicateProfile() {
+    if (lock.current || !profile || !duplicateName.trim()) return;
+    lock.current = true;
+    setBusy('duplicate');
+    onBusy(true);
+    setError('');
+    try {
+      const result = await requestApi<{ data: MappingProfile }>(
+        `mapping/profiles/${profile.id}/duplicate`,
+        jsonPost({ name: duplicateName.trim() }),
+      );
+      if (!alive.current) return;
+      setProfile(result.data);
+      setChannel(result.data.channel);
+      setRules(Object.fromEntries(result.data.rules.map((rule) => [rule.target, rule])));
+      setDirty(false);
+      setPreview(null);
+      setVersions([]);
+      setDuplicateName('');
+      setShowVersions(false);
+      setWorkspace(
+        (current) => current && { ...current, profiles: [result.data, ...current.profiles] },
+      );
+    } catch (err) {
+      if (alive.current)
+        setError(err instanceof Error ? err.message : 'Profil tidak bisa diduplikasi.');
+    } finally {
+      lock.current = false;
+      onBusy(false);
+      if (alive.current) setBusy('');
+    }
+  }
+  async function restoreVersion(version: number) {
+    if (lock.current || !profile || version === profile.version) return;
+    lock.current = true;
+    setBusy('restore');
+    onBusy(true);
+    setError('');
+    try {
+      const result = await requestApi<{ data: MappingProfile }>(
+        `mapping/profiles/${profile.id}/restore`,
+        jsonPost({ version, expected_version: profile.version }),
+      );
+      if (!alive.current) return;
+      setProfile(result.data);
+      setRules(Object.fromEntries(result.data.rules.map((rule) => [rule.target, rule])));
+      setDirty(false);
+      setPreview(null);
+      setVersions([]);
+      setShowVersions(false);
+    } catch (err) {
+      if (alive.current)
+        setError(err instanceof Error ? err.message : 'Versi lama tidak bisa dipulihkan.');
+    } finally {
+      lock.current = false;
+      onBusy(false);
+      if (alive.current) setBusy('');
+    }
   }
   async function act(
     action: 'upload' | 'save' | 'preview' | 'stage',
@@ -383,6 +498,13 @@ function FileMappingWorkspace({
             )
           }
         />
+        {profile && (
+          <div className="mapping-actions">
+            <AppButton variant="secondary" icon={History} disabled={!!busy} onClick={openVersions}>
+              Riwayat versi
+            </AppButton>
+          </div>
+        )}
         <div className="mapping-form-grid">
           <label className="mapping-field">
             Profil mapping
@@ -570,6 +692,58 @@ function FileMappingWorkspace({
           </AppButton>
         </div>
       </WorkspacePanel>
+      {profile && showVersions && (
+        <FormDialog
+          open
+          title={`Riwayat versi · ${profile.name}`}
+          onClose={() => setShowVersions(false)}
+          busy={!!busy}
+        >
+          <p className="muted">
+            Versi lama tidak diubah. Pemulihan selalu membuat versi baru agar batch yang sudah
+            dibuat tetap memakai aturan aslinya.
+          </p>
+          <div className="mapping-actions">
+            <input
+              aria-label="Nama salinan profil"
+              placeholder="Nama profil salinan"
+              maxLength={120}
+              value={duplicateName}
+              disabled={!!busy}
+              onChange={(event) => setDuplicateName(event.target.value)}
+            />
+            <AppButton
+              icon={Copy}
+              disabled={!!busy || !duplicateName.trim()}
+              onClick={() => void duplicateProfile()}
+            >
+              {busy === 'duplicate' ? 'Menyalin...' : 'Duplikasi profil'}
+            </AppButton>
+          </div>
+          <DataTable
+            columns={['Versi', 'Dibuat', 'Perubahan dari versi sebelumnya', 'Aksi']}
+            rows={versions.map((item, index) => [
+              `v${item.version}`,
+              new Date(item.created_at).toLocaleString('id-ID'),
+              changedTargets(item, versions[index + 1]).join(', '),
+              <div className="mapping-actions">
+                <details>
+                  <summary>Lihat aturan</summary>
+                  <pre>{JSON.stringify(item.rules, null, 2)}</pre>
+                </details>
+                <AppButton
+                  variant="secondary"
+                  icon={RotateCcw}
+                  disabled={!!busy || item.version === profile.version}
+                  onClick={() => void restoreVersion(item.version)}
+                >
+                  Pulihkan
+                </AppButton>
+              </div>,
+            ])}
+          />
+        </FormDialog>
+      )}
       {preview && (
         <WorkspacePanel>
           <SectionHeader

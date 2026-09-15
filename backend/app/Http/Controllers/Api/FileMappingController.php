@@ -48,6 +48,49 @@ class FileMappingController
         ]], 200, ['Cache-Control' => 'no-store']);
     }
 
+    public function versions(Request $request, MappingProfile $mappingProfile): JsonResponse
+    {
+        $this->authorizeProfile($request, $mappingProfile);
+
+        return response()->json(['data' => $mappingProfile->versions()->orderByDesc('version')->get(['id', 'version', 'rules', 'created_at'])], 200, ['Cache-Control' => 'no-store']);
+    }
+
+    public function duplicate(Request $request, MappingProfile $mappingProfile): JsonResponse
+    {
+        $this->authorizeProfile($request, $mappingProfile);
+        $input = $request->validate(['name' => 'required|string|max:120']);
+        $copy = DB::transaction(function () use ($mappingProfile, $input, $request) {
+            $mappingProfile = MappingProfile::query()->lockForUpdate()->findOrFail($mappingProfile->id);
+            $version = $mappingProfile->currentVersion()->firstOrFail();
+            $copy = MappingProfile::create(['tenant_id' => $mappingProfile->tenant_id, 'name' => $input['name'], 'channel' => $mappingProfile->channel, 'version' => 1]);
+            $copy->versions()->create(['version' => 1, 'rules' => $version->rules]);
+            $this->audit($request, $mappingProfile->tenant_id, 'mapping.duplicated', $copy->id);
+
+            return $copy->load('currentVersion');
+        });
+
+        return response()->json(['data' => $this->profile($copy)], 201, ['Cache-Control' => 'no-store']);
+    }
+
+    public function restore(Request $request, MappingProfile $mappingProfile): JsonResponse
+    {
+        $this->authorizeProfile($request, $mappingProfile);
+        $input = $request->validate(['version' => 'required|integer|min:1', 'expected_version' => 'required|integer|min:1']);
+        $restored = DB::transaction(function () use ($mappingProfile, $input, $request) {
+            $mappingProfile = MappingProfile::query()->lockForUpdate()->findOrFail($mappingProfile->id);
+            abort_unless($mappingProfile->version === $input['expected_version'], 409, 'Profil telah berubah. Muat ulang riwayat versi.');
+            $version = $mappingProfile->versions()->where('version', $input['version'])->firstOrFail();
+            $next = $mappingProfile->version + 1;
+            $mappingProfile->update(['version' => $next]);
+            $mappingProfile->versions()->create(['version' => $next, 'rules' => $version->rules]);
+            $this->audit($request, $mappingProfile->tenant_id, 'mapping.version_restored', $mappingProfile->id);
+
+            return $mappingProfile->load('currentVersion');
+        });
+
+        return response()->json(['data' => $this->profile($restored)], 200, ['Cache-Control' => 'no-store']);
+    }
+
     public function upload(Request $request, SourceFileReader $reader): JsonResponse
     {
         $input = $request->validate(['tenant_id' => 'nullable|uuid|exists:tenants,id', 'file' => 'required|file|mimes:csv,txt,xlsx|max:2048',
@@ -203,6 +246,12 @@ class FileMappingController
         abort_unless($source->tenant_id === $profile->tenant_id, 403);
 
         return [$source, $input];
+    }
+
+    private function authorizeProfile(Request $request, MappingProfile $profile): void
+    {
+        $user = $request->user();
+        abort_unless($user->isAdmin() || $user->tenant_id === $profile->tenant_id, 403);
     }
 
     private function tenant(Request $request): string

@@ -166,6 +166,36 @@ class FileMappingTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['tenant_id' => $stored->tenant_id, 'event' => 'mapping.preview_report.downloaded', 'subject_id' => $profile['id']]);
     }
 
+    public function test_mapping_profile_history_can_duplicate_and_restore_without_mutating_old_versions(): void
+    {
+        [$source, $profile, $token, $payload] = $this->fixture();
+        $payload['profile_id'] = $profile['id'];
+        $payload['expected_version'] = 1;
+        $payload['name'] = 'Mapping versi dua';
+        $payload['rules'][1]['transform'] = 'trim';
+        $updated = $this->withToken($token)->postJson('/api/mapping/profiles', $payload)->assertOk()->assertJsonPath('data.version', 2)->json('data');
+        $url = '/api/mapping/profiles/'.$profile['id'];
+
+        $history = $this->withToken($token)->getJson($url.'/versions')->assertOk()->assertJsonCount(2, 'data')->json('data');
+        $this->assertSame(2, $history[0]['version']);
+        $this->assertSame(1, $history[1]['version']);
+        $this->assertNotSame($history[0]['rules'], $history[1]['rules']);
+
+        $restored = $this->withToken($token)->postJson($url.'/restore', ['version' => 1, 'expected_version' => 2])
+            ->assertOk()->assertJsonPath('data.version', 3)->json('data');
+        $this->assertSame($history[1]['rules'], $restored['rules']);
+        $this->assertSame($history[1]['rules'], MappingProfile::findOrFail($profile['id'])->versions()->where('version', 3)->firstOrFail()->rules);
+        $this->withToken($token)->postJson($url.'/restore', ['version' => 2, 'expected_version' => 2])->assertConflict();
+
+        $copy = $this->withToken($token)->postJson($url.'/duplicate', ['name' => 'Salinan mapping'])
+            ->assertCreated()->assertJsonPath('data.name', 'Salinan mapping')->assertJsonPath('data.channel', $updated['channel'])
+            ->assertJsonPath('data.version', 1)->json('data');
+        $this->assertSame($restored['rules'], $copy['rules']);
+        $this->assertDatabaseCount('mapping_profile_versions', 4);
+        $this->assertDatabaseHas('audit_logs', ['tenant_id' => $source['tenant_id'], 'event' => 'mapping.version_restored', 'subject_id' => $profile['id']]);
+        $this->assertDatabaseHas('audit_logs', ['tenant_id' => $source['tenant_id'], 'event' => 'mapping.duplicated', 'subject_id' => $copy['id']]);
+    }
+
     public function test_advanced_transforms_keep_zeroes_spaces_and_report_unmapped_values(): void
     {
         [$source, , $token, $payload] = $this->fixture();
