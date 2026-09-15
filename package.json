@@ -12,6 +12,7 @@
     "dev:stop": "bun scripts/stop-local.mjs",
     "frontend:build": "bun run --cwd frontend build",
     "frontend:lint": "bun run --cwd frontend lint",
-    "backend:test": "composer --working-dir=backend test"
+    "backend:test": "composer --working-dir=backend test",
+    "test:integration": "bun scripts/test-integration.mjs"
   }
 }
