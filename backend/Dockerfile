@@ -5,6 +5,7 @@ WORKDIR /var/www/html
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
+        default-mysql-client \
         git \
         libfreetype6-dev \
         libicu-dev \

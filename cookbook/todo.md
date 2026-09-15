@@ -297,7 +297,8 @@
 - [ ] Access control per tenant.
 - [ ] Audit access raw payload.
 - [ ] File retention policy.
-- [ ] Backup database.
+- [x] File retention command: preview/apply, preserve unresolved delivery and staging (local tests).
+- [x] Backup database and restore drill on a separate local MySQL service (`deploy/backup-and-retention.md`).
 - [ ] Export audit log.
 - [ ] Rate limit per tenant.
 - [ ] Timeout config per Neo Feeder connection.
