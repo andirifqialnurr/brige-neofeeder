@@ -46,6 +46,22 @@ final class StagingRecordValidator
     private function validateAcademicMapping(StagingRecord $record, array $row, array &$result): void
     {
         if ($record->source_lineage === null || ! in_array($record->channel, ['mata_kuliah', 'kelas_kuliah'], true)) {
+            if ($record->source_lineage === null || $record->channel !== 'nilai_perkuliahan') {
+                return;
+            }
+        }
+        if ($record->channel === 'nilai_perkuliahan') {
+            $hasGrade = collect(['nilai_angka', 'nilai_indeks', 'nilai_huruf'])->contains(fn (string $field): bool => filled($row[$field] ?? null));
+            if (! $hasGrade) {
+                $result['errors'][] = $this->issue(null, 'grade_value', 'Isi setidaknya satu nilai angka, indeks, atau huruf.');
+            }
+            if (filled($row['nilai_angka'] ?? null) && (! is_numeric($row['nilai_angka']) || (float) $row['nilai_angka'] < 0 || (float) $row['nilai_angka'] > 100 || ! preg_match('/^\d{1,3}(\.\d)?$/', (string) $row['nilai_angka']))) {
+                $result['errors'][] = $this->issue('nilai_angka', 'grade_range', 'Nilai angka harus 0 sampai 100 dengan maksimal satu desimal.');
+            }
+            if (filled($row['nilai_indeks'] ?? null) && (! is_numeric($row['nilai_indeks']) || (float) $row['nilai_indeks'] < 0 || (float) $row['nilai_indeks'] > 4 || ! preg_match('/^\d(\.\d{1,2})?$/', (string) $row['nilai_indeks']))) {
+                $result['errors'][] = $this->issue('nilai_indeks', 'grade_range', 'Nilai indeks harus 0 sampai 4 dengan maksimal dua desimal.');
+            }
+
             return;
         }
         if ($record->channel === 'mata_kuliah' && isset($row['sks_mata_kuliah'])) {

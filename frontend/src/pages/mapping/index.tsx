@@ -48,6 +48,8 @@ const channelLabels: Record<string, string> = {
   mahasiswa_riwayat_pendidikan: 'Riwayat pendidikan mahasiswa',
   mata_kuliah: 'Mata kuliah',
   kelas_kuliah: 'Kelas kuliah',
+  peserta_kelas: 'Peserta kelas',
+  nilai_perkuliahan: 'Nilai perkuliahan',
 };
 const jsonPost = (body: unknown): RequestInit => ({
   method: 'POST',
@@ -448,6 +450,18 @@ function FileMappingWorkspace({
         <p className="muted">
           Siapkan referensi prodi, semester, dan mata kuliah terlebih dahulu. Mata kuliah baru harus
           memperoleh ID Neo Feeder sebelum dipakai untuk kelas.
+        </p>
+      )}
+      {channel === 'peserta_kelas' && (
+        <p className="muted">
+          Pastikan ID kelas dan ID registrasi mahasiswa sudah tersedia pada referensi lokal sebelum
+          staging.
+        </p>
+      )}
+      {channel === 'nilai_perkuliahan' && (
+        <p className="muted">
+          Nilai harus memiliki setidaknya satu dari nilai angka, indeks, atau huruf. ID kelas dan
+          registrasi mahasiswa wajib berasal dari referensi yang tersimpan.
         </p>
       )}
       <WorkspacePanel>

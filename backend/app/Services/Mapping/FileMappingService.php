@@ -21,7 +21,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class FileMappingService
 {
-    public const CHANNELS = ['mahasiswa_biodata', 'mahasiswa_riwayat_pendidikan', 'mata_kuliah', 'kelas_kuliah'];
+    public const CHANNELS = ['mahasiswa_biodata', 'mahasiswa_riwayat_pendidikan', 'mata_kuliah', 'kelas_kuliah', 'peserta_kelas', 'nilai_perkuliahan'];
 
     public function __construct(private NeoFeederContractRegistry $registry, private StagingRecordValidator $validator) {}
 

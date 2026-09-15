@@ -94,4 +94,43 @@ class AcademicMappingTest extends TestCase
         $id = $this->withToken($token)->postJson('/api/mapping/profiles', ['name' => 'Invalid MK', 'channel' => 'mata_kuliah', 'rules' => $rules])->assertOk()->json('data.id');
         $this->withToken($token)->postJson('/api/mapping/profiles/'.$id.'/preview', ['source_id' => $source, 'version' => 1])->assertOk()->assertJsonPath('data.summary.invalid_rows', 3);
     }
+
+    public function test_participant_and_grade_mapping_validate_dependencies_and_build_expected_actions(): void
+    {
+        [$tenant, $token] = $this->workspace();
+        $class = '00000000-0000-4000-8000-000000000010';
+        $registration = '00000000-0000-4000-8000-000000000011';
+        foreach ([
+            ['endpoint' => 'GetListKelasKuliah', 'value_key' => 'id_kelas_kuliah', 'value' => $class, 'label' => 'Kelas A'],
+            ['endpoint' => 'GetListRiwayatPendidikanMahasiswa', 'value_key' => 'id_registrasi_mahasiswa', 'value' => $registration, 'label' => 'Registrasi A'],
+        ] as $reference) {
+            ReferenceRecord::create(['tenant_id' => $tenant, ...$reference, 'raw_payload' => []]);
+        }
+        $source = $this->source($token, "Kelas,Registrasi\n{$class},{$registration}\n");
+        $rules = [
+            ['target' => 'id_kelas_kuliah', 'kind' => 'source', 'source' => 'Kelas', 'transform' => 'trim'],
+            ['target' => 'id_registrasi_mahasiswa', 'kind' => 'source', 'source' => 'Registrasi', 'transform' => 'trim'],
+        ];
+        $profile = $this->withToken($token)->postJson('/api/mapping/profiles', ['name' => 'Peserta', 'channel' => 'peserta_kelas', 'rules' => $rules])->assertOk()->json('data');
+        $preview = $this->withToken($token)->postJson('/api/mapping/profiles/'.$profile['id'].'/preview', ['source_id' => $source, 'version' => 1])
+            ->assertOk()->assertJsonPath('data.summary.valid_rows', 1)->json('data');
+        $batch = $this->withToken($token)->postJson('/api/mapping/profiles/'.$profile['id'].'/stage', ['source_id' => $source, 'version' => 1, 'preview_hash' => $preview['preview_hash']])
+            ->assertCreated()->json('data.id');
+        $this->withToken($token)->postJson('/api/import-batches/'.$batch.'/dry-run')->assertOk()->assertJsonPath('data.payload_preview.0.action', 'InsertPesertaKelasKuliah');
+
+        $gradeSource = $this->source($token, "Kelas,Registrasi,Angka\n{$class},{$registration},95.5\n");
+        $gradeRules = [...$rules, ['target' => 'nilai_angka', 'kind' => 'source', 'source' => 'Angka', 'transform' => 'trim']];
+        $grade = $this->withToken($token)->postJson('/api/mapping/profiles', ['name' => 'Nilai', 'channel' => 'nilai_perkuliahan', 'rules' => $gradeRules])->assertOk()->json('data');
+        $gradePreview = $this->withToken($token)->postJson('/api/mapping/profiles/'.$grade['id'].'/preview', ['source_id' => $gradeSource, 'version' => 1])
+            ->assertOk()->assertJsonPath('data.summary.valid_rows', 1)->json('data');
+        $gradeBatch = $this->withToken($token)->postJson('/api/mapping/profiles/'.$grade['id'].'/stage', ['source_id' => $gradeSource, 'version' => 1, 'preview_hash' => $gradePreview['preview_hash']])
+            ->assertCreated()->json('data.id');
+        $this->withToken($token)->postJson('/api/import-batches/'.$gradeBatch.'/dry-run')->assertOk()->assertJsonPath('data.payload_preview.0.action', 'UpdateNilaiPerkuliahanKelas');
+
+        $invalidSource = $this->source($token, "Kelas,Registrasi,Angka\n{$class},{$registration},101\n");
+        $this->withToken($token)->postJson('/api/mapping/profiles/'.$grade['id'].'/preview', ['source_id' => $invalidSource, 'version' => 1])
+            ->assertOk()->assertJsonPath('data.summary.invalid_rows', 1)->assertJsonPath('data.rows.0.validation_result.errors.0.rule', 'grade_range');
+        Http::assertNothingSent();
+        Queue::assertNothingPushed();
+    }
 }
