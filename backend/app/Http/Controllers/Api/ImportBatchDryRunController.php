@@ -6,12 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\ImportBatch;
 use App\Models\User;
 use App\Services\DryRun\ImportBatchDryRunService;
+use App\Services\Operations\SensitiveData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ImportBatchDryRunController extends Controller
 {
-    public function __invoke(Request $request, ImportBatch $importBatch, ImportBatchDryRunService $dryRunService): JsonResponse
+    public function __invoke(Request $request, ImportBatch $importBatch, ImportBatchDryRunService $dryRunService, SensitiveData $privacy): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -21,7 +22,7 @@ class ImportBatchDryRunController extends Controller
         }
 
         return response()->json([
-            'data' => $dryRunService->preview($importBatch),
-        ]);
+            'data' => $privacy->present($dryRunService->preview($importBatch)),
+        ], 200, ['Cache-Control' => 'no-store']);
     }
 }

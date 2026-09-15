@@ -18,6 +18,7 @@ import {
   getBatchRow,
   getBatchRows,
   runImportBatchDryRun,
+  requestApi,
   type BatchDetail,
   type BatchRow,
   type ImportBatch,
@@ -458,6 +459,35 @@ function RowDialog({
   const [row, setRow] = useState<RowDetail | null>(null);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<'data' | 'raw' | 'payload' | 'issues'>('data');
+  const [revealing, setRevealing] = useState(false);
+  const [purpose, setPurpose] = useState('verification');
+  const revealLock = useRef(false);
+  const revealController = useRef<AbortController | null>(null);
+  useEffect(() => () => revealController.current?.abort(), []);
+  async function reveal() {
+    if (revealLock.current) return;
+    revealLock.current = true;
+    setRevealing(true);
+    const controller = new AbortController();
+    revealController.current = controller;
+    try {
+      const result = await requestApi<{ data: RowDetail }>(
+        `import-batches/${batchId}/rows/${rowId}/reveal`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ purpose }),
+          signal: controller.signal,
+        },
+      );
+      if (!controller.signal.aborted) setRow(result.data);
+    } catch (err) {
+      if (!controller.signal.aborted) setError(message(err));
+    } finally {
+      revealLock.current = false;
+      if (!controller.signal.aborted) setRevealing(false);
+    }
+  }
   useEffect(() => {
     const controller = new AbortController();
     getBatchRow(batchId, rowId, controller.signal)
@@ -485,11 +515,37 @@ function RowDialog({
             label="Detail baris"
             items={[
               { id: 'data', label: 'Data' },
-              { id: 'raw', label: 'Asli' },
+              ...(row.raw_row ? [{ id: 'raw' as const, label: 'Asli' }] : []),
               { id: 'payload', label: 'Payload' },
               { id: 'issues', label: 'Temuan' },
             ]}
           />
+          {!row.sensitive_revealed && (
+            <p className="muted">NIK, NPWP, dan nomor telepon disamarkan.</p>
+          )}
+          {row.can_reveal_sensitive && !row.sensitive_revealed && (
+            <div className="table-toolbar">
+              <label className="inline-field">
+                <span className="sr-only">Tujuan membuka data</span>
+                <Select
+                  value={purpose}
+                  disabled={revealing}
+                  onChange={(event) => setPurpose(event.target.value)}
+                >
+                  <option value="verification">Verifikasi data</option>
+                  <option value="correction">Koreksi data</option>
+                </Select>
+              </label>
+              <AppButton disabled={revealing} onClick={reveal}>
+                {revealing ? 'Membuka...' : 'Buka data lengkap'}
+              </AppButton>
+            </div>
+          )}
+          {row.sensitive_revealed && (
+            <p role="status" className="muted">
+              Akses data lengkap telah dicatat di audit.
+            </p>
+          )}
           <div
             role="tabpanel"
             id={`panel-${tab}`}

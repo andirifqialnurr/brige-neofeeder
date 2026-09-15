@@ -9,6 +9,7 @@ use App\Models\StagingRecord;
 use App\Services\DryRun\ImportBatchDryRunService;
 use App\Services\Imports\ImportWorkbookParser;
 use App\Services\NeoFeeder\Contracts\NeoFeederContractRegistry;
+use App\Services\Operations\SensitiveData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -66,17 +67,33 @@ class ImportBatchInspectionController extends Controller
         ]);
     }
 
-    public function row(Request $request, ImportBatch $importBatch, string $record, ImportBatchDryRunService $preview): JsonResponse
+    public function row(Request $request, ImportBatch $importBatch, string $record, ImportBatchDryRunService $preview, SensitiveData $privacy): JsonResponse
     {
         $this->authorizeBatch($request, $importBatch);
         $row = $importBatch->stagingRecords()->findOrFail($record);
         $this->audit($request, $importBatch, 'import.row.viewed', ['staging_record_id' => $row->id]);
 
-        return response()->json(['data' => [
+        return response()->json(['data' => $privacy->present([
             ...$preview->previewRecord($row),
-            'raw_row' => $row->raw_row,
+            'raw_row' => $request->user()->isAdmin() ? $row->raw_row : null,
             'normalized_row' => $row->normalized_row,
-        ]], 200, ['Cache-Control' => 'no-store']);
+            'can_reveal_sensitive' => $request->user()->isAdmin(),
+            'sensitive_revealed' => false,
+        ])], 200, ['Cache-Control' => 'no-store']);
+    }
+
+    public function reveal(Request $request, ImportBatch $importBatch, string $record, ImportBatchDryRunService $preview, SensitiveData $privacy): JsonResponse
+    {
+        $this->authorizeBatch($request, $importBatch);
+        abort_unless($request->user()->isAdmin(), 403);
+        $input = $request->validate(['purpose' => ['required', Rule::in(['verification', 'correction'])]]);
+        $row = $importBatch->stagingRecords()->findOrFail($record);
+        $this->audit($request, $importBatch, 'import.row.sensitive_viewed', ['staging_record_id' => $row->id, 'purpose' => $input['purpose']]);
+
+        return response()->json(['data' => $privacy->present([
+            ...$preview->previewRecord($row), 'raw_row' => $row->raw_row, 'normalized_row' => $row->normalized_row,
+            'can_reveal_sensitive' => true, 'sensitive_revealed' => true,
+        ], true)], 200, ['Cache-Control' => 'no-store']);
     }
 
     public function report(Request $request, ImportBatch $importBatch): StreamedResponse
@@ -105,7 +122,7 @@ class ImportBatchInspectionController extends Controller
             foreach ($importBatch->stagingRecords()->orderBy('sheet_name')->orderBy('row_number')->cursor() as $row) {
                 foreach (['errors' => 'error', 'warnings' => 'warning', 'info' => 'info'] as $key => $severity) {
                     foreach (($row->validation_result[$key] ?? []) as $issue) {
-                        $write([$row->sheet_name, $row->row_number, $row->status, $severity, $issue['field'] ?? '', $issue['rule'] ?? '', $issue['message'] ?? '']);
+                        $write([$row->sheet_name, $row->row_number, $row->status, $severity, $issue['field'] ?? '', $issue['rule'] ?? '', app(SensitiveData::class)->present($issue['message'] ?? '', false, 'message')]);
                     }
                 }
             }

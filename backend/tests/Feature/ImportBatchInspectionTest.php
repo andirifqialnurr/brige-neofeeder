@@ -46,7 +46,7 @@ class ImportBatchInspectionTest extends TestCase
         $this->getJson("/api/import-batches/{$batch->id}/rows?status=invalid&sheet=mahasiswa_biodata")->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.errors', 1);
         $this->getJson("/api/import-batches/{$batch->id}/rows?status=invalid&sheet=missing")->assertOk()->assertJsonCount(0, 'data');
         $this->getJson("/api/import-batches/{$batch->id}/rows?per_page=1000")->assertUnprocessable();
-        $this->getJson("/api/import-batches/{$batch->id}/rows/{$valid->id}")->assertOk()->assertJsonPath('data.payload.record.nik', '0000000000000002')->assertJsonPath('data.candidate_operation', 'insert');
+        $this->getJson("/api/import-batches/{$batch->id}/rows/{$valid->id}")->assertOk()->assertJsonPath('data.payload.record.nik', '************0002')->assertJsonPath('data.candidate_operation', 'insert')->assertJsonPath('data.raw_row', null);
         $this->assertSame('invalid', $batch->refresh()->status);
         $this->assertSame(1, AuditLog::where('event', 'import.row.viewed')->count());
         $this->assertStringNotContainsString('0000000000000002', AuditLog::first()->toJson());

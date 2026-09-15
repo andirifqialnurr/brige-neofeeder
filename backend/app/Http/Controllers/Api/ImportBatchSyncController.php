@@ -7,6 +7,7 @@ use App\Jobs\SyncStagingRecordJob;
 use App\Models\ImportBatch;
 use App\Models\SyncAttempt;
 use App\Models\User;
+use App\Services\Operations\SensitiveData;
 use App\Services\Sync\ImportBatchSyncPlanner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -63,6 +64,7 @@ class ImportBatchSyncController extends Controller
             'data' => $page->getCollection()->map(fn ($attempt) => [
                 ...$attempt->only(['id', 'staging_record_id', 'action', 'status', 'error_code', 'error_desc', 'identity_payload', 'created_at', 'attempted_at', 'completed_at', 'retry_of']),
                 'sheet_name' => $attempt->stagingRecord->sheet_name,
+                'error_desc' => app(SensitiveData::class)->present($attempt->error_desc, false, 'error_desc'),
                 'row_number' => $attempt->stagingRecord->row_number,
                 'can_retry' => ! $demo && (bool) $importBatch->approved_at && $planner->canRetry($attempt),
             ]),

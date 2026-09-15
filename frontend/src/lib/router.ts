@@ -8,6 +8,7 @@ export const pagePaths = {
   'import-batch': '/import-batch',
   mapping: '/mapping',
   operations: '/operations',
+  audit: '/audit',
 } as const;
 export type PageId = keyof typeof pagePaths;
 export function resolveRoute(url: string) {

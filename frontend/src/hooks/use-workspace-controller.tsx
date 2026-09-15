@@ -1,6 +1,7 @@
 import {
   Building2,
   Activity,
+  ScrollText,
   DatabaseZap,
   FileSpreadsheet,
   LayoutDashboard,
@@ -52,6 +53,7 @@ export const navItems: AppNavItem[] = [
   { id: 'import-batch', label: 'Import Batch', icon: Upload },
   { id: 'mapping', label: 'Mapping', icon: Waypoints },
   { id: 'operations', label: 'Operasional', icon: Activity },
+  { id: 'audit', label: 'Audit', icon: ScrollText },
 ];
 
 export const campusColumns = ['Kampus', 'Kode PT', 'Status', 'Diperbarui'];
@@ -65,6 +67,7 @@ export const pageMeta: Record<PageId, { eyebrow: string; title: string }> = {
   'import-batch': { eyebrow: 'Import', title: 'Import Batch' },
   mapping: { eyebrow: 'Otomatisasi', title: 'Mapping SIAKAD' },
   operations: { eyebrow: 'Sistem', title: 'Operasional' },
+  audit: { eyebrow: 'Riwayat', title: 'Audit' },
 };
 
 export const tenantStatusLabels: Record<TenantStatus, string> = {

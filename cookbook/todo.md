@@ -293,13 +293,12 @@
 
 ## Hardening
 
-- [ ] Masking NIK/NPWP/phone di UI.
+- [x] Masking NIK/NPWP/phone in row/dry-run UI and API; explicit audited admin reveal.
 - [ ] Access control per tenant.
-- [ ] Audit access raw payload.
-- [ ] File retention policy.
+- [x] Audit access raw payload; original row restricted to admin.
 - [x] File retention command: preview/apply, preserve unresolved delivery and staging (local tests).
 - [x] Backup database and restore drill on a separate local MySQL service (`deploy/backup-and-retention.md`).
-- [ ] Export audit log.
+- [x] Tenant-scoped audit viewer, filters, pagination, and safe CSV export.
 - [ ] Rate limit per tenant.
 - [ ] Timeout config per Neo Feeder connection.
 - [ ] Circuit breaker jika Neo Feeder tidak stabil.

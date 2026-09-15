@@ -730,9 +730,36 @@ export type BatchRow = {
   warnings: number;
 };
 export type RowDetail = DryRunPayloadPreview & {
-  raw_row: Record<string, unknown>;
+  raw_row: Record<string, unknown> | null;
   normalized_row: Record<string, unknown>;
+  can_reveal_sensitive: boolean;
+  sensitive_revealed: boolean;
 };
+
+export type AuditEntry = {
+  id: string;
+  event: string;
+  subject_id: string | null;
+  created_at: string;
+  tenant_name: string;
+  actor_name: string;
+  metadata: Record<string, unknown>;
+};
+
+export async function downloadApiFile(path: string, filename: string) {
+  const headers = getAuthHeaders();
+  if (!headers) throw new Error('Sesi login belum tersedia.');
+  const response = await fetch(`${API_BASE_URL}/${path}`, { headers, cache: 'no-store' });
+  if (!response.ok) throw new Error(await parseApiError(response));
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
 async function batchRequest<T>(path: string, signal?: AbortSignal): Promise<T> {
   const headers = getAuthHeaders();

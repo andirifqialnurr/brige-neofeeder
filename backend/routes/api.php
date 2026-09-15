@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\HealthController;
@@ -22,6 +23,9 @@ Route::get('/health', HealthController::class);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
 Route::middleware('api.token')->group(function (): void {
+    Route::get('audit-logs', [AuditLogController::class, 'index']);
+    Route::get('audit-logs/export', [AuditLogController::class, 'export']);
+    Route::post('import-batches/{importBatch}/rows/{record}/reveal', [ImportBatchInspectionController::class, 'reveal']);
     Route::get('operations/health', OperationsController::class);
     Route::get('dashboard/statistics', DashboardController::class);
     Route::get('/auth/me', [AuthController::class, 'me']);

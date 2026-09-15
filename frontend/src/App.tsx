@@ -17,6 +17,7 @@ import { ImportBatchPage } from '@/pages/import-batch';
 import { ImportBatchDetailPage } from '@/pages/import-batch/detail';
 import { MappingPage } from '@/pages/mapping';
 import { OperationsPage } from '@/pages/operations';
+import { AuditPage } from '@/pages/audit';
 
 function Redirect({ to }: { to: string }) {
   useEffect(() => {
@@ -63,6 +64,7 @@ function ApplicationRoutes() {
     ),
     mapping: <MappingPage />,
     operations: <OperationsPage />,
+    audit: <AuditPage />,
   };
   return (
     <WorkspaceLayout>
