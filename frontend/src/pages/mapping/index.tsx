@@ -38,6 +38,7 @@ import {
   type MappingProfile,
   type MappingProfileVersion,
   type MappingRule,
+  type MappingStructureReport,
   type MappingWorkspaceData,
   type SourceFile,
 } from '@/lib/mapping';
@@ -150,6 +151,8 @@ function FileMappingWorkspace({
   const [versions, setVersions] = useState<MappingProfileVersion[]>([]);
   const [showVersions, setShowVersions] = useState(false);
   const [duplicateName, setDuplicateName] = useState('');
+  const [structure, setStructure] = useState<MappingStructureReport | null>(null);
+  const [showStructure, setShowStructure] = useState(false);
   const lock = useRef(false);
   const alive = useRef(true);
   useEffect(() => {
@@ -176,6 +179,8 @@ function FileMappingWorkspace({
     setDirty(true);
     setPreview(null);
     setPreviewPage(1);
+    setStructure(null);
+    setShowStructure(false);
   };
   function changeRule(field: MappingField, changes: Partial<MappingRule>) {
     setRules((current) => ({
@@ -193,6 +198,8 @@ function FileMappingWorkspace({
     setName(selected?.name ?? '');
     setPreview(null);
     setPreviewPage(1);
+    setStructure(null);
+    setShowStructure(false);
     setDirty(!selected);
     if (selected) {
       setChannel(selected.channel);
@@ -277,6 +284,33 @@ function FileMappingWorkspace({
     } catch (err) {
       if (alive.current)
         setError(err instanceof Error ? err.message : 'Versi lama tidak bisa dipulihkan.');
+    } finally {
+      lock.current = false;
+      onBusy(false);
+      if (alive.current) setBusy('');
+    }
+  }
+  async function inspectStructure() {
+    if (lock.current || !profile || !source) return;
+    lock.current = true;
+    setBusy('structure');
+    onBusy(true);
+    setError('');
+    try {
+      const query = new URLSearchParams({
+        profile_id: profile.id,
+        version: String(profile.version),
+      });
+      const result = await requestApi<{ data: MappingStructureReport }>(
+        `mapping/sources/${source.id}/structure?${query}`,
+      );
+      if (alive.current) {
+        setStructure(result.data);
+        setShowStructure(true);
+      }
+    } catch (err) {
+      if (alive.current)
+        setError(err instanceof Error ? err.message : 'Struktur sumber gagal diperiksa.');
     } finally {
       lock.current = false;
       onBusy(false);
@@ -486,6 +520,13 @@ function FileMappingWorkspace({
           <AppButton icon={Upload} disabled={!!busy || !file} onClick={() => act('upload')}>
             {busy === 'upload' ? 'Membaca file...' : 'Upload sumber'}
           </AppButton>
+          <AppButton
+            variant="secondary"
+            disabled={!!busy || !source || !profile}
+            onClick={() => void inspectStructure()}
+          >
+            {busy === 'structure' ? 'Memeriksa...' : 'Periksa struktur'}
+          </AppButton>
         </div>
       </WorkspacePanel>
       <WorkspacePanel>
@@ -692,6 +733,63 @@ function FileMappingWorkspace({
           </AppButton>
         </div>
       </WorkspacePanel>
+      {structure && showStructure && (
+        <FormDialog
+          open
+          title="Pemeriksaan struktur sumber"
+          onClose={() => setShowStructure(false)}
+          busy={!!busy}
+        >
+          <p className="muted">
+            {structure.source.name} · {structure.summary.source_rows} baris · profil v
+            {structure.profile.version}
+          </p>
+          <dl className="summary-strip">
+            {[
+              ['Mapping hilang', structure.summary.missing_mappings],
+              ['Kolom sumber hilang', structure.summary.missing_source_columns],
+              ['Sel wajib kosong', structure.summary.empty_required_cells],
+              ['Grup duplikat', structure.summary.duplicate_groups],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+          {structure.missing_source_columns.length > 0 && (
+            <p className="error-text">
+              Kolom hilang: {structure.missing_source_columns.join(', ')}
+            </p>
+          )}
+          {structure.unmapped_source_columns.length > 0 && (
+            <p className="muted">
+              Kolom belum dipakai: {structure.unmapped_source_columns.join(', ')}
+            </p>
+          )}
+          <DataTable
+            columns={['Field wajib', 'Sumber', 'Status', 'Sel kosong']}
+            rows={structure.required_fields.map((field) => [
+              field.label,
+              field.source ?? 'Nilai tetap / belum dipetakan',
+              <StatusBadge tone={field.mapped ? 'success' : 'warning'}>
+                {field.mapped ? 'Siap' : 'Perlu diperbaiki'}
+              </StatusBadge>,
+              field.empty_rows,
+            ])}
+          />
+          {structure.duplicate_candidates.length > 0 && (
+            <DataTable
+              columns={['Natural key', 'Baris kandidat', 'Jumlah']}
+              rows={structure.duplicate_candidates.map((candidate) => [
+                candidate.natural_key,
+                candidate.rows.join(', '),
+                candidate.count,
+              ])}
+            />
+          )}
+        </FormDialog>
+      )}
       {profile && showVersions && (
         <FormDialog
           open

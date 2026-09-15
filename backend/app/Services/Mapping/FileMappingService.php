@@ -66,6 +66,102 @@ class FileMappingService
             'filters' => ['status' => $status, 'search' => $search]];
     }
 
+    public function inspectStructure(SourceConnection $source, MappingProfile $profile, int $version): array
+    {
+        abort_unless($source->tenant_id === $profile->tenant_id, 403);
+        abort_unless($profile->version === $version, 409, 'Versi mapping berubah. Muat ulang profil.');
+        $rules = $profile->versions()->where('version', $version)->firstOrFail()->rules;
+        $ruleByTarget = collect($rules)->keyBy('target');
+        $headers = array_values($source->headers);
+        $usedColumns = [];
+        foreach ($rules as $rule) {
+            if (($rule['kind'] ?? null) === 'source' && isset($rule['source'])) {
+                $usedColumns[] = $rule['source'];
+            }
+            foreach ($rule['transform'] === 'concat' ? ($rule['append_sources'] ?? []) : [] as $column) {
+                $usedColumns[] = $column;
+            }
+        }
+        $missingSourceColumns = array_values(array_diff(array_unique($usedColumns), $headers));
+        $requiredFields = [];
+        foreach ($this->registry->channel($profile->channel)->fields as $field) {
+            if (! ($field['required'] ?? false)) {
+                continue;
+            }
+            $rule = $ruleByTarget->get($field['name']);
+            $sourceColumn = ($rule['kind'] ?? null) === 'source' ? ($rule['source'] ?? null) : null;
+            $sourceMissing = $sourceColumn !== null && in_array($sourceColumn, $missingSourceColumns, true);
+            $emptyRows = 0;
+            if (! $rule || $sourceMissing) {
+                $emptyRows = count($source->snapshot);
+            } else {
+                foreach ($source->snapshot as $row) {
+                    $value = ($rule['kind'] ?? null) === 'constant' ? ($rule['constant'] ?? null) : ($row['values'][$sourceColumn] ?? null);
+                    if ($value === null || trim((string) $value) === '') {
+                        $emptyRows++;
+                    }
+                }
+            }
+            $requiredFields[] = [
+                'target' => $field['name'],
+                'label' => $field['label'],
+                'mapped' => (bool) $rule && ! $sourceMissing,
+                'source' => $sourceColumn,
+                'empty_rows' => $emptyRows,
+            ];
+        }
+
+        $duplicateGroups = [];
+        $naturalKeyFields = $this->registry->channel($profile->channel)->naturalKey;
+        foreach ($source->snapshot as $row) {
+            $parts = [];
+            $complete = true;
+            foreach ($naturalKeyFields as $field) {
+                $rule = $ruleByTarget->get($field);
+                if (! $rule) {
+                    $complete = false;
+                    break;
+                }
+                $value = ($rule['kind'] ?? null) === 'constant' ? ($rule['constant'] ?? null) : ($row['values'][$rule['source'] ?? ''] ?? null);
+                if ($value === null || trim((string) $value) === '') {
+                    $complete = false;
+                    break;
+                }
+                $parts[] = mb_strtolower(trim((string) $value));
+            }
+            if ($complete) {
+                $duplicateGroups[implode('|', $parts)][] = $row['row_number'];
+            }
+        }
+        $duplicates = [];
+        foreach ($duplicateGroups as $key => $rowNumbers) {
+            if (count($rowNumbers) > 1) {
+                $duplicates[] = ['natural_key' => $key, 'rows' => $rowNumbers, 'count' => count($rowNumbers)];
+            }
+            if (count($duplicates) >= 100) {
+                break;
+            }
+        }
+
+        return [
+            'source' => $source->only(['id', 'name', 'headers', 'sheet_name', 'row_count', 'sha256']),
+            'profile' => ['id' => $profile->id, 'name' => $profile->name, 'channel' => $profile->channel, 'version' => $version],
+            'required_fields' => $requiredFields,
+            'missing_source_columns' => $missingSourceColumns,
+            'unmapped_source_columns' => array_values(array_diff($headers, array_unique($usedColumns))),
+            'natural_key_fields' => $naturalKeyFields,
+            'duplicate_candidates' => $duplicates,
+            'summary' => [
+                'source_rows' => count($source->snapshot),
+                'required_fields' => count($requiredFields),
+                'missing_mappings' => count(array_filter($requiredFields, fn ($field) => ! $field['mapped'])),
+                'missing_source_columns' => count($missingSourceColumns),
+                'empty_required_cells' => array_sum(array_column($requiredFields, 'empty_rows')),
+                'duplicate_groups' => count($duplicates),
+            ],
+        ];
+    }
+
     public function stage(MappingProfile $profile, SourceConnection $source, int $version, string $hash, User $actor): ImportBatch
     {
         return DB::transaction(function () use ($profile, $source, $version, $hash, $actor) {

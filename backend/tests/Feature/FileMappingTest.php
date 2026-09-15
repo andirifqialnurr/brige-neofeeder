@@ -196,6 +196,36 @@ class FileMappingTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['tenant_id' => $source['tenant_id'], 'event' => 'mapping.duplicated', 'subject_id' => $copy['id']]);
     }
 
+    public function test_mapping_structure_check_reports_changed_columns_empty_required_values_and_duplicate_candidates(): void
+    {
+        [$source, $profile, $token, $payload] = $this->fixture();
+        $stored = SourceConnection::findOrFail($source['id']);
+        $rows = $stored->snapshot;
+        $rows[] = [...$rows[0], 'row_number' => 3];
+        foreach ($rows as &$row) {
+            $row['values']['LegacyColumn'] = 'unused';
+        }
+        unset($row);
+        $stored->update(['headers' => [...$stored->headers, 'LegacyColumn'], 'snapshot' => $rows, 'row_count' => 2]);
+        $payload['profile_id'] = $profile['id'];
+        $payload['expected_version'] = 1;
+        $payload['name'] = 'Mapping struktur v2';
+        $payload['rules'][0]['source'] = 'NamaYangBerubah';
+        $version = $this->withToken($token)->postJson('/api/mapping/profiles', $payload)->assertOk()->json('data.version');
+
+        $report = $this->withToken($token)->getJson('/api/mapping/sources/'.$source['id'].'/structure?'.http_build_query([
+            'profile_id' => $profile['id'], 'version' => $version,
+        ]))->assertOk()->json('data');
+        $this->assertSame(['NamaYangBerubah'], $report['missing_source_columns']);
+        $this->assertContains('LegacyColumn', $report['unmapped_source_columns']);
+        $required = collect($report['required_fields'])->firstWhere('target', 'nama_mahasiswa');
+        $this->assertFalse($required['mapped']);
+        $this->assertSame(2, $required['empty_rows']);
+        $this->assertSame(1, $report['summary']['duplicate_groups']);
+        $this->assertSame([2, 3], $report['duplicate_candidates'][0]['rows']);
+        $this->assertSame(2, $report['summary']['source_rows']);
+    }
+
     public function test_advanced_transforms_keep_zeroes_spaces_and_report_unmapped_values(): void
     {
         [$source, , $token, $payload] = $this->fixture();

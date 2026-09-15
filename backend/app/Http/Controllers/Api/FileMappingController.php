@@ -112,6 +112,16 @@ class FileMappingController
         return response()->json(['data' => $source->only(['id', 'tenant_id', 'name', 'headers', 'sheet_name', 'row_count', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
     }
 
+    public function structure(Request $request, SourceConnection $sourceConnection, FileMappingService $service): JsonResponse
+    {
+        $input = $request->validate(['profile_id' => 'required|uuid', 'version' => 'required|integer|min:1']);
+        $profile = MappingProfile::findOrFail($input['profile_id']);
+        $this->authorizeProfile($request, $profile);
+        abort_unless($sourceConnection->tenant_id === $profile->tenant_id, 403);
+
+        return response()->json(['data' => $service->inspectStructure($sourceConnection, $profile, $input['version'])], 200, ['Cache-Control' => 'no-store']);
+    }
+
     public function save(Request $request, NeoFeederContractRegistry $registry): JsonResponse
     {
         $input = $request->validate(['tenant_id' => 'nullable|uuid|exists:tenants,id', 'profile_id' => 'nullable|uuid',

@@ -42,6 +42,36 @@ export type MappingProfileVersion = {
   rules: MappingRule[];
   created_at: string;
 };
+export type MappingStructureReport = {
+  source: {
+    id: string;
+    name: string;
+    headers: string[];
+    sheet_name: string | null;
+    row_count: number;
+    sha256: string;
+  };
+  profile: { id: string; name: string; channel: string; version: number };
+  required_fields: {
+    target: string;
+    label: string;
+    mapped: boolean;
+    source: string | null;
+    empty_rows: number;
+  }[];
+  missing_source_columns: string[];
+  unmapped_source_columns: string[];
+  natural_key_fields: string[];
+  duplicate_candidates: { natural_key: string; rows: number[]; count: number }[];
+  summary: {
+    source_rows: number;
+    required_fields: number;
+    missing_mappings: number;
+    missing_source_columns: number;
+    empty_required_cells: number;
+    duplicate_groups: number;
+  };
+};
 export type MappingField = {
   name: string;
   label: string;
