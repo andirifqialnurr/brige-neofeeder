@@ -18,6 +18,7 @@ class SourceConnection extends Model
         'headers' => 'array',
         'snapshot' => 'array',
         'row_count' => 'integer',
+        'snapshot_version' => 'integer',
         'connection_config' => 'encrypted:array',
         'schema_discovery_started_at' => 'datetime',
         'schema_discovered_at' => 'datetime',

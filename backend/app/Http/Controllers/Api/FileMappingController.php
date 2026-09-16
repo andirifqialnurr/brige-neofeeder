@@ -150,6 +150,7 @@ class FileMappingController
             'type' => 'database',
             'schema_discovery_status' => 'idle',
             'snapshot_status' => $table !== '' ? 'ready' : 'idle',
+            'snapshot_version' => 1,
             'snapshot_refreshed_at' => $table !== '' ? now() : null,
             'name' => $config['database'].($table !== '' ? '.'.$table : ''),
             'sha256' => hash('sha256', json_encode([$config['host'], $config['port'], $config['database'], $config['username'], $config['table'], $config['columns'], $snapshot], JSON_THROW_ON_ERROR)),
@@ -181,6 +182,7 @@ class FileMappingController
         $snapshot = $reader->read($config);
         $sourceConnection->forceFill([
             'name' => $config['database'].'.'.$input['table'],
+            'snapshot_version' => ($sourceConnection->snapshot_version ?? 0) + 1,
             'sha256' => hash('sha256', json_encode([$config['host'], $config['port'], $config['database'], $config['username'], $input['table'], $input['columns'], $snapshot], JSON_THROW_ON_ERROR)),
             ...$snapshot,
             'snapshot_status' => 'ready',

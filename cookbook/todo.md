@@ -302,7 +302,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 
 ## 2.4 Automation Sync
 
-- [ ] Manual run untuk mapping profile.
+- [x] Manual run untuk mapping profile berbasis snapshot terbaru.
 - [ ] Scheduled run.
 - [ ] Incremental strategy berbasis timestamp jika tersedia.
 - [ ] Full refresh mode.

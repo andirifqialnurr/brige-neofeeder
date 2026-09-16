@@ -170,7 +170,10 @@ class FileMappingService
             $records = $this->records($profile, $source, $version);
             abort_unless(hash_equals($this->hash($profile, $source, $records), $hash), 409, 'Mapping, referensi, atau contract berubah. Tinjau preview ulang.');
             $mappingVersion = $profile->versions()->where('version', $version)->firstOrFail();
-            $existing = DB::table('mapping_runs')->where('source_connection_id', $source->id)->where('mapping_profile_version_id', $mappingVersion->id)->first();
+            $snapshotVersion = $source->snapshot_version ?? 1;
+            $existing = DB::table('mapping_runs')->where('source_connection_id', $source->id)
+                ->where('mapping_profile_version_id', $mappingVersion->id)
+                ->where('source_snapshot_version', $snapshotVersion)->first();
             if ($existing) {
                 abort_unless($existing->preview_hash === $hash, 409, 'Sumber/versi ini sudah diproses dengan contract lain. Simpan versi mapping baru.');
 
@@ -188,7 +191,8 @@ class FileMappingService
             }
             app(ImportBatchValidationService::class)->validate($batch);
             DB::table('mapping_runs')->insert(['id' => (string) Str::uuid(), 'source_connection_id' => $source->id,
-                'mapping_profile_version_id' => $mappingVersion->id, 'import_batch_id' => $batch->id, 'preview_hash' => $hash, 'created_at' => now()]);
+                'mapping_profile_version_id' => $mappingVersion->id, 'source_snapshot_version' => $snapshotVersion,
+                'import_batch_id' => $batch->id, 'preview_hash' => $hash, 'created_at' => now()]);
             AuditLog::create(['tenant_id' => $source->tenant_id, 'actor_id' => $actor->id, 'event' => 'mapping.staged',
                 'subject_type' => ImportBatch::class, 'subject_id' => $batch->id, 'metadata' => ['records' => count($records)]]);
 

@@ -49,6 +49,7 @@ class DatabaseSnapshotRefreshJobTest extends TestCase
 
         $this->assertSame('ready', $source->refresh()->snapshot_status);
         $this->assertSame(1, $source->row_count);
+        $this->assertSame(2, $source->refresh()->snapshot_version);
         $this->withToken($token)->getJson("/api/mapping/sources/{$source->id}/schema")
             ->assertOk()
             ->assertJsonPath('data.source.snapshot_status', 'ready');

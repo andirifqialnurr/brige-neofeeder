@@ -62,6 +62,7 @@ class RefreshDatabaseSourceSnapshotJob implements ShouldBeUnique, ShouldQueue
             $snapshot = $reader->read($config);
             $source->forceFill([
                 'sha256' => hash('sha256', json_encode([$config['host'], $config['port'], $config['database'], $config['username'], $config['table'], $config['columns'], $snapshot], JSON_THROW_ON_ERROR)),
+                'snapshot_version' => ($source->snapshot_version ?? 0) + 1,
                 ...$snapshot,
                 'snapshot_status' => 'ready',
                 'snapshot_refreshed_at' => now(),

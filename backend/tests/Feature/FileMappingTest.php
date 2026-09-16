@@ -78,6 +78,12 @@ class FileMappingTest extends TestCase
         $this->withToken($token)->postJson('/api/import-batches/'.$id.'/dry-run')->assertOk();
         Http::assertNothingSent();
         Queue::assertNothingPushed();
+
+        SourceConnection::findOrFail($source['id'])->update(['sha256' => str_repeat('e', 64), 'snapshot_version' => 2]);
+        $refreshedPreview = $this->withToken($token)->postJson($url.'/preview', $body)->assertOk()->json('data');
+        $this->withToken($token)->postJson($url.'/stage', [...$body, 'preview_hash' => $refreshedPreview['preview_hash']])
+            ->assertCreated();
+        $this->assertDatabaseCount('mapping_runs', 2);
     }
 
     public function test_reference_mapping_requires_explicit_ambiguous_choice_and_preserves_errors(): void

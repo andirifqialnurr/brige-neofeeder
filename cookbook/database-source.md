@@ -49,6 +49,10 @@ Snapshot yang sudah pernah dibuat dapat disegarkan asynchronous melalui `POST
 /api/mapping/sources/{source}/refresh-snapshot`. Statusnya terpisah dari
 discovery schema (`idle`, `queued`, `refreshing`, `pending`, `ready`, `failed`)
 agar operator dapat membedakan schema siap dari data snapshot terbaru.
+Setiap snapshot memiliki `snapshot_version`. Versi ini menjadi bagian dari
+idempotency key mapping run: stage ulang pada snapshot yang sama mengembalikan
+batch lama, sedangkan snapshot baru dapat membuat batch baru untuk profile yang
+sama.
 
 Konfigurasi koneksi disimpan terenkripsi pada `source_connections` dan tidak
 dikembalikan pada endpoint workspace. Gunakan akun database khusus baca dengan
