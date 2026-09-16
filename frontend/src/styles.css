@@ -695,6 +695,44 @@ select:focus {
 .workspace {
   min-width: 0;
 }
+.automation-workspace {
+  display: grid;
+  gap: 24px;
+}
+.automation-form {
+  display: grid;
+  grid-template-columns:
+    minmax(160px, 1.1fr)
+    minmax(180px, 1.2fr)
+    minmax(180px, 1.2fr)
+    minmax(140px, 0.8fr) auto;
+  align-items: end;
+  gap: 14px;
+}
+.automation-form label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 500;
+}
+.automation-form input,
+.automation-form .select-trigger {
+  width: 100%;
+  min-width: 0;
+}
+.automation-form > .app-button {
+  white-space: nowrap;
+}
+.automation-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.automation-form + .auth-error {
+  margin: 16px 0 0;
+}
 .section-heading {
   display: flex;
   align-items: center;
@@ -1675,6 +1713,12 @@ tbody tr:hover {
   }
   .inline-field {
     width: 100%;
+  }
+  .automation-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .automation-form > .app-button {
+    width: max-content;
   }
   .inline-field .select-trigger {
     flex: 1;

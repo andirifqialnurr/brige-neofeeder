@@ -1,6 +1,7 @@
 import {
   Building2,
   Activity,
+  CalendarClock,
   ScrollText,
   DatabaseZap,
   FileSpreadsheet,
@@ -52,6 +53,7 @@ export const navItems: AppNavItem[] = [
   { id: 'template-excel', label: 'Template Excel', icon: FileSpreadsheet },
   { id: 'import-batch', label: 'Import Batch', icon: Upload },
   { id: 'mapping', label: 'Mapping', icon: Waypoints },
+  { id: 'automation', label: 'Otomatisasi', icon: CalendarClock },
   { id: 'operations', label: 'Operasional', icon: Activity },
   { id: 'audit', label: 'Audit', icon: ScrollText },
 ];
@@ -66,6 +68,7 @@ export const pageMeta: Record<PageId, { eyebrow: string; title: string }> = {
   'template-excel': { eyebrow: 'Template', title: 'Template Excel' },
   'import-batch': { eyebrow: 'Import', title: 'Import Batch' },
   mapping: { eyebrow: 'Otomatisasi', title: 'Mapping SIAKAD' },
+  automation: { eyebrow: 'Otomatisasi', title: 'Schedule SIAKAD' },
   operations: { eyebrow: 'Sistem', title: 'Operasional' },
   audit: { eyebrow: 'Riwayat', title: 'Audit' },
 };

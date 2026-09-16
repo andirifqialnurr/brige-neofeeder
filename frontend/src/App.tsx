@@ -16,6 +16,7 @@ import { TemplatePage } from '@/pages/template-excel';
 import { ImportBatchPage } from '@/pages/import-batch';
 import { ImportBatchDetailPage } from '@/pages/import-batch/detail';
 import { MappingPage } from '@/pages/mapping';
+import { AutomationPage } from '@/pages/automation';
 import { OperationsPage } from '@/pages/operations';
 import { AuditPage } from '@/pages/audit';
 
@@ -63,6 +64,7 @@ function ApplicationRoutes() {
       <ImportBatchPage />
     ),
     mapping: <MappingPage />,
+    automation: <AutomationPage />,
     operations: <OperationsPage />,
     audit: <AuditPage />,
   };

@@ -7,6 +7,7 @@ export const pagePaths = {
   'template-excel': '/template-excel',
   'import-batch': '/import-batch',
   mapping: '/mapping',
+  automation: '/automation',
   operations: '/operations',
   audit: '/audit',
 } as const;

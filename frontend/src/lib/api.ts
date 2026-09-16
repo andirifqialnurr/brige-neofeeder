@@ -1,4 +1,4 @@
-import type { SourceFile } from './mapping';
+import type { MappingWorkspaceData, SourceFile } from './mapping';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:2000/api';
 const API_TOKEN_STORAGE_KEY = 'bridge-neofeeder-api-token';
@@ -464,6 +464,94 @@ export async function refreshDatabaseSource(sourceId: string): Promise<SourceSch
     `mapping/sources/${sourceId}/refresh-snapshot`,
     { method: 'POST' },
   );
+
+  return payload.data;
+}
+
+export type AutomationScheduleFrequency = 'hourly' | 'daily' | 'weekly';
+export type AutomationScheduleStatus = 'idle' | 'queued' | 'running' | 'success' | 'failed';
+export type AutomationSchedule = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  frequency: AutomationScheduleFrequency;
+  is_active: boolean;
+  status: AutomationScheduleStatus;
+  next_run_at: string | null;
+  last_started_at: string | null;
+  last_completed_at: string | null;
+  last_error: string | null;
+  last_batch_id: string | null;
+  source: {
+    id: string;
+    name: string;
+    type: 'database';
+    row_count: number;
+    snapshot_status: SnapshotStatus;
+    snapshot_refreshed_at: string | null;
+  } | null;
+  profile: { id: string; name: string; channel: string; version: number } | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getMappingWorkspace(
+  tenantId: string,
+  signal?: AbortSignal,
+): Promise<MappingWorkspaceData> {
+  const payload = await requestApi<{ data: MappingWorkspaceData }>(
+    `mapping/workspace?tenant_id=${encodeURIComponent(tenantId)}`,
+    { signal },
+  );
+
+  return payload.data;
+}
+
+export async function getAutomationSchedules(
+  tenantId: string,
+  signal?: AbortSignal,
+): Promise<AutomationSchedule[]> {
+  const payload = await requestApi<{ data: AutomationSchedule[] }>(
+    `automation/schedules?tenant_id=${encodeURIComponent(tenantId)}`,
+    { signal },
+  );
+
+  return payload.data;
+}
+
+export async function createAutomationSchedule(input: {
+  tenant_id: string;
+  source_connection_id: string;
+  mapping_profile_id: string;
+  name: string;
+  frequency: AutomationScheduleFrequency;
+}): Promise<AutomationSchedule> {
+  const payload = await requestApi<{ data: AutomationSchedule }>('automation/schedules', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+
+  return payload.data;
+}
+
+export async function updateAutomationSchedule(
+  id: string,
+  input: { frequency?: AutomationScheduleFrequency; is_active?: boolean; name?: string },
+): Promise<AutomationSchedule> {
+  const payload = await requestApi<{ data: AutomationSchedule }>(`automation/schedules/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+
+  return payload.data;
+}
+
+export async function runAutomationSchedule(id: string): Promise<AutomationSchedule> {
+  const payload = await requestApi<{ data: AutomationSchedule }>(`automation/schedules/${id}/run`, {
+    method: 'POST',
+  });
 
   return payload.data;
 }
