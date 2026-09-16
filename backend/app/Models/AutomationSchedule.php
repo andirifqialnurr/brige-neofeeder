@@ -21,6 +21,8 @@ class AutomationSchedule extends Model
 
     public const ALERT_MIN_RUNS = 3;
 
+    public const RUN_STATUSES = ['running', 'success', 'failed'];
+
     protected $guarded = [];
 
     protected $casts = [

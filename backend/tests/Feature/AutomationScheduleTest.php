@@ -195,6 +195,44 @@ class AutomationScheduleTest extends TestCase
         $this->assertFalse($schedule->refresh()->alert_active);
     }
 
+    public function test_schedule_run_history_is_filtered_paginated_and_tenant_scoped(): void
+    {
+        [$schedule, $token] = $this->schedule();
+        $id = $this->withToken($token)->postJson('/api/automation/schedules', [
+            'source_connection_id' => $schedule->source_connection_id,
+            'mapping_profile_id' => $schedule->mapping_profile_id,
+            'name' => 'Schedule history',
+            'frequency' => 'daily',
+        ])->assertCreated()->json('data.id');
+        $schedule = AutomationSchedule::findOrFail($id);
+
+        foreach (['success', 'failed', 'running'] as $index => $status) {
+            AutomationScheduleRun::create([
+                'automation_schedule_id' => $schedule->id,
+                'tenant_id' => $schedule->tenant_id,
+                'status' => $status,
+                'started_at' => now()->subMinutes($index + 1),
+                'completed_at' => $status === 'running' ? null : now()->subMinutes($index),
+                'last_batch_id' => null,
+                'error_message' => $status === 'failed' ? 'Scheduled run gagal.' : null,
+            ]);
+        }
+
+        $this->withToken($token)->getJson("/api/automation/schedules/{$id}/runs?status=failed")
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.status', 'failed')
+            ->assertJsonPath('data.0.error_message', 'Scheduled run gagal.')
+            ->assertJsonPath('data.0.last_batch_id', null);
+        $this->withToken($token)->getJson("/api/automation/schedules/{$id}/runs?per_page=2")
+            ->assertOk()
+            ->assertJsonPath('meta.total', 3)
+            ->assertJsonPath('meta.per_page', 25);
+
+        [, , , $foreignToken] = $this->syncWorkspace();
+        $this->withToken($foreignToken)->getJson("/api/automation/schedules/{$id}/runs")->assertForbidden();
+    }
+
     /** @return array{0: AutomationSchedule, 1: string} */
     private function schedule(): array
     {

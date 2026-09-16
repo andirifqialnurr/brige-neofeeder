@@ -107,6 +107,38 @@ class AutomationScheduleController
         return response()->json(['data' => $this->view($automationSchedule->fresh(['source', 'profile']))], 202, ['Cache-Control' => 'no-store']);
     }
 
+    public function runs(Request $request, AutomationSchedule $automationSchedule): JsonResponse
+    {
+        $this->authorizeSchedule($request, $automationSchedule);
+        $input = $request->validate([
+            'page' => 'sometimes|integer|min:1',
+            'status' => ['nullable', Rule::in(AutomationSchedule::RUN_STATUSES)],
+        ]);
+        $page = $automationSchedule->runs()
+            ->when($input['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->orderByDesc('started_at')->orderByDesc('id')->paginate(25);
+
+        return response()->json([
+            'data' => $page->getCollection()->map(fn ($run) => [
+                'id' => $run->id,
+                'status' => $run->status,
+                'started_at' => $run->started_at?->toISOString(),
+                'completed_at' => $run->completed_at?->toISOString(),
+                'duration_ms' => $run->started_at && $run->completed_at
+                    ? max(0, (int) $run->started_at->diffInMilliseconds($run->completed_at))
+                    : null,
+                'last_batch_id' => $run->last_batch_id,
+                'error_message' => $run->error_message,
+            ]),
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'last_page' => $page->lastPage(),
+                'total' => $page->total(),
+                'per_page' => $page->perPage(),
+            ],
+        ], 200, ['Cache-Control' => 'no-store']);
+    }
+
     private function view(AutomationSchedule $schedule): array
     {
         return [

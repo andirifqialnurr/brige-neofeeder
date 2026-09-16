@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\SourceConnection;
+use App\Models\SourceSchemaTable;
 use App\Services\Mapping\DatabaseSourceReader;
 use App\Services\Mapping\DatabaseSourceReaderContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -119,5 +120,31 @@ class DatabaseSourceTest extends TestCase
         $response->assertJsonPath('data.id', $source->id)->assertJsonPath('data.row_count', 1);
         $this->assertDatabaseHas('source_connections', ['id' => $source->id, 'name' => 'siakad.mahasiswa', 'row_count' => 1]);
         $this->assertStringNotContainsString('secret', $response->getContent());
+    }
+
+    public function test_schema_endpoint_exposes_incremental_readiness_without_connection_config(): void
+    {
+        [, , $user, $token] = $this->syncWorkspace();
+        $source = SourceConnection::create([
+            'tenant_id' => $user->tenant_id, 'type' => 'database', 'name' => 'siakad',
+            'sha256' => str_repeat('f', 64), 'headers' => [], 'snapshot' => [], 'row_count' => 0,
+            'schema_discovery_status' => 'ready',
+            'connection_config' => ['database' => 'siakad'],
+        ]);
+        $table = SourceSchemaTable::create([
+            'source_connection_id' => $source->id, 'table_name' => 'mahasiswa', 'table_type' => 'BASE TABLE',
+            'estimated_rows' => 1, 'primary_key_columns' => ['id'], 'candidate_key_columns' => ['id'],
+        ]);
+        $table->columns()->createMany([
+            ['name' => 'id', 'ordinal_position' => 1, 'data_type' => 'int', 'is_nullable' => false, 'is_primary_key' => true],
+            ['name' => 'updated_at', 'ordinal_position' => 2, 'data_type' => 'datetime', 'is_nullable' => true],
+        ]);
+
+        $response = $this->withToken($token)->getJson("/api/mapping/sources/{$source->id}/schema")->assertOk();
+
+        $response->assertJsonPath('data.tables.0.incremental_readiness.status', 'ready')
+            ->assertJsonPath('data.tables.0.incremental_readiness.activation_allowed', false)
+            ->assertJsonPath('data.tables.0.incremental_readiness.timestamp_columns.0.name', 'updated_at');
+        $this->assertStringNotContainsString('connection_config', $response->getContent());
     }
 }

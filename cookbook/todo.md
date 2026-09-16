@@ -306,9 +306,11 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [x] Scheduled run berbasis refresh snapshot, mapping, dan staging; outbound Neo Feeder tetap menunggu credential/token.
 - [ ] Incremental strategy berbasis timestamp jika tersedia.
 - [x] Full refresh mode untuk schedule database; mode incremental ditahan sampai kontrak timestamp/watermark pilot tersedia.
+- [x] Laporan kesiapan incremental per tabel dari kandidat key/timestamp; aktivasi tetap dikunci sampai review pilot.
 - [x] Pause/resume schedule melalui toggle aktif/nonaktif dengan guard saat job berjalan.
 - [x] Lock agar tidak ada dua sync tenant/kanal berjalan bersamaan; job yang tertahan kembali ke queue.
 - [x] Alert in-app jika error rate schedule melewati threshold; notifikasi email/webhook menunggu kanal operasional.
+- [x] Riwayat run schedule tenant-scoped dengan filter status, pagination, dan dialog UI.
 - [x] Reconciliation report dari catatan lokal per batch; pembacaan balik remote masih menunggu trial.
 
 ## 2.5 Pilot Kampus

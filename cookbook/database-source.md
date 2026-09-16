@@ -65,9 +65,16 @@ snapshot database yang sudah siap dan berisi baris. Tahap ini belum melakukan
 POST ke Neo Feeder; outbound baru boleh ditambahkan setelah token, approval,
 dan kontrak kampus pilot tersedia.
 
-Mode incremental belum diaktifkan. Implementasinya harus menunggu bukti kolom
-timestamp/primary key, aturan update/delete, dan watermark dari database
-SIAKAD pilot agar tidak melewatkan atau menghapus data secara keliru.
+Mode incremental belum diaktifkan. Katalog schema sekarang menampilkan laporan
+kesiapan struktural per tabel: kandidat primary/unique key, kandidat kolom
+`datetime`/`timestamp` untuk watermark, dan status `ready`, `needs_review`, atau
+`not_ready`. Status `ready` hanya berarti satu kandidat key dan timestamp
+ditemukan; properti `activation_allowed` tetap `false`.
+
+Implementasi incremental harus menunggu bukti kolom timestamp/primary key, aturan
+update/delete, dan watermark dari database SIAKAD pilot agar tidak melewatkan
+atau menghapus data secara keliru. Kandidat dengan lebih dari satu timestamp
+memerlukan pemilihan manual saat review pilot.
 Eksekusi schedule memakai lock `tenant + channel`; schedule lain pada kanal yang
 sama menunggu di queue sampai proses sebelumnya selesai.
 
@@ -76,6 +83,14 @@ minimal tiga run selesai, sistem menghitung error rate dan menyalakan alert
 operasional jika melewati `error_rate_threshold` (default 50%). Alert terlihat di
 daftar schedule dan tercatat sebagai `automation.schedule_alert_triggered`;
 notifikasi email/webhook belum diaktifkan.
+
+Riwayat run tersedia melalui `GET
+/api/automation/schedules/{schedule}/runs`. Endpoint ini tenant-scoped, mendukung
+filter `status=running|success|failed`, pagination 25 data per halaman, dan
+mengembalikan status, waktu mulai/selesai, durasi, batch lokal, serta pesan error.
+Payload, credential, dan konfigurasi koneksi tidak pernah dikembalikan. UI
+menampilkan riwayat melalui dialog dari tabel schedule sehingga operator dapat
+memeriksa hasil tanpa berpindah konteks.
 
 Konfigurasi koneksi disimpan terenkripsi pada `source_connections` dan tidak
 dikembalikan pada endpoint workspace. Gunakan akun database khusus baca dengan

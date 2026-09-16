@@ -4,12 +4,14 @@ import {
   AppButton,
   DataTable,
   EmptyState,
+  HelpTip,
   SectionHeader,
   StatusBadge,
   WorkspacePanel,
 } from '@/components/ui';
 import type {
   SchemaDiscoveryStatus,
+  IncrementalReadinessStatus,
   SnapshotStatus,
   SourceSchemaCatalog,
   SourceSchemaTable,
@@ -56,6 +58,20 @@ const snapshotStatusTones: Record<
   pending: 'warning',
   ready: 'success',
   failed: 'destructive',
+};
+
+const incrementalReadinessLabels: Record<IncrementalReadinessStatus, string> = {
+  ready: 'Kandidat terdeteksi',
+  needs_review: 'Perlu tinjauan',
+  not_ready: 'Belum siap',
+};
+const incrementalReadinessTones: Record<
+  IncrementalReadinessStatus,
+  'neutral' | 'success' | 'warning'
+> = {
+  ready: 'success',
+  needs_review: 'warning',
+  not_ready: 'neutral',
 };
 
 function tableKeys(table: SourceSchemaTable): string {
@@ -187,6 +203,28 @@ export function DatabaseSchemaPanel({
                   </AppButton>
                 )}
               </div>
+              {selectedTable.incremental_readiness ? (
+                <div className="schema-incremental-line">
+                  <StatusBadge
+                    tone={incrementalReadinessTones[selectedTable.incremental_readiness.status]}
+                  >
+                    {incrementalReadinessLabels[selectedTable.incremental_readiness.status]}
+                  </StatusBadge>
+                  <span className="muted">
+                    Key: {selectedTable.incremental_readiness.key_columns.join(', ') || '-'}
+                  </span>
+                  <span className="muted">
+                    Watermark:{' '}
+                    {selectedTable.incremental_readiness.timestamp_columns
+                      .map((column) => column.name)
+                      .join(', ') || '-'}
+                  </span>
+                  <HelpTip
+                    label="Tentang kandidat incremental"
+                    text="Analisis ini hanya membaca kandidat key dan timestamp. Aktivasi tetap menunggu aturan update/delete dan watermark yang diuji pada kampus pilot."
+                  />
+                </div>
+              ) : null}
               <DataTable
                 columns={['Kolom', 'Tipe', 'Null', 'Relasi', 'Sample']}
                 rows={selectedTable.columns.map((column) => [

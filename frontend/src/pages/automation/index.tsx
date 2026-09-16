@@ -1,4 +1,4 @@
-import { CalendarClock, Pause, Play, Plus, RefreshCcw, RotateCw } from 'lucide-react';
+import { CalendarClock, History, Pause, Play, Plus, RefreshCcw, RotateCw } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -14,6 +14,7 @@ import {
   WorkspacePanel,
 } from '@/components/ui';
 import { Select } from '@/components/ui/select';
+import { AutomationScheduleRunsDialog } from '@/components/automation-schedule-runs';
 import { useWorkspace } from '@/hooks/workspace-context';
 import {
   createAutomationSchedule,
@@ -104,6 +105,7 @@ function AutomationWorkspace({ tenantId }: { tenantId: string }) {
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const [historySchedule, setHistorySchedule] = useState<AutomationSchedule | null>(null);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -345,6 +347,11 @@ function AutomationWorkspace({ tenantId }: { tenantId: string }) {
             formatDateTime(schedule.next_run_at),
             <div className="automation-row-actions" key={schedule.id}>
               <IconButton
+                label="Lihat riwayat"
+                icon={History}
+                onClick={() => setHistorySchedule(schedule)}
+              />
+              <IconButton
                 label={schedule.is_active ? 'Jeda schedule' : 'Aktifkan schedule'}
                 icon={schedule.is_active ? Pause : Play}
                 disabled={
@@ -380,6 +387,10 @@ function AutomationWorkspace({ tenantId }: { tenantId: string }) {
           }
         />
       </WorkspacePanel>
+      <AutomationScheduleRunsDialog
+        schedule={historySchedule}
+        onClose={() => setHistorySchedule(null)}
+      />
     </div>
   );
 }

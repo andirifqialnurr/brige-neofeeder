@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\SourceConnection;
+use App\Models\SourceSchemaTable;
 use App\Models\Tenant;
 use App\Services\Mapping\DatabaseSchemaDiscoveryService;
+use App\Services\Mapping\IncrementalReadinessAnalyzer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use PDO;
@@ -75,6 +77,54 @@ class DatabaseSchemaDiscoveryTest extends TestCase
 
         $this->expectException(ValidationException::class);
         app(DatabaseSchemaDiscoveryService::class)->discover($source, new PDO('sqlite::memory:'));
+    }
+
+    public function test_incremental_readiness_is_conservative_about_timestamp_candidates(): void
+    {
+        $source = SourceConnection::create([
+            'tenant_id' => $this->tenantId(), 'type' => 'database', 'name' => 'siakad.students',
+            'sha256' => str_repeat('d', 64), 'headers' => [], 'snapshot' => [], 'row_count' => 0,
+            'connection_config' => ['database' => 'siakad'],
+        ]);
+        $table = SourceSchemaTable::create([
+            'source_connection_id' => $source->id, 'table_name' => 'students', 'table_type' => 'BASE TABLE',
+            'estimated_rows' => 10, 'primary_key_columns' => ['id'], 'candidate_key_columns' => ['id'],
+        ]);
+        $table->columns()->createMany([
+            ['name' => 'id', 'ordinal_position' => 1, 'data_type' => 'int', 'is_nullable' => false, 'is_primary_key' => true],
+            ['name' => 'updated_at', 'ordinal_position' => 2, 'data_type' => 'datetime', 'is_nullable' => true],
+            ['name' => 'created_at', 'ordinal_position' => 3, 'data_type' => 'datetime', 'is_nullable' => true],
+        ]);
+
+        $result = app(IncrementalReadinessAnalyzer::class)->analyze($table->load('columns'));
+
+        $this->assertSame('ready', $result['status']);
+        $this->assertSame(['updated_at'], array_column($result['timestamp_columns'], 'name'));
+        $this->assertFalse($result['activation_allowed']);
+        $this->assertCount(2, $result['blocking_reasons']);
+    }
+
+    public function test_incremental_readiness_requires_review_for_multiple_timestamp_candidates(): void
+    {
+        $source = SourceConnection::create([
+            'tenant_id' => $this->tenantId(), 'type' => 'database', 'name' => 'siakad.enrollments',
+            'sha256' => str_repeat('e', 64), 'headers' => [], 'snapshot' => [], 'row_count' => 0,
+            'connection_config' => ['database' => 'siakad'],
+        ]);
+        $table = SourceSchemaTable::create([
+            'source_connection_id' => $source->id, 'table_name' => 'enrollments', 'table_type' => 'BASE TABLE',
+            'estimated_rows' => 10, 'primary_key_columns' => [], 'candidate_key_columns' => [],
+        ]);
+        $table->columns()->createMany([
+            ['name' => 'updated_at', 'ordinal_position' => 1, 'data_type' => 'timestamp', 'is_nullable' => false],
+            ['name' => 'modified_at', 'ordinal_position' => 2, 'data_type' => 'datetime', 'is_nullable' => false],
+        ]);
+
+        $result = app(IncrementalReadinessAnalyzer::class)->analyze($table->load('columns'));
+
+        $this->assertSame('not_ready', $result['status']);
+        $this->assertCount(2, $result['timestamp_columns']);
+        $this->assertContains('Tidak ada primary key atau unique key non-null.', $result['reasons']);
     }
 
     private function tenantId(): string

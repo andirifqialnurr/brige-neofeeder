@@ -161,6 +161,21 @@ export type SourceSchemaColumn = {
   sample_values: string[];
 };
 
+export type IncrementalReadinessStatus = 'ready' | 'needs_review' | 'not_ready';
+export type IncrementalTimestampCandidate = {
+  name: string;
+  data_type: string;
+  confidence: 'high' | 'medium';
+};
+export type IncrementalReadiness = {
+  status: IncrementalReadinessStatus;
+  key_columns: string[];
+  timestamp_columns: IncrementalTimestampCandidate[];
+  reasons: string[];
+  activation_allowed: false;
+  blocking_reasons: string[];
+};
+
 export type SourceSchemaTable = {
   id: string;
   table_name: string;
@@ -168,6 +183,7 @@ export type SourceSchemaTable = {
   estimated_rows: number | null;
   primary_key_columns: string[];
   candidate_key_columns: string[];
+  incremental_readiness?: IncrementalReadiness;
   columns: SourceSchemaColumn[];
 };
 
@@ -508,6 +524,17 @@ export type AutomationSchedule = {
   updated_at: string;
 };
 
+export type AutomationScheduleRunStatus = 'running' | 'success' | 'failed';
+export type AutomationScheduleRun = {
+  id: string;
+  status: AutomationScheduleRunStatus;
+  started_at: string;
+  completed_at: string | null;
+  duration_ms: number | null;
+  last_batch_id: string | null;
+  error_message: string | null;
+};
+
 export async function getMappingWorkspace(
   tenantId: string,
   signal?: AbortSignal,
@@ -574,6 +601,26 @@ export async function runAutomationSchedule(id: string): Promise<AutomationSched
   });
 
   return payload.data;
+}
+
+export async function getAutomationScheduleRuns(
+  scheduleId: string,
+  options: {
+    page?: number;
+    status?: AutomationScheduleRunStatus;
+    signal?: AbortSignal;
+  } = {},
+): Promise<PageResult<AutomationScheduleRun>> {
+  const query = new URLSearchParams();
+  if (options.page && options.page > 1) query.set('page', String(options.page));
+  if (options.status) query.set('status', options.status);
+  const queryString = query.toString();
+  const payload = await requestApi<PageResult<AutomationScheduleRun>>(
+    `automation/schedules/${encodeURIComponent(scheduleId)}/runs${queryString ? `?${queryString}` : ''}`,
+    { signal: options.signal },
+  );
+
+  return payload;
 }
 
 export async function getTenants(): Promise<Tenant[]> {

@@ -39,6 +39,16 @@ describe('database schema panel', () => {
               estimated_rows: 12,
               primary_key_columns: ['id'],
               candidate_key_columns: [],
+              incremental_readiness: {
+                status: 'ready',
+                key_columns: ['id'],
+                timestamp_columns: [
+                  { name: 'updated_at', data_type: 'datetime', confidence: 'high' },
+                ],
+                reasons: ['Ditemukan satu kandidat timestamp untuk watermark.'],
+                activation_allowed: false,
+                blocking_reasons: [],
+              },
               columns: [
                 {
                   id: 'column-1',
@@ -67,6 +77,9 @@ describe('database schema panel', () => {
 
     expect(html).toContain('Schema siap');
     expect(html).toContain('mahasiswa');
+    expect(html).toContain('Kandidat terdeteksi');
+    expect(html).toContain('Key: id');
+    expect(html).toContain('Watermark: updated_at');
     expect(html).toContain('[masked]');
     expect(html).not.toContain('connection_config');
   });

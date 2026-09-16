@@ -45,6 +45,7 @@ Route::middleware(['api.token', 'throttle:bridge-tenant'])->group(function (): v
     Route::post('mapping/profiles/{mappingProfile}/stage', [FileMappingController::class, 'stage']);
     Route::get('automation/schedules', [AutomationScheduleController::class, 'index']);
     Route::post('automation/schedules', [AutomationScheduleController::class, 'store']);
+    Route::get('automation/schedules/{automationSchedule}/runs', [AutomationScheduleController::class, 'runs']);
     Route::patch('automation/schedules/{automationSchedule}', [AutomationScheduleController::class, 'update']);
     Route::post('automation/schedules/{automationSchedule}/run', [AutomationScheduleController::class, 'run']);
     Route::get('audit-logs', [AuditLogController::class, 'index']);

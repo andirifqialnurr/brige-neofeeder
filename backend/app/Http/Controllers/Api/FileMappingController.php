@@ -11,6 +11,7 @@ use App\Models\SourceConnection;
 use App\Models\SourceSchemaTable;
 use App\Services\Mapping\DatabaseSourceReaderContract;
 use App\Services\Mapping\FileMappingService;
+use App\Services\Mapping\IncrementalReadinessAnalyzer;
 use App\Services\Mapping\MappingReferenceResolver;
 use App\Services\Mapping\SourceFileReader;
 use App\Services\NeoFeeder\Contracts\NeoFeederContractRegistry;
@@ -252,7 +253,7 @@ class FileMappingController
         return response()->json(['data' => $this->sourceStatus($sourceConnection)], 202, ['Cache-Control' => 'no-store']);
     }
 
-    public function schema(Request $request, SourceConnection $sourceConnection): JsonResponse
+    public function schema(Request $request, SourceConnection $sourceConnection, IncrementalReadinessAnalyzer $readiness): JsonResponse
     {
         $this->authorizeSource($request, $sourceConnection);
         $sourceConnection->load('schemaTables.columns');
@@ -261,6 +262,7 @@ class FileMappingController
             'source' => $this->sourceStatus($sourceConnection),
             'tables' => $sourceConnection->schemaTables->map(fn (SourceSchemaTable $table) => [
                 ...$table->only(['id', 'table_name', 'table_type', 'estimated_rows', 'primary_key_columns', 'candidate_key_columns']),
+                'incremental_readiness' => $readiness->analyze($table),
                 'columns' => $table->columns->map(fn ($column) => $column->only([
                     'id', 'name', 'ordinal_position', 'data_type', 'column_type', 'is_nullable',
                     'is_primary_key', 'is_unique_key', 'is_candidate_primary_key', 'is_foreign_key',
