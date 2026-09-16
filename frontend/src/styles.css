@@ -6,12 +6,85 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 12px;
 }
-.mapping-field, .mapping-rule-cell {
+.mapping-field,
+.mapping-rule-cell {
   display: grid;
   gap: 6px;
   min-width: 0;
 }
-.mapping-rule-cell { min-width: 180px; }
+.mapping-rule-cell {
+  min-width: 180px;
+}
+.schema-status-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: -4px 0 16px;
+}
+.schema-browser {
+  display: grid;
+  gap: 20px;
+}
+.schema-table-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: hsl(var(--foreground));
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.schema-table-button:hover,
+.schema-table-button.is-selected {
+  border-color: hsl(var(--primary) / 0.35);
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+.schema-detail {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid hsl(var(--border));
+}
+.schema-detail-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.schema-detail-heading > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+.schema-detail-heading .muted {
+  font-size: 12px;
+}
+.schema-column-name {
+  display: grid;
+  gap: 2px;
+  font-weight: 500;
+}
+.schema-column-name small {
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  font-weight: 400;
+}
+.schema-sample {
+  display: block;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
 .mapping-field-code {
   display: block;
   color: hsl(var(--muted-foreground));

@@ -121,6 +121,53 @@ export type NeoFeederConnectionTestResult = {
   connection: NeoFeederConnection;
 };
 
+export type SchemaDiscoveryStatus =
+  'idle' | 'queued' | 'discovering' | 'pending' | 'ready' | 'failed';
+
+export type SourceSchemaStatus = {
+  id: string;
+  tenant_id: string;
+  type: 'file' | 'database';
+  name: string;
+  schema_discovery_status: SchemaDiscoveryStatus;
+  schema_discovery_started_at: string | null;
+  schema_discovered_at: string | null;
+  schema_discovery_error: string | null;
+};
+
+export type SourceSchemaColumn = {
+  id: string;
+  name: string;
+  ordinal_position: number;
+  data_type: string;
+  column_type: string | null;
+  is_nullable: boolean;
+  is_primary_key: boolean;
+  is_unique_key: boolean;
+  is_candidate_primary_key: boolean;
+  is_foreign_key: boolean;
+  is_candidate_relation: boolean;
+  relation_confidence: 'foreign_key' | 'name_pattern' | null;
+  referenced_table: string | null;
+  referenced_column: string | null;
+  sample_values: string[];
+};
+
+export type SourceSchemaTable = {
+  id: string;
+  table_name: string;
+  table_type: string;
+  estimated_rows: number | null;
+  primary_key_columns: string[];
+  candidate_key_columns: string[];
+  columns: SourceSchemaColumn[];
+};
+
+export type SourceSchemaCatalog = {
+  source: SourceSchemaStatus;
+  tables: SourceSchemaTable[];
+};
+
 export type ReferenceEndpointStatus = {
   name: string;
   endpoint: string;
@@ -368,6 +415,27 @@ export async function getCurrentUser(): Promise<AuthUser> {
   storeAuthUser(payload.user);
 
   return payload.user;
+}
+
+export async function discoverSourceSchema(sourceId: string): Promise<SourceSchemaStatus> {
+  const payload = await requestApi<{ data: SourceSchemaStatus }>(
+    `mapping/sources/${sourceId}/discover-schema`,
+    { method: 'POST' },
+  );
+
+  return payload.data;
+}
+
+export async function getSourceSchema(
+  sourceId: string,
+  signal?: AbortSignal,
+): Promise<SourceSchemaCatalog> {
+  const payload = await requestApi<{ data: SourceSchemaCatalog }>(
+    `mapping/sources/${sourceId}/schema`,
+    { signal },
+  );
+
+  return payload.data;
 }
 
 export async function getTenants(): Promise<Tenant[]> {

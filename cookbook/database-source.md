@@ -35,6 +35,11 @@ Kegagalan retry pertama disimpan sebagai status `pending` dengan pesan umum.
 Setelah retry terakhir, status menjadi `failed`. Detail exception tidak
 dikirim ke API dan hanya tersedia di log server untuk troubleshooting internal.
 
+Halaman Mapping menyediakan trigger discovery, polling status worker, daftar
+tabel, detail kolom, candidate key/relation, dan sample value yang sudah
+dimasking. Operator dapat memilih tabel dari katalog untuk mengisi pilihan
+kolom snapshot berikutnya.
+
 Konfigurasi koneksi disimpan terenkripsi pada `source_connections` dan tidak
 dikembalikan pada endpoint workspace. Gunakan akun database khusus baca dengan
 hak minimum. Snapshot tetap terisolasi per tenant dan masuk ke alur mapping,

@@ -10,6 +10,7 @@ import {
   Upload,
   Waypoints,
 } from 'lucide-react';
+import { DatabaseSchemaPanel } from '@/components/database-schema-panel';
 import {
   AppButton,
   DataTable,
@@ -26,7 +27,14 @@ import {
 } from '@/components/ui';
 import { Select } from '@/components/ui/select';
 import { useWorkspace } from '@/hooks/workspace-context';
-import { downloadApiFile, requestApi } from '@/lib/api';
+import {
+  discoverSourceSchema,
+  downloadApiFile,
+  getSourceSchema,
+  requestApi,
+  type SourceSchemaCatalog,
+  type SourceSchemaStatus,
+} from '@/lib/api';
 import { goTo } from '@/lib/router';
 import { ReferenceRule } from './reference-rule';
 import { TransformRule } from './transform-rule';
@@ -164,6 +172,8 @@ function FileMappingWorkspace({
   const [duplicateName, setDuplicateName] = useState('');
   const [structure, setStructure] = useState<MappingStructureReport | null>(null);
   const [showStructure, setShowStructure] = useState(false);
+  const [schemaCatalog, setSchemaCatalog] = useState<SourceSchemaCatalog | null>(null);
+  const [schemaError, setSchemaError] = useState('');
   const lock = useRef(false);
   const alive = useRef(true);
   useEffect(() => {
@@ -186,6 +196,43 @@ function FileMappingWorkspace({
   }, [tenantId, onBusy]);
   const source = workspace?.sources.find((item) => item.id === sourceId);
   const fields = workspace?.channels.find((item) => item.key === channel)?.fields ?? [];
+  const sourceKey = source?.id ?? '';
+  const sourceType = source?.type;
+  const schemaStatus = source?.schema_discovery_status ?? 'idle';
+  useEffect(() => {
+    setSchemaCatalog(null);
+    setSchemaError('');
+    if (!sourceKey || sourceType !== 'database') return;
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const result = await getSourceSchema(sourceKey);
+        if (cancelled) return;
+        setSchemaCatalog(result);
+        setWorkspace((current) =>
+          current
+            ? {
+                ...current,
+                sources: current.sources.map((item) =>
+                  item.id === result.source.id ? { ...item, ...result.source } : item,
+                ),
+              }
+            : current,
+        );
+      } catch (err) {
+        if (!cancelled) {
+          setSchemaError(err instanceof Error ? err.message : 'Schema sumber gagal dimuat.');
+        }
+      }
+    };
+    void refresh();
+    const polling = ['queued', 'discovering', 'pending'].includes(schemaStatus);
+    const timer = polling ? window.setInterval(() => void refresh(), 2500) : undefined;
+    return () => {
+      cancelled = true;
+      if (timer) window.clearInterval(timer);
+    };
+  }, [sourceKey, sourceType, schemaStatus]);
   const edit = () => {
     setDirty(true);
     setPreview(null);
@@ -322,6 +369,36 @@ function FileMappingWorkspace({
     } catch (err) {
       if (alive.current)
         setError(err instanceof Error ? err.message : 'Struktur sumber gagal diperiksa.');
+    } finally {
+      lock.current = false;
+      onBusy(false);
+      if (alive.current) setBusy('');
+    }
+  }
+  async function discoverSchema() {
+    if (lock.current || !source || source.type !== 'database') return;
+    lock.current = true;
+    setBusy('schema');
+    onBusy(true);
+    setSchemaError('');
+    try {
+      const status: SourceSchemaStatus = await discoverSourceSchema(source.id);
+      if (alive.current) {
+        setWorkspace((current) =>
+          current
+            ? {
+                ...current,
+                sources: current.sources.map((item) =>
+                  item.id === status.id ? { ...item, ...status } : item,
+                ),
+              }
+            : current,
+        );
+      }
+    } catch (err) {
+      if (alive.current) {
+        setSchemaError(err instanceof Error ? err.message : 'Discovery schema gagal dimulai.');
+      }
     } finally {
       lock.current = false;
       onBusy(false);
@@ -647,15 +724,36 @@ function FileMappingWorkspace({
               !!busy ||
               !database.database ||
               !database.username ||
-              !database.table ||
-              !database.columns
+              Boolean(database.table.trim()) !== Boolean(database.columns.trim())
             }
             onClick={() => void act('database')}
           >
-            {busy === 'database' ? 'Membaca database...' : 'Buat snapshot database'}
+            {busy === 'database'
+              ? database.table && database.columns
+                ? 'Membaca database...'
+                : 'Menyimpan koneksi...'
+              : database.table && database.columns
+                ? 'Buat snapshot database'
+                : 'Simpan koneksi read-only'}
           </AppButton>
         </details>
       </WorkspacePanel>
+      {source?.type === 'database' && (
+        <DatabaseSchemaPanel
+          source={source}
+          catalog={schemaCatalog}
+          busy={busy === 'schema'}
+          error={schemaError}
+          onDiscover={() => void discoverSchema()}
+          onSelectTable={(table) =>
+            setDatabase((current) => ({
+              ...current,
+              table: table.table_name,
+              columns: table.columns.map((column) => column.name).join(','),
+            }))
+          }
+        />
+      )}
       <WorkspacePanel>
         <SectionHeader
           title="Mapping kolom"
