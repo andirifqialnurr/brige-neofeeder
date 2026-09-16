@@ -8,15 +8,17 @@ use App\Services\Mapping\FileMappingService;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
 
 class RunAutomationScheduleJob implements ShouldBeUnique, ShouldQueue
 {
-    use Queueable;
+    use InteractsWithQueue, Queueable;
 
-    public int $tries = 1;
+    public int $tries = 5;
 
     public int $timeout = 120;
 
@@ -44,9 +46,26 @@ class RunAutomationScheduleJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
+        $profile = $schedule->profile;
+        if (! $profile) {
+            $schedule->forceFill([
+                'status' => 'failed',
+                'last_completed_at' => now(),
+                'last_error' => 'Scheduled run gagal. Mapping profile tidak ditemukan.',
+            ])->save();
+
+            return;
+        }
+        $executionLock = Cache::lock($this->lockKey($schedule), $this->timeout + 30);
+        if (! $executionLock->get()) {
+            $schedule->forceFill(['status' => 'queued', 'last_error' => 'Menunggu kanal yang sedang diproses.'])->save();
+            $this->release(30);
+
+            return;
+        }
+
         try {
             $source = $schedule->source;
-            $profile = $schedule->profile;
             if (! $source || ! $profile || $source->tenant_id !== $schedule->tenant_id || $profile->tenant_id !== $schedule->tenant_id) {
                 throw new RuntimeException('Konfigurasi schedule tidak valid.');
             }
@@ -79,6 +98,8 @@ class RunAutomationScheduleJob implements ShouldBeUnique, ShouldQueue
                 'last_error' => 'Scheduled run gagal. Periksa snapshot, mapping profile, dan log server.',
             ])->save();
             throw $exception;
+        } finally {
+            $executionLock->release();
         }
     }
 
@@ -89,5 +110,10 @@ class RunAutomationScheduleJob implements ShouldBeUnique, ShouldQueue
             'last_completed_at' => now(),
             'last_error' => 'Scheduled run gagal. Periksa snapshot, mapping profile, dan log server.',
         ]);
+    }
+
+    private function lockKey(AutomationSchedule $schedule): string
+    {
+        return "automation:tenant:{$schedule->tenant_id}:channel:{$schedule->profile?->channel}";
     }
 }

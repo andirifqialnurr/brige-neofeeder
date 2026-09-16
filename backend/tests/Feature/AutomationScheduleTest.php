@@ -9,9 +9,12 @@ use App\Models\MappingProfile;
 use App\Models\SourceConnection;
 use App\Models\User;
 use App\Services\Mapping\FileMappingService;
+use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
+use Mockery;
 use Tests\Concerns\CreatesSyncWorkspace;
 use Tests\TestCase;
 
@@ -113,6 +116,30 @@ class AutomationScheduleTest extends TestCase
             'name' => 'Invalid',
             'frequency' => 'daily',
         ])->assertUnprocessable();
+    }
+
+    public function test_schedule_job_releases_when_tenant_channel_is_busy(): void
+    {
+        Bus::fake([RefreshDatabaseSourceSnapshotJob::class]);
+        [$schedule, $token] = $this->schedule();
+        $id = $this->withToken($token)->postJson('/api/automation/schedules', [
+            'source_connection_id' => $schedule->source_connection_id,
+            'mapping_profile_id' => $schedule->mapping_profile_id,
+            'name' => 'Schedule locked',
+            'frequency' => 'daily',
+        ])->assertCreated()->json('data.id');
+        $schedule = AutomationSchedule::with('profile')->findOrFail($id);
+        $schedule->update(['status' => 'queued']);
+        $lock = Mockery::mock(Lock::class);
+        $lock->shouldReceive('get')->once()->andReturnFalse();
+        Cache::shouldReceive('lock')->once()
+            ->with("automation:tenant:{$schedule->tenant_id}:channel:{$schedule->profile->channel}", 150)
+            ->andReturn($lock);
+
+        $job = (new RunAutomationScheduleJob($id))->withFakeQueueInteractions();
+        $job->handle(app(FileMappingService::class));
+        $job->assertReleased(30);
+        $this->assertSame('queued', $schedule->refresh()->status);
     }
 
     /** @return array{0: AutomationSchedule, 1: string} */

@@ -60,6 +60,8 @@ pilihan frekuensi MVP adalah `hourly`, `daily`, dan `weekly`. Schedule hanya
 dapat dibuat untuk snapshot database yang sudah siap dan berisi baris. Tahap ini
 belum melakukan POST ke Neo Feeder; outbound baru boleh ditambahkan setelah
 token, approval, dan kontrak kampus pilot tersedia.
+Eksekusi schedule memakai lock `tenant + channel`; schedule lain pada kanal yang
+sama menunggu di queue sampai proses sebelumnya selesai.
 
 Konfigurasi koneksi disimpan terenkripsi pada `source_connections` dan tidak
 dikembalikan pada endpoint workspace. Gunakan akun database khusus baca dengan

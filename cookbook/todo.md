@@ -307,7 +307,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [ ] Incremental strategy berbasis timestamp jika tersedia.
 - [ ] Full refresh mode.
 - [x] Pause/resume schedule melalui toggle aktif/nonaktif dengan guard saat job berjalan.
-- [ ] Lock agar tidak ada dua sync tenant/kanal berjalan bersamaan.
+- [x] Lock agar tidak ada dua sync tenant/kanal berjalan bersamaan; job yang tertahan kembali ke queue.
 - [ ] Alert jika error rate melewati threshold.
 - [x] Reconciliation report dari catatan lokal per batch; pembacaan balik remote masih menunggu trial.
 
