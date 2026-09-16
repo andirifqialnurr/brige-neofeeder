@@ -266,6 +266,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [x] Dukung source database read-only untuk snapshot MySQL dengan tabel/kolom terpilih (`database-source.md`).
 - [ ] Dukung source API.
 - [x] Buat worker schema discovery asynchronous, unique per source, dengan status lifecycle dan endpoint katalog (`database-source.md`).
+- [x] Izinkan registrasi koneksi database tanpa tabel/kolom sebelum discovery schema.
 - [x] Simpan source tables.
 - [x] Simpan source fields.
 - [x] Simpan sample values yang sudah dimasking.

@@ -1,9 +1,12 @@
 # Snapshot sumber database SIAKAD
 
-Mapping menerima snapshot MySQL read-only melalui `POST /api/mapping/sources/database`.
-Operator memilih host, port, database, tabel, dan daftar kolom secara eksplisit.
-Query yang dijalankan hanya `SELECT` dengan batas 2.000 baris; nama tabel dan
-kolom memakai allowlist identifier sehingga tidak dapat menjadi SQL bebas.
+Mapping menerima koneksi atau snapshot MySQL read-only melalui `POST
+/api/mapping/sources/database`. Operator dapat mengirim host, port, database,
+username, dan password tanpa tabel/kolom untuk mendaftarkan koneksi sebelum
+discovery. Setelah katalog siap, operator mengirim tabel dan daftar kolom untuk
+membuat snapshot mapping. Query snapshot hanya `SELECT` dengan batas 2.000
+baris; nama tabel dan kolom memakai allowlist identifier sehingga tidak dapat
+menjadi SQL bebas.
 
 Discovery schema disimpan terpisah pada `source_schema_tables` dan
 `source_schema_columns`. Katalog menyimpan nama/type tabel, estimasi jumlah

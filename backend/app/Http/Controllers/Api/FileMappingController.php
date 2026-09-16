@@ -129,17 +129,25 @@ class FileMappingController
             'connection.database' => 'required|string|max:128',
             'connection.username' => 'required|string|max:128',
             'connection.password' => 'nullable|string|max:255',
-            'connection.table' => 'required|string|max:128',
-            'connection.columns' => 'required|array|min:1|max:64',
+            'connection.table' => 'nullable|string|max:128',
+            'connection.columns' => 'nullable|array|max:64',
             'connection.columns.*' => 'required|string|max:128',
         ]);
         $tenantId = $this->tenant($request);
         $config = $input['connection'];
-        $snapshot = $reader->read($config);
+        $table = trim((string) ($config['table'] ?? ''));
+        $columns = array_values(array_filter($config['columns'] ?? [], fn ($column): bool => trim((string) $column) !== ''));
+        if (($table === '') !== ($columns === [])) {
+            throw ValidationException::withMessages(['connection' => 'Isi tabel dan kolom bersama-sama, atau kosongkan keduanya untuk discovery schema.']);
+        }
+        $config['table'] = $table;
+        $config['columns'] = $columns;
+        $snapshot = $table !== '' ? $reader->read($config) : ['headers' => [], 'snapshot' => [], 'row_count' => 0];
         $source = SourceConnection::create([
             'tenant_id' => $tenantId,
             'type' => 'database',
-            'name' => $config['database'].'.'.$config['table'],
+            'schema_discovery_status' => 'idle',
+            'name' => $config['database'].($table !== '' ? '.'.$table : ''),
             'sha256' => hash('sha256', json_encode([$config['host'], $config['port'], $config['database'], $config['username'], $config['table'], $config['columns'], $snapshot], JSON_THROW_ON_ERROR)),
             'connection_config' => $config,
             ...$snapshot,

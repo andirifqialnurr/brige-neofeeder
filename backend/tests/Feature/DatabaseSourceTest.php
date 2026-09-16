@@ -58,4 +58,33 @@ class DatabaseSourceTest extends TestCase
             $this->assertArrayHasKey('connection', $exception->errors());
         }
     }
+
+    public function test_database_source_can_register_connection_before_schema_discovery(): void
+    {
+        [, , , $token] = $this->syncWorkspace();
+        $response = $this->withToken($token)->postJson('/api/mapping/sources/database', [
+            'connection' => [
+                'host' => '127.0.0.1', 'port' => 3306, 'database' => 'siakad', 'username' => 'readonly', 'password' => 'secret',
+                'table' => '', 'columns' => [],
+            ],
+        ])->assertCreated();
+
+        $response->assertJsonPath('data.type', 'database')
+            ->assertJsonPath('data.name', 'siakad')
+            ->assertJsonPath('data.row_count', 0)
+            ->assertJsonPath('data.schema_discovery_status', 'idle');
+        $this->assertDatabaseHas('source_connections', ['name' => 'siakad', 'row_count' => 0]);
+        $this->assertStringNotContainsString('connection_config', $response->getContent());
+    }
+
+    public function test_database_source_rejects_only_one_of_table_and_columns(): void
+    {
+        [, , , $token] = $this->syncWorkspace();
+        $this->withToken($token)->postJson('/api/mapping/sources/database', [
+            'connection' => [
+                'host' => '127.0.0.1', 'port' => 3306, 'database' => 'siakad', 'username' => 'readonly', 'password' => 'secret',
+                'table' => 'students', 'columns' => [],
+            ],
+        ])->assertUnprocessable();
+    }
 }
