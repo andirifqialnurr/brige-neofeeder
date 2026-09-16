@@ -15,6 +15,7 @@ class ReferenceStatusController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        abort_unless($user->isAdmin() || $user->tenant_id, 403);
         $tenantId = $this->tenantId($request, $user);
         $operations = collect(config('neofeeder-contracts.channels.references.operations', []));
         $statusByEndpoint = $this->statusByEndpoint($tenantId);

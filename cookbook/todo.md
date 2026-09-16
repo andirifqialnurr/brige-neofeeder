@@ -326,7 +326,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 ## Hardening
 
 - [x] Masking NIK/NPWP/phone in row/dry-run UI and API; explicit audited admin reveal.
-- [ ] Access control per tenant.
+- [x] Access control per tenant; resource ownership and unscoped operator guards are covered by API regression tests.
 - [x] Audit access raw payload; original row restricted to admin.
 - [x] File retention command: preview/apply, preserve unresolved delivery and staging (local tests).
 - [x] Backup database and restore drill on a separate local MySQL service (`deploy/backup-and-retention.md`).

@@ -64,4 +64,40 @@ class ReferenceStatusTest extends TestCase
             ->assertJsonPath('data.endpoints.1.total_rows', 1)
             ->assertJsonPath('data.endpoints.1.status', 'synced');
     }
+
+    public function test_operator_without_tenant_cannot_read_global_reference_status(): void
+    {
+        $tenant = Tenant::query()->create([
+            'name' => 'Kampus Terisolasi',
+            'code' => 'ISO',
+            'status' => 'active',
+        ]);
+
+        ReferenceRecord::query()->create([
+            'tenant_id' => $tenant->id,
+            'endpoint' => 'GetProdi',
+            'value_key' => 'id_prodi',
+            'value' => 'private-prodi',
+            'label' => 'Private',
+            'raw_payload' => ['id_prodi' => 'private-prodi'],
+        ]);
+
+        $user = User::query()->create([
+            'tenant_id' => null,
+            'name' => 'Operator Tanpa Kampus',
+            'email' => 'unscoped-operator@example.test',
+            'password' => Hash::make('password'),
+            'role' => 'operator',
+            'status' => 'active',
+        ]);
+        $plainToken = 'reference-status-unscoped-token';
+
+        ApiAccessToken::query()->create([
+            'user_id' => $user->id,
+            'name' => 'test',
+            'token_hash' => hash('sha256', $plainToken),
+        ]);
+
+        $this->withToken($plainToken)->getJson('/api/references/status')->assertForbidden();
+    }
 }

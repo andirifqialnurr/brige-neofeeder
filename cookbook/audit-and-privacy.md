@@ -18,6 +18,12 @@ The default period is 30 days. Export is limited to 10,000 matching entries,
 escapes spreadsheet formula prefixes, and records `audit.exported`. Raw metadata,
 IP addresses, user-agent strings, credentials and payloads are excluded.
 
+Tenant-bound APIs reject an operator without a campus scope before reading
+aggregate data. Resource endpoints verify the authenticated campus against the
+resource owner, while admin-only endpoints may explicitly select a campus or
+use a platform-wide scope. The reference status endpoint follows the same rule;
+an unscoped operator cannot receive a global reference summary.
+
 Local verification 2026-09-15: privacy/audit tests passed (2 tests, 27 assertions);
 inspection, dry-run and approval regression tests passed; frontend build/lint passed.
 Browser validation uses synthetic demo data only.
