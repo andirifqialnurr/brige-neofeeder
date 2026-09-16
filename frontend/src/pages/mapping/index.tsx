@@ -32,6 +32,7 @@ import {
   downloadApiFile,
   getSourceSchema,
   requestApi,
+  snapshotDatabaseSource,
   type SourceSchemaCatalog,
   type SourceSchemaStatus,
 } from '@/lib/api';
@@ -405,6 +406,42 @@ function FileMappingWorkspace({
       if (alive.current) setBusy('');
     }
   }
+  async function createDatabaseSnapshot(table: SourceSchemaCatalog['tables'][number]) {
+    if (lock.current || !source || source.type !== 'database') return;
+    lock.current = true;
+    setBusy('snapshot');
+    onBusy(true);
+    setSchemaError('');
+    try {
+      const result = await snapshotDatabaseSource(source.id, {
+        table: table.table_name,
+        columns: table.columns.map((column) => column.name),
+      });
+      if (!alive.current) return;
+      setWorkspace((current) =>
+        current
+          ? {
+              ...current,
+              sources: [result, ...current.sources.filter((item) => item.id !== result.id)],
+            }
+          : current,
+      );
+      setSourceId(result.id);
+      setPreview(null);
+      if (!profile) {
+        setRules(matchMappingHeaders(result.headers, fields));
+        setDirty(true);
+      }
+    } catch (err) {
+      if (alive.current) {
+        setSchemaError(err instanceof Error ? err.message : 'Snapshot database gagal dibuat.');
+      }
+    } finally {
+      lock.current = false;
+      onBusy(false);
+      if (alive.current) setBusy('');
+    }
+  }
   async function act(
     action: 'upload' | 'database' | 'save' | 'preview' | 'stage',
     previewOptions: { page?: number; status?: string; search?: string } = {},
@@ -752,6 +789,7 @@ function FileMappingWorkspace({
               columns: table.columns.map((column) => column.name).join(','),
             }))
           }
+          onSnapshot={(table) => void createDatabaseSnapshot(table)}
         />
       )}
       <WorkspacePanel>

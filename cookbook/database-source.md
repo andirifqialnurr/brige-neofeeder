@@ -40,6 +40,11 @@ tabel, detail kolom, candidate key/relation, dan sample value yang sudah
 dimasking. Operator dapat memilih tabel dari katalog untuk mengisi pilihan
 kolom snapshot berikutnya.
 
+Snapshot lanjutan memakai `POST
+/api/mapping/sources/{source}/snapshot` dengan `table` dan `columns`. Endpoint
+ini membaca credential dari source yang tersimpan, memperbarui source yang
+sama, dan tidak membuat credential atau source baru di client.
+
 Konfigurasi koneksi disimpan terenkripsi pada `source_connections` dan tidak
 dikembalikan pada endpoint workspace. Gunakan akun database khusus baca dengan
 hak minimum. Snapshot tetap terisolasi per tenant dan masuk ke alur mapping,

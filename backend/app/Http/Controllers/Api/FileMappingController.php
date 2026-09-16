@@ -8,7 +8,7 @@ use App\Models\MappingProfile;
 use App\Models\ReferenceRecord;
 use App\Models\SourceConnection;
 use App\Models\SourceSchemaTable;
-use App\Services\Mapping\DatabaseSourceReader;
+use App\Services\Mapping\DatabaseSourceReaderContract;
 use App\Services\Mapping\FileMappingService;
 use App\Services\Mapping\MappingReferenceResolver;
 use App\Services\Mapping\SourceFileReader;
@@ -119,7 +119,7 @@ class FileMappingController
             'schema_discovery_error', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
     }
 
-    public function databaseSource(Request $request, DatabaseSourceReader $reader): JsonResponse
+    public function databaseSource(Request $request, DatabaseSourceReaderContract $reader): JsonResponse
     {
         $input = $request->validate([
             'tenant_id' => 'nullable|uuid|exists:tenants,id',
@@ -157,6 +157,33 @@ class FileMappingController
         return response()->json(['data' => $source->only(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name',
             'row_count', 'schema_discovery_status', 'schema_discovery_started_at', 'schema_discovered_at',
             'schema_discovery_error', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
+    }
+
+    public function databaseSnapshot(Request $request, SourceConnection $sourceConnection, DatabaseSourceReaderContract $reader): JsonResponse
+    {
+        $this->authorizeSource($request, $sourceConnection);
+        abort_unless($sourceConnection->type === 'database', 422, 'Snapshot hanya tersedia untuk sumber database.');
+        $input = $request->validate([
+            'table' => 'required|string|max:128',
+            'columns' => 'required|array|min:1|max:64',
+            'columns.*' => 'required|string|max:128',
+        ]);
+        $savedConfig = $sourceConnection->connection_config;
+        if (! is_array($savedConfig) || blank($savedConfig['database'] ?? null) || blank($savedConfig['username'] ?? null)) {
+            throw ValidationException::withMessages(['connection' => 'Konfigurasi koneksi database belum tersedia. Simpan ulang koneksi read-only.']);
+        }
+        $config = [...$savedConfig, 'table' => $input['table'], 'columns' => $input['columns']];
+        $snapshot = $reader->read($config);
+        $sourceConnection->forceFill([
+            'name' => $config['database'].'.'.$input['table'],
+            'sha256' => hash('sha256', json_encode([$config['host'], $config['port'], $config['database'], $config['username'], $input['table'], $input['columns'], $snapshot], JSON_THROW_ON_ERROR)),
+            ...$snapshot,
+        ])->save();
+        $this->audit($request, $sourceConnection->tenant_id, 'source.database_snapshot_created', $sourceConnection->id);
+
+        return response()->json(['data' => $sourceConnection->only(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name',
+            'row_count', 'schema_discovery_status', 'schema_discovery_started_at', 'schema_discovered_at',
+            'schema_discovery_error', 'created_at'])], 200, ['Cache-Control' => 'no-store']);
     }
 
     public function discoverSchema(Request $request, SourceConnection $sourceConnection): JsonResponse

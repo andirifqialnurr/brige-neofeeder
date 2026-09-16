@@ -47,6 +47,7 @@ export function DatabaseSchemaPanel({
   error = '',
   onDiscover,
   onSelectTable,
+  onSnapshot,
 }: {
   source: SourceFile;
   catalog: SourceSchemaCatalog | null;
@@ -54,6 +55,7 @@ export function DatabaseSchemaPanel({
   error?: string;
   onDiscover: () => void;
   onSelectTable?: (table: SourceSchemaTable) => void;
+  onSnapshot?: (table: SourceSchemaTable) => void;
 }) {
   const status = source.schema_discovery_status ?? 'idle';
   const [selectedTableId, setSelectedTableId] = useState(catalog?.tables[0]?.id ?? '');
@@ -126,13 +128,16 @@ export function DatabaseSchemaPanel({
                   <strong>{selectedTable.table_name}</strong>
                   <span className="muted">{selectedTable.columns.length} kolom</span>
                 </div>
-                {onSelectTable && (
+                {(onSelectTable || onSnapshot) && (
                   <AppButton
                     variant="ghost"
                     icon={Database}
-                    onClick={() => onSelectTable(selectedTable)}
+                    onClick={() => {
+                      if (onSnapshot) onSnapshot(selectedTable);
+                      else onSelectTable?.(selectedTable);
+                    }}
                   >
-                    Gunakan tabel
+                    {onSnapshot ? 'Buat snapshot' : 'Gunakan tabel'}
                   </AppButton>
                 )}
               </div>

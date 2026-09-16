@@ -5,7 +5,7 @@ namespace App\Services\Mapping;
 use Illuminate\Validation\ValidationException;
 use PDO;
 
-final class DatabaseSourceReader
+final class DatabaseSourceReader implements DatabaseSourceReaderContract
 {
     public const MAX_ROWS = 2000;
 

@@ -1,3 +1,5 @@
+import type { SourceFile } from './mapping';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:2000/api';
 const API_TOKEN_STORAGE_KEY = 'bridge-neofeeder-api-token';
 const AUTH_USER_STORAGE_KEY = 'bridge-neofeeder-auth-user';
@@ -434,6 +436,19 @@ export async function getSourceSchema(
     `mapping/sources/${sourceId}/schema`,
     { signal },
   );
+
+  return payload.data;
+}
+
+export async function snapshotDatabaseSource(
+  sourceId: string,
+  input: { table: string; columns: string[] },
+): Promise<SourceFile> {
+  const payload = await requestApi<{ data: SourceFile }>(`mapping/sources/${sourceId}/snapshot`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
 
   return payload.data;
 }

@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Services\Mapping\DatabaseSchemaDiscoveryContract;
 use App\Services\Mapping\DatabaseSchemaDiscoveryService;
+use App\Services\Mapping\DatabaseSourceReader;
+use App\Services\Mapping\DatabaseSourceReaderContract;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,6 +16,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(DatabaseSchemaDiscoveryContract::class, DatabaseSchemaDiscoveryService::class);
+        $this->app->bind(DatabaseSourceReaderContract::class, DatabaseSourceReader::class);
     }
 
     public function boot(): void

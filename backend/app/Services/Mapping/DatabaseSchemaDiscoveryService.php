@@ -16,7 +16,7 @@ final class DatabaseSchemaDiscoveryService implements DatabaseSchemaDiscoveryCon
 
     public const SAMPLE_LIMIT = 5;
 
-    public function __construct(private readonly DatabaseSourceReader $reader) {}
+    public function __construct(private readonly DatabaseSourceReaderContract $reader) {}
 
     /**
      * @return array{database:string, tables:list<array<string,mixed>>, table_count:int, column_count:int, discovered_at:string}

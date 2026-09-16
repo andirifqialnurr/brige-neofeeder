@@ -268,6 +268,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [x] Buat worker schema discovery asynchronous, unique per source, dengan status lifecycle dan endpoint katalog (`database-source.md`).
 - [x] Izinkan registrasi koneksi database tanpa tabel/kolom sebelum discovery schema.
 - [x] Sediakan UI trigger, polling status, katalog tabel/kolom, dan pemilihan tabel hasil discovery.
+- [x] Buat snapshot dari tabel hasil discovery memakai koneksi tersimpan tanpa meminta ulang credential.
 - [x] Simpan source tables.
 - [x] Simpan source fields.
 - [x] Simpan sample values yang sudah dimasking.
