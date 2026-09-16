@@ -265,7 +265,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [x] Dukung source file CSV/Excel sebagai langkah awal (biodata/riwayat, `file-mapping.md`).
 - [x] Dukung source database read-only untuk snapshot MySQL dengan tabel/kolom terpilih (`database-source.md`).
 - [ ] Dukung source API.
-- [ ] Buat worker schema discovery.
+- [x] Buat worker schema discovery asynchronous, unique per source, dengan status lifecycle dan endpoint katalog (`database-source.md`).
 - [x] Simpan source tables.
 - [x] Simpan source fields.
 - [x] Simpan sample values yang sudah dimasking.

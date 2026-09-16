@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Jobs\DiscoverDatabaseSchemaJob;
 use App\Models\AuditLog;
 use App\Models\MappingProfile;
 use App\Models\ReferenceRecord;
 use App\Models\SourceConnection;
+use App\Models\SourceSchemaTable;
 use App\Services\Mapping\DatabaseSourceReader;
 use App\Services\Mapping\FileMappingService;
 use App\Services\Mapping\MappingReferenceResolver;
@@ -43,7 +45,9 @@ class FileMappingController
 
         return response()->json(['data' => [
             'sources' => SourceConnection::where('tenant_id', $tenantId)->latest()->limit(100)
-                ->get(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name', 'row_count', 'created_at']),
+                ->get(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name', 'row_count',
+                    'schema_discovery_status', 'schema_discovery_started_at', 'schema_discovered_at',
+                    'schema_discovery_error', 'created_at']),
             'profiles' => MappingProfile::with('currentVersion')->where('tenant_id', $tenantId)->latest()->limit(100)->get()->map(fn ($profile) => $this->profile($profile)),
             'channels' => array_map(fn ($key) => ['key' => $key, 'fields' => $registry->channel($key)->fields], FileMappingService::CHANNELS),
         ]], 200, ['Cache-Control' => 'no-store']);
@@ -110,7 +114,9 @@ class FileMappingController
             'name' => mb_substr($file->getClientOriginalName(), 0, 255), 'sha256' => hash_file('sha256', $file->getRealPath()), ...$snapshot]);
         $this->audit($request, $tenantId, 'source.uploaded', $source->id);
 
-        return response()->json(['data' => $source->only(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name', 'row_count', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
+        return response()->json(['data' => $source->only(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name',
+            'row_count', 'schema_discovery_status', 'schema_discovery_started_at', 'schema_discovered_at',
+            'schema_discovery_error', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
     }
 
     public function databaseSource(Request $request, DatabaseSourceReader $reader): JsonResponse
@@ -140,7 +146,53 @@ class FileMappingController
         ]);
         $this->audit($request, $tenantId, 'source.database_snapshot_created', $source->id);
 
-        return response()->json(['data' => $source->only(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name', 'row_count', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
+        return response()->json(['data' => $source->only(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name',
+            'row_count', 'schema_discovery_status', 'schema_discovery_started_at', 'schema_discovered_at',
+            'schema_discovery_error', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
+    }
+
+    public function discoverSchema(Request $request, SourceConnection $sourceConnection): JsonResponse
+    {
+        $this->authorizeSource($request, $sourceConnection);
+        abort_unless($sourceConnection->type === 'database', 422, 'Discovery schema hanya tersedia untuk sumber database.');
+        $queued = DB::transaction(function () use ($sourceConnection): bool {
+            $source = SourceConnection::query()->lockForUpdate()->findOrFail($sourceConnection->id);
+            if (in_array($source->schema_discovery_status, ['queued', 'discovering'], true)) {
+                return false;
+            }
+            $source->forceFill([
+                'schema_discovery_status' => 'queued',
+                'schema_discovery_error' => null,
+            ])->save();
+
+            return true;
+        });
+        if ($queued) {
+            DiscoverDatabaseSchemaJob::dispatch($sourceConnection->id);
+            $this->audit($request, $sourceConnection->tenant_id, 'source.schema_discovery_requested', $sourceConnection->id);
+        }
+        $sourceConnection->refresh();
+
+        return response()->json(['data' => $this->sourceStatus($sourceConnection)], 202, ['Cache-Control' => 'no-store']);
+    }
+
+    public function schema(Request $request, SourceConnection $sourceConnection): JsonResponse
+    {
+        $this->authorizeSource($request, $sourceConnection);
+        $sourceConnection->load('schemaTables.columns');
+
+        return response()->json(['data' => [
+            'source' => $this->sourceStatus($sourceConnection),
+            'tables' => $sourceConnection->schemaTables->map(fn (SourceSchemaTable $table) => [
+                ...$table->only(['id', 'table_name', 'table_type', 'estimated_rows', 'primary_key_columns', 'candidate_key_columns']),
+                'columns' => $table->columns->map(fn ($column) => $column->only([
+                    'id', 'name', 'ordinal_position', 'data_type', 'column_type', 'is_nullable',
+                    'is_primary_key', 'is_unique_key', 'is_candidate_primary_key', 'is_foreign_key',
+                    'is_candidate_relation', 'relation_confidence', 'referenced_table',
+                    'referenced_column', 'sample_values',
+                ])),
+            ]),
+        ]], 200, ['Cache-Control' => 'no-store']);
     }
 
     public function structure(Request $request, SourceConnection $sourceConnection, FileMappingService $service): JsonResponse
@@ -293,6 +345,20 @@ class FileMappingController
     {
         $user = $request->user();
         abort_unless($user->isAdmin() || $user->tenant_id === $profile->tenant_id, 403);
+    }
+
+    private function authorizeSource(Request $request, SourceConnection $source): void
+    {
+        $user = $request->user();
+        abort_unless($user->isAdmin() || $user->tenant_id === $source->tenant_id, 403);
+    }
+
+    private function sourceStatus(SourceConnection $source): array
+    {
+        return $source->only([
+            'id', 'tenant_id', 'type', 'name', 'schema_discovery_status',
+            'schema_discovery_started_at', 'schema_discovered_at', 'schema_discovery_error',
+        ]);
     }
 
     private function tenant(Request $request): string

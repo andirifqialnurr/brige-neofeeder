@@ -14,7 +14,14 @@ class SourceConnection extends Model
 
     protected $hidden = ['snapshot', 'connection_config'];
 
-    protected $casts = ['headers' => 'array', 'snapshot' => 'array', 'row_count' => 'integer', 'connection_config' => 'encrypted:array'];
+    protected $casts = [
+        'headers' => 'array',
+        'snapshot' => 'array',
+        'row_count' => 'integer',
+        'connection_config' => 'encrypted:array',
+        'schema_discovery_started_at' => 'datetime',
+        'schema_discovered_at' => 'datetime',
+    ];
 
     public function schemaTables(): HasMany
     {

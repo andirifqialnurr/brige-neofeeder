@@ -8,7 +8,7 @@ use Illuminate\Validation\ValidationException;
 use PDO;
 use Throwable;
 
-final class DatabaseSchemaDiscoveryService
+final class DatabaseSchemaDiscoveryService implements DatabaseSchemaDiscoveryContract
 {
     public const MAX_TABLES = 200;
 
