@@ -469,12 +469,14 @@ export async function refreshDatabaseSource(sourceId: string): Promise<SourceSch
 }
 
 export type AutomationScheduleFrequency = 'hourly' | 'daily' | 'weekly';
+export type AutomationScheduleMode = 'full';
 export type AutomationScheduleStatus = 'idle' | 'queued' | 'running' | 'success' | 'failed';
 export type AutomationSchedule = {
   id: string;
   tenant_id: string;
   name: string;
   frequency: AutomationScheduleFrequency;
+  mode: AutomationScheduleMode;
   is_active: boolean;
   status: AutomationScheduleStatus;
   next_run_at: string | null;
@@ -525,6 +527,7 @@ export async function createAutomationSchedule(input: {
   mapping_profile_id: string;
   name: string;
   frequency: AutomationScheduleFrequency;
+  mode?: AutomationScheduleMode;
 }): Promise<AutomationSchedule> {
   const payload = await requestApi<{ data: AutomationSchedule }>('automation/schedules', {
     method: 'POST',
@@ -537,7 +540,12 @@ export async function createAutomationSchedule(input: {
 
 export async function updateAutomationSchedule(
   id: string,
-  input: { frequency?: AutomationScheduleFrequency; is_active?: boolean; name?: string },
+  input: {
+    frequency?: AutomationScheduleFrequency;
+    mode?: AutomationScheduleMode;
+    is_active?: boolean;
+    name?: string;
+  },
 ): Promise<AutomationSchedule> {
   const payload = await requestApi<{ data: AutomationSchedule }>(`automation/schedules/${id}`, {
     method: 'PATCH',

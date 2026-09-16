@@ -69,6 +69,9 @@ class RunAutomationScheduleJob implements ShouldBeUnique, ShouldQueue
             if (! $source || ! $profile || $source->tenant_id !== $schedule->tenant_id || $profile->tenant_id !== $schedule->tenant_id) {
                 throw new RuntimeException('Konfigurasi schedule tidak valid.');
             }
+            if ($schedule->mode !== AutomationSchedule::MODE_FULL) {
+                throw new RuntimeException('Mode schedule belum didukung.');
+            }
             if ($source->type !== 'database') {
                 throw new RuntimeException('Schedule hanya tersedia untuk sumber database.');
             }

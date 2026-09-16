@@ -12,6 +12,10 @@ class AutomationSchedule extends Model
 
     public const FREQUENCIES = ['hourly', 'daily', 'weekly'];
 
+    public const MODE_FULL = 'full';
+
+    public const MODES = [self::MODE_FULL];
+
     protected $guarded = [];
 
     protected $casts = [

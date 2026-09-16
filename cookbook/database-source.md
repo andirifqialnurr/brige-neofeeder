@@ -54,12 +54,20 @@ idempotency key mapping run: stage ulang pada snapshot yang sama mengembalikan
 batch lama, sedangkan snapshot baru dapat membuat batch baru untuk profile yang
 sama.
 
-Schedule Phase 2 menjalankan urutan `refresh snapshot -> preview -> stage`
-melalui queue worker. Endpoint schedule berada di `/api/automation/schedules`;
-pilihan frekuensi MVP adalah `hourly`, `daily`, dan `weekly`. Schedule hanya
-dapat dibuat untuk snapshot database yang sudah siap dan berisi baris. Tahap ini
-belum melakukan POST ke Neo Feeder; outbound baru boleh ditambahkan setelah
-token, approval, dan kontrak kampus pilot tersedia.
+Schedule Phase 2 menjalankan mode `full` dengan urutan
+`refresh snapshot -> preview -> stage` melalui queue worker. Mode `full`
+membaca ulang seluruh snapshot dari tabel/kolom yang dipilih, dengan batas
+2.000 baris yang sama seperti snapshot manual. Stage tetap idempotent untuk
+snapshot yang tidak berubah sehingga schedule tidak membuat batch duplikat.
+Endpoint schedule berada di `/api/automation/schedules`; pilihan frekuensi MVP
+adalah `hourly`, `daily`, dan `weekly`. Schedule hanya dapat dibuat untuk
+snapshot database yang sudah siap dan berisi baris. Tahap ini belum melakukan
+POST ke Neo Feeder; outbound baru boleh ditambahkan setelah token, approval,
+dan kontrak kampus pilot tersedia.
+
+Mode incremental belum diaktifkan. Implementasinya harus menunggu bukti kolom
+timestamp/primary key, aturan update/delete, dan watermark dari database
+SIAKAD pilot agar tidak melewatkan atau menghapus data secara keliru.
 Eksekusi schedule memakai lock `tenant + channel`; schedule lain pada kanal yang
 sama menunggu di queue sampai proses sebelumnya selesai.
 

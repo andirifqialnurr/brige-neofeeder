@@ -32,6 +32,7 @@ class AutomationScheduleController
             'mapping_profile_id' => 'required|uuid|exists:mapping_profiles,id',
             'name' => 'required|string|max:120',
             'frequency' => ['required', Rule::in(AutomationSchedule::FREQUENCIES)],
+            'mode' => ['sometimes', Rule::in(AutomationSchedule::MODES)],
         ]);
         $tenantId = $this->tenant($request, $input['tenant_id'] ?? null);
         $source = SourceConnection::findOrFail($input['source_connection_id']);
@@ -50,6 +51,7 @@ class AutomationScheduleController
             'created_by' => $request->user()->id,
             'name' => $input['name'],
             'frequency' => $input['frequency'],
+            'mode' => $input['mode'] ?? AutomationSchedule::MODE_FULL,
             'is_active' => true,
             'status' => 'idle',
             'next_run_at' => $service->nextRunAt($input['frequency']),
@@ -66,6 +68,7 @@ class AutomationScheduleController
         $input = $request->validate([
             'name' => 'sometimes|required|string|max:120',
             'frequency' => ['sometimes', Rule::in(AutomationSchedule::FREQUENCIES)],
+            'mode' => ['sometimes', Rule::in(AutomationSchedule::MODES)],
             'is_active' => 'sometimes|boolean',
         ]);
         $frequency = $input['frequency'] ?? $automationSchedule->frequency;
@@ -98,7 +101,7 @@ class AutomationScheduleController
     private function view(AutomationSchedule $schedule): array
     {
         return [
-            ...$schedule->only(['id', 'tenant_id', 'name', 'frequency', 'is_active', 'status', 'next_run_at', 'last_started_at', 'last_completed_at', 'last_error', 'last_batch_id', 'created_at', 'updated_at']),
+            ...$schedule->only(['id', 'tenant_id', 'name', 'frequency', 'mode', 'is_active', 'status', 'next_run_at', 'last_started_at', 'last_completed_at', 'last_error', 'last_batch_id', 'created_at', 'updated_at']),
             'source' => $schedule->source?->only(['id', 'name', 'type', 'row_count', 'snapshot_status', 'snapshot_refreshed_at']),
             'profile' => $schedule->profile?->only(['id', 'name', 'channel', 'version']),
         ];

@@ -34,6 +34,7 @@ class AutomationScheduleTest extends TestCase
             'name' => 'Sync mahasiswa harian',
             'frequency' => 'daily',
         ])->assertCreated()->assertJsonPath('data.status', 'idle');
+        $response->assertJsonPath('data.mode', AutomationSchedule::MODE_FULL);
         $id = $response->json('data.id');
 
         $this->withToken($token)->getJson('/api/automation/schedules')->assertOk()->assertJsonPath('data.0.name', 'Sync mahasiswa harian');
@@ -98,6 +99,7 @@ class AutomationScheduleTest extends TestCase
 
         $saved = $schedule->refresh();
         $this->assertSame('success', $saved->status);
+        $this->assertSame(AutomationSchedule::MODE_FULL, $saved->mode);
         $this->assertNotNull($saved->last_batch_id);
         $this->assertDatabaseHas('import_batches', ['id' => $saved->last_batch_id, 'source_type' => 'mapping']);
         Bus::assertDispatched(RefreshDatabaseSourceSnapshotJob::class);

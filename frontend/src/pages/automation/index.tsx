@@ -31,6 +31,7 @@ const frequencyLabels: Record<AutomationScheduleFrequency, string> = {
   daily: 'Setiap hari',
   weekly: 'Setiap minggu',
 };
+const modeLabels = { full: 'Full refresh' } as const;
 const statusLabels: Record<AutomationSchedule['status'], string> = {
   idle: 'Siap',
   queued: 'Diantrekan',
@@ -186,6 +187,7 @@ function AutomationWorkspace({ tenantId }: { tenantId: string }) {
         mapping_profile_id: profileId,
         name: name.trim(),
         frequency,
+        mode: 'full',
       });
       setSchedules((current) => [schedule, ...current]);
       setName('');
@@ -299,13 +301,23 @@ function AutomationWorkspace({ tenantId }: { tenantId: string }) {
       <WorkspacePanel>
         <SectionHeader title="Daftar schedule" />
         <DataTable
-          columns={['Schedule', 'Source', 'Profile', 'Frekuensi', 'Status', 'Berikutnya', 'Aksi']}
+          columns={[
+            'Schedule',
+            'Source',
+            'Profile',
+            'Mode',
+            'Frekuensi',
+            'Status',
+            'Berikutnya',
+            'Aksi',
+          ]}
           rows={schedules.map((schedule) => [
             <span className="table-primary" key={schedule.id}>
               {schedule.name}
             </span>,
             schedule.source?.name ?? '-',
             schedule.profile?.name ?? '-',
+            modeLabels[schedule.mode],
             frequencyLabels[schedule.frequency],
             <StatusBadge key={schedule.id} tone={statusTones[schedule.status]}>
               {statusLabels[schedule.status]}

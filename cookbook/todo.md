@@ -305,7 +305,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [x] Manual run untuk mapping profile berbasis snapshot terbaru.
 - [x] Scheduled run berbasis refresh snapshot, mapping, dan staging; outbound Neo Feeder tetap menunggu credential/token.
 - [ ] Incremental strategy berbasis timestamp jika tersedia.
-- [ ] Full refresh mode.
+- [x] Full refresh mode untuk schedule database; mode incremental ditahan sampai kontrak timestamp/watermark pilot tersedia.
 - [x] Pause/resume schedule melalui toggle aktif/nonaktif dengan guard saat job berjalan.
 - [x] Lock agar tidak ada dua sync tenant/kanal berjalan bersamaan; job yang tertahan kembali ke queue.
 - [ ] Alert jika error rate melewati threshold.
