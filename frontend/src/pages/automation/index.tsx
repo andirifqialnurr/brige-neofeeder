@@ -147,6 +147,29 @@ function AutomationWorkspace({ tenantId }: { tenantId: string }) {
     return () => controller.abort();
   }, [load]);
 
+  useEffect(() => {
+    if (!schedules.some((schedule) => ['queued', 'running'].includes(schedule.status))) {
+      return undefined;
+    }
+    const controller = new AbortController();
+    const timer = window.setInterval(() => {
+      void getAutomationSchedules(tenantId, controller.signal)
+        .then(setSchedules)
+        .catch((pollError) => {
+          if (!(pollError instanceof DOMException && pollError.name === 'AbortError')) {
+            setError(
+              pollError instanceof Error ? pollError.message : 'Status schedule belum bisa dimuat.',
+            );
+          }
+        });
+    }, 3000);
+
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+    };
+  }, [schedules, tenantId]);
+
   const availableProfiles = useMemo(() => profiles, [profiles]);
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

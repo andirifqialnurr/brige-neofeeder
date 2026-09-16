@@ -306,7 +306,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [x] Scheduled run berbasis refresh snapshot, mapping, dan staging; outbound Neo Feeder tetap menunggu credential/token.
 - [ ] Incremental strategy berbasis timestamp jika tersedia.
 - [ ] Full refresh mode.
-- [ ] Pause/resume schedule.
+- [x] Pause/resume schedule melalui toggle aktif/nonaktif dengan guard saat job berjalan.
 - [ ] Lock agar tidak ada dua sync tenant/kanal berjalan bersamaan.
 - [ ] Alert jika error rate melewati threshold.
 - [x] Reconciliation report dari catatan lokal per batch; pembacaan balik remote masih menunggu trial.
