@@ -132,6 +132,7 @@ export function DatabaseSchemaPanel({
                   <AppButton
                     variant="ghost"
                     icon={Database}
+                    disabled={busy}
                     onClick={() => {
                       if (onSnapshot) onSnapshot(selectedTable);
                       else onSelectTable?.(selectedTable);
