@@ -45,6 +45,11 @@ Snapshot lanjutan memakai `POST
 ini membaca credential dari source yang tersimpan, memperbarui source yang
 sama, dan tidak membuat credential atau source baru di client.
 
+Snapshot yang sudah pernah dibuat dapat disegarkan asynchronous melalui `POST
+/api/mapping/sources/{source}/refresh-snapshot`. Statusnya terpisah dari
+discovery schema (`idle`, `queued`, `refreshing`, `pending`, `ready`, `failed`)
+agar operator dapat membedakan schema siap dari data snapshot terbaru.
+
 Konfigurasi koneksi disimpan terenkripsi pada `source_connections` dan tidak
 dikembalikan pada endpoint workspace. Gunakan akun database khusus baca dengan
 hak minimum. Snapshot tetap terisolasi per tenant dan masuk ke alur mapping,

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Jobs\DiscoverDatabaseSchemaJob;
+use App\Jobs\RefreshDatabaseSourceSnapshotJob;
 use App\Models\AuditLog;
 use App\Models\MappingProfile;
 use App\Models\ReferenceRecord;
@@ -47,7 +48,8 @@ class FileMappingController
             'sources' => SourceConnection::where('tenant_id', $tenantId)->latest()->limit(100)
                 ->get(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name', 'row_count',
                     'schema_discovery_status', 'schema_discovery_started_at', 'schema_discovered_at',
-                    'schema_discovery_error', 'created_at']),
+                    'schema_discovery_error', 'snapshot_status', 'snapshot_started_at',
+                    'snapshot_refreshed_at', 'snapshot_error', 'created_at']),
             'profiles' => MappingProfile::with('currentVersion')->where('tenant_id', $tenantId)->latest()->limit(100)->get()->map(fn ($profile) => $this->profile($profile)),
             'channels' => array_map(fn ($key) => ['key' => $key, 'fields' => $registry->channel($key)->fields], FileMappingService::CHANNELS),
         ]], 200, ['Cache-Control' => 'no-store']);
@@ -147,16 +149,19 @@ class FileMappingController
             'tenant_id' => $tenantId,
             'type' => 'database',
             'schema_discovery_status' => 'idle',
+            'snapshot_status' => $table !== '' ? 'ready' : 'idle',
+            'snapshot_refreshed_at' => $table !== '' ? now() : null,
             'name' => $config['database'].($table !== '' ? '.'.$table : ''),
             'sha256' => hash('sha256', json_encode([$config['host'], $config['port'], $config['database'], $config['username'], $config['table'], $config['columns'], $snapshot], JSON_THROW_ON_ERROR)),
             'connection_config' => $config,
             ...$snapshot,
         ]);
-        $this->audit($request, $tenantId, 'source.database_snapshot_created', $source->id);
+        $this->audit($request, $tenantId, $table === '' ? 'source.database_connection_created' : 'source.database_snapshot_created', $source->id);
 
         return response()->json(['data' => $source->only(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name',
             'row_count', 'schema_discovery_status', 'schema_discovery_started_at', 'schema_discovered_at',
-            'schema_discovery_error', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
+            'schema_discovery_error', 'snapshot_status', 'snapshot_started_at', 'snapshot_refreshed_at',
+            'snapshot_error', 'created_at'])], 201, ['Cache-Control' => 'no-store']);
     }
 
     public function databaseSnapshot(Request $request, SourceConnection $sourceConnection, DatabaseSourceReaderContract $reader): JsonResponse
@@ -178,12 +183,45 @@ class FileMappingController
             'name' => $config['database'].'.'.$input['table'],
             'sha256' => hash('sha256', json_encode([$config['host'], $config['port'], $config['database'], $config['username'], $input['table'], $input['columns'], $snapshot], JSON_THROW_ON_ERROR)),
             ...$snapshot,
+            'snapshot_status' => 'ready',
+            'snapshot_refreshed_at' => now(),
+            'snapshot_error' => null,
         ])->save();
         $this->audit($request, $sourceConnection->tenant_id, 'source.database_snapshot_created', $sourceConnection->id);
 
         return response()->json(['data' => $sourceConnection->only(['id', 'tenant_id', 'type', 'name', 'headers', 'sheet_name',
             'row_count', 'schema_discovery_status', 'schema_discovery_started_at', 'schema_discovered_at',
-            'schema_discovery_error', 'created_at'])], 200, ['Cache-Control' => 'no-store']);
+            'schema_discovery_error', 'snapshot_status', 'snapshot_started_at', 'snapshot_refreshed_at',
+            'snapshot_error', 'created_at'])], 200, ['Cache-Control' => 'no-store']);
+    }
+
+    public function refreshSnapshot(Request $request, SourceConnection $sourceConnection): JsonResponse
+    {
+        $this->authorizeSource($request, $sourceConnection);
+        abort_unless($sourceConnection->type === 'database', 422, 'Refresh snapshot hanya tersedia untuk sumber database.');
+        $queued = DB::transaction(function () use ($sourceConnection): bool {
+            $source = SourceConnection::query()->lockForUpdate()->findOrFail($sourceConnection->id);
+            $config = $source->connection_config;
+            if (! is_array($config) || blank($config['table'] ?? null) || empty($config['columns'] ?? [])) {
+                throw ValidationException::withMessages(['source' => 'Snapshot pertama belum dibuat. Pilih tabel dan kolom terlebih dahulu.']);
+            }
+            if (in_array($source->snapshot_status, ['queued', 'refreshing'], true)) {
+                return false;
+            }
+            $source->forceFill([
+                'snapshot_status' => 'queued',
+                'snapshot_error' => null,
+            ])->save();
+
+            return true;
+        });
+        if ($queued) {
+            RefreshDatabaseSourceSnapshotJob::dispatch($sourceConnection->id);
+            $this->audit($request, $sourceConnection->tenant_id, 'source.database_snapshot_refresh_requested', $sourceConnection->id);
+        }
+        $sourceConnection->refresh();
+
+        return response()->json(['data' => $this->sourceStatus($sourceConnection)], 202, ['Cache-Control' => 'no-store']);
     }
 
     public function discoverSchema(Request $request, SourceConnection $sourceConnection): JsonResponse
@@ -393,6 +431,7 @@ class FileMappingController
         return $source->only([
             'id', 'tenant_id', 'type', 'name', 'schema_discovery_status',
             'schema_discovery_started_at', 'schema_discovered_at', 'schema_discovery_error',
+            'snapshot_status', 'snapshot_started_at', 'snapshot_refreshed_at', 'snapshot_error',
         ]);
     }
 

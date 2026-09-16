@@ -31,6 +31,7 @@ Route::middleware(['api.token', 'throttle:bridge-tenant'])->group(function (): v
     Route::post('mapping/sources', [FileMappingController::class, 'upload']);
     Route::post('mapping/sources/database', [FileMappingController::class, 'databaseSource']);
     Route::post('mapping/sources/{sourceConnection}/snapshot', [FileMappingController::class, 'databaseSnapshot']);
+    Route::post('mapping/sources/{sourceConnection}/refresh-snapshot', [FileMappingController::class, 'refreshSnapshot']);
     Route::post('mapping/sources/{sourceConnection}/discover-schema', [FileMappingController::class, 'discoverSchema']);
     Route::get('mapping/sources/{sourceConnection}/schema', [FileMappingController::class, 'schema']);
     Route::post('mapping/profiles', [FileMappingController::class, 'save']);

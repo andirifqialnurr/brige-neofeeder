@@ -8,7 +8,12 @@ import {
   StatusBadge,
   WorkspacePanel,
 } from '@/components/ui';
-import type { SchemaDiscoveryStatus, SourceSchemaCatalog, SourceSchemaTable } from '@/lib/api';
+import type {
+  SchemaDiscoveryStatus,
+  SnapshotStatus,
+  SourceSchemaCatalog,
+  SourceSchemaTable,
+} from '@/lib/api';
 import type { SourceFile } from '@/lib/mapping';
 
 const statusLabels: Record<SchemaDiscoveryStatus, string> = {
@@ -32,6 +37,27 @@ const statusTones: Record<
   failed: 'destructive',
 };
 
+const snapshotStatusLabels: Record<SnapshotStatus, string> = {
+  idle: 'Belum ada snapshot',
+  queued: 'Snapshot menunggu worker',
+  refreshing: 'Snapshot diproses',
+  pending: 'Snapshot menunggu percobaan ulang',
+  ready: 'Snapshot siap',
+  failed: 'Snapshot gagal',
+};
+
+const snapshotStatusTones: Record<
+  SnapshotStatus,
+  'neutral' | 'info' | 'success' | 'warning' | 'destructive'
+> = {
+  idle: 'neutral',
+  queued: 'info',
+  refreshing: 'info',
+  pending: 'warning',
+  ready: 'success',
+  failed: 'destructive',
+};
+
 function tableKeys(table: SourceSchemaTable): string {
   const keys = [...table.primary_key_columns, ...table.candidate_key_columns].filter(
     (key, index, values) => values.indexOf(key) === index,
@@ -48,6 +74,7 @@ export function DatabaseSchemaPanel({
   onDiscover,
   onSelectTable,
   onSnapshot,
+  onRefreshSnapshot,
 }: {
   source: SourceFile;
   catalog: SourceSchemaCatalog | null;
@@ -56,8 +83,10 @@ export function DatabaseSchemaPanel({
   onDiscover: () => void;
   onSelectTable?: (table: SourceSchemaTable) => void;
   onSnapshot?: (table: SourceSchemaTable) => void;
+  onRefreshSnapshot?: () => void;
 }) {
   const status = source.schema_discovery_status ?? 'idle';
+  const snapshotStatus = source.snapshot_status ?? 'idle';
   const [selectedTableId, setSelectedTableId] = useState(catalog?.tables[0]?.id ?? '');
   const selectedTable = catalog?.tables.find((table) => table.id === selectedTableId);
   const firstTableId = catalog?.tables[0]?.id ?? '';
@@ -79,18 +108,33 @@ export function DatabaseSchemaPanel({
       <SectionHeader
         title="Schema sumber"
         action={
-          <AppButton
-            variant="secondary"
-            icon={RefreshCcw}
-            disabled={actionBusy}
-            onClick={onDiscover}
-          >
-            {busy ? 'Memulai...' : actionLabel}
-          </AppButton>
+          <div className="schema-actions">
+            <AppButton
+              variant="secondary"
+              icon={RefreshCcw}
+              disabled={actionBusy}
+              onClick={onDiscover}
+            >
+              {busy ? 'Memulai...' : actionLabel}
+            </AppButton>
+            {onRefreshSnapshot && source.row_count > 0 && (
+              <AppButton
+                variant="ghost"
+                icon={RefreshCcw}
+                disabled={busy || snapshotStatus === 'queued' || snapshotStatus === 'refreshing'}
+                onClick={onRefreshSnapshot}
+              >
+                {snapshotStatus === 'refreshing' ? 'Memperbarui...' : 'Refresh snapshot'}
+              </AppButton>
+            )}
+          </div>
         }
       />
       <div className="schema-status-line">
         <StatusBadge tone={statusTones[status]}>{statusLabels[status]}</StatusBadge>
+        <StatusBadge tone={snapshotStatusTones[snapshotStatus]}>
+          {snapshotStatusLabels[snapshotStatus]}
+        </StatusBadge>
         <span className="muted">
           {catalog ? `${catalog.tables.length} tabel ditemukan` : 'Koneksi belum dipelajari'}
         </span>
@@ -99,6 +143,7 @@ export function DatabaseSchemaPanel({
       {source.schema_discovery_error && (
         <p className="error-text">{source.schema_discovery_error}</p>
       )}
+      {source.snapshot_error && <p className="error-text">{source.snapshot_error}</p>}
       {catalog?.tables.length ? (
         <div className="schema-browser">
           <DataTable

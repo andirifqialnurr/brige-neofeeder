@@ -126,6 +126,8 @@ export type NeoFeederConnectionTestResult = {
 export type SchemaDiscoveryStatus =
   'idle' | 'queued' | 'discovering' | 'pending' | 'ready' | 'failed';
 
+export type SnapshotStatus = 'idle' | 'queued' | 'refreshing' | 'pending' | 'ready' | 'failed';
+
 export type SourceSchemaStatus = {
   id: string;
   tenant_id: string;
@@ -135,6 +137,10 @@ export type SourceSchemaStatus = {
   schema_discovery_started_at: string | null;
   schema_discovered_at: string | null;
   schema_discovery_error: string | null;
+  snapshot_status: SnapshotStatus;
+  snapshot_started_at: string | null;
+  snapshot_refreshed_at: string | null;
+  snapshot_error: string | null;
 };
 
 export type SourceSchemaColumn = {
@@ -449,6 +455,15 @@ export async function snapshotDatabaseSource(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
+
+  return payload.data;
+}
+
+export async function refreshDatabaseSource(sourceId: string): Promise<SourceSchemaStatus> {
+  const payload = await requestApi<{ data: SourceSchemaStatus }>(
+    `mapping/sources/${sourceId}/refresh-snapshot`,
+    { method: 'POST' },
+  );
 
   return payload.data;
 }

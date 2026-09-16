@@ -26,6 +26,10 @@ describe('database schema panel', () => {
             schema_discovery_started_at: null,
             schema_discovered_at: '2026-09-16T00:00:00Z',
             schema_discovery_error: null,
+            snapshot_status: 'ready',
+            snapshot_started_at: null,
+            snapshot_refreshed_at: '2026-09-16T00:00:00Z',
+            snapshot_error: null,
           },
           tables: [
             {

@@ -298,6 +298,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [x] Jalankan validator Phase 1.
 - [x] Tampilkan error/warning seperti upload Excel.
 - [x] Tampilkan source lineage per staging row.
+- [x] Refresh snapshot database asynchronous, unique per source, dengan retry dan status aman.
 
 ## 2.4 Automation Sync
 

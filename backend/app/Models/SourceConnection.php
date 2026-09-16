@@ -21,6 +21,8 @@ class SourceConnection extends Model
         'connection_config' => 'encrypted:array',
         'schema_discovery_started_at' => 'datetime',
         'schema_discovered_at' => 'datetime',
+        'snapshot_started_at' => 'datetime',
+        'snapshot_refreshed_at' => 'datetime',
     ];
 
     public function schemaTables(): HasMany

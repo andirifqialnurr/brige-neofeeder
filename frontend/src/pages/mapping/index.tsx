@@ -31,6 +31,7 @@ import {
   discoverSourceSchema,
   downloadApiFile,
   getSourceSchema,
+  refreshDatabaseSource,
   requestApi,
   snapshotDatabaseSource,
   type SourceSchemaCatalog,
@@ -200,6 +201,7 @@ function FileMappingWorkspace({
   const sourceKey = source?.id ?? '';
   const sourceType = source?.type;
   const schemaStatus = source?.schema_discovery_status ?? 'idle';
+  const snapshotStatus = source?.snapshot_status ?? 'idle';
   useEffect(() => {
     setSchemaCatalog(null);
     setSchemaError('');
@@ -227,13 +229,15 @@ function FileMappingWorkspace({
       }
     };
     void refresh();
-    const polling = ['queued', 'discovering', 'pending'].includes(schemaStatus);
+    const polling =
+      ['queued', 'discovering', 'pending'].includes(schemaStatus) ||
+      ['queued', 'refreshing', 'pending'].includes(snapshotStatus);
     const timer = polling ? window.setInterval(() => void refresh(), 2500) : undefined;
     return () => {
       cancelled = true;
       if (timer) window.clearInterval(timer);
     };
-  }, [sourceKey, sourceType, schemaStatus]);
+  }, [sourceKey, sourceType, schemaStatus, snapshotStatus]);
   const edit = () => {
     setDirty(true);
     setPreview(null);
@@ -435,6 +439,36 @@ function FileMappingWorkspace({
     } catch (err) {
       if (alive.current) {
         setSchemaError(err instanceof Error ? err.message : 'Snapshot database gagal dibuat.');
+      }
+    } finally {
+      lock.current = false;
+      onBusy(false);
+      if (alive.current) setBusy('');
+    }
+  }
+  async function refreshSnapshot() {
+    if (lock.current || !source || source.type !== 'database') return;
+    lock.current = true;
+    setBusy('snapshot');
+    onBusy(true);
+    setSchemaError('');
+    try {
+      const status: SourceSchemaStatus = await refreshDatabaseSource(source.id);
+      if (alive.current) {
+        setWorkspace((current) =>
+          current
+            ? {
+                ...current,
+                sources: current.sources.map((item) =>
+                  item.id === status.id ? { ...item, ...status } : item,
+                ),
+              }
+            : current,
+        );
+      }
+    } catch (err) {
+      if (alive.current) {
+        setSchemaError(err instanceof Error ? err.message : 'Refresh snapshot gagal dimulai.');
       }
     } finally {
       lock.current = false;
@@ -779,7 +813,7 @@ function FileMappingWorkspace({
         <DatabaseSchemaPanel
           source={source}
           catalog={schemaCatalog}
-          busy={busy === 'schema'}
+          busy={busy === 'schema' || busy === 'snapshot'}
           error={schemaError}
           onDiscover={() => void discoverSchema()}
           onSelectTable={(table) =>
@@ -790,6 +824,7 @@ function FileMappingWorkspace({
             }))
           }
           onSnapshot={(table) => void createDatabaseSnapshot(table)}
+          onRefreshSnapshot={() => void refreshSnapshot()}
         />
       )}
       <WorkspacePanel>

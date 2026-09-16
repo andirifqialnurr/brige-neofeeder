@@ -1,4 +1,4 @@
-import type { DryRunIssue, SchemaDiscoveryStatus } from './api';
+import type { DryRunIssue, SchemaDiscoveryStatus, SnapshotStatus } from './api';
 
 export type SourceFile = {
   id: string;
@@ -12,6 +12,10 @@ export type SourceFile = {
   schema_discovery_started_at?: string | null;
   schema_discovered_at?: string | null;
   schema_discovery_error?: string | null;
+  snapshot_status?: SnapshotStatus;
+  snapshot_started_at?: string | null;
+  snapshot_refreshed_at?: string | null;
+  snapshot_error?: string | null;
 };
 export type MappingRule = {
   target: string;
