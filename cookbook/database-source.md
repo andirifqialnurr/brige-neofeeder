@@ -71,6 +71,12 @@ SIAKAD pilot agar tidak melewatkan atau menghapus data secara keliru.
 Eksekusi schedule memakai lock `tenant + channel`; schedule lain pada kanal yang
 sama menunggu di queue sampai proses sebelumnya selesai.
 
+Setiap eksekusi schedule menyimpan run history. Dalam window tujuh hari, setelah
+minimal tiga run selesai, sistem menghitung error rate dan menyalakan alert
+operasional jika melewati `error_rate_threshold` (default 50%). Alert terlihat di
+daftar schedule dan tercatat sebagai `automation.schedule_alert_triggered`;
+notifikasi email/webhook belum diaktifkan.
+
 Konfigurasi koneksi disimpan terenkripsi pada `source_connections` dan tidak
 dikembalikan pada endpoint workspace. Gunakan akun database khusus baca dengan
 hak minimum. Snapshot tetap terisolasi per tenant dan masuk ke alur mapping,

@@ -477,6 +477,17 @@ export type AutomationSchedule = {
   name: string;
   frequency: AutomationScheduleFrequency;
   mode: AutomationScheduleMode;
+  error_rate_threshold: number;
+  alert: {
+    active: boolean;
+    threshold: number;
+    run_count: number;
+    failed_count: number;
+    error_rate: number | null;
+    minimum_runs: number;
+    window_days: number;
+    triggered_at: string | null;
+  };
   is_active: boolean;
   status: AutomationScheduleStatus;
   next_run_at: string | null;
@@ -528,6 +539,7 @@ export async function createAutomationSchedule(input: {
   name: string;
   frequency: AutomationScheduleFrequency;
   mode?: AutomationScheduleMode;
+  error_rate_threshold?: number;
 }): Promise<AutomationSchedule> {
   const payload = await requestApi<{ data: AutomationSchedule }>('automation/schedules', {
     method: 'POST',

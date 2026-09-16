@@ -19,6 +19,12 @@ class AutomationScheduleController
     {
         $tenantId = $this->tenant($request, $request->input('tenant_id'));
         $schedules = AutomationSchedule::with(['source:id,name,type,row_count,snapshot_status,snapshot_refreshed_at', 'profile:id,name,channel,version'])
+            ->withCount([
+                'runs as alert_run_count' => fn ($query) => $query->whereIn('status', ['success', 'failed'])
+                    ->where('completed_at', '>=', now()->subDays(AutomationSchedule::ALERT_WINDOW_DAYS)),
+                'runs as alert_failed_count' => fn ($query) => $query->where('status', 'failed')
+                    ->where('completed_at', '>=', now()->subDays(AutomationSchedule::ALERT_WINDOW_DAYS)),
+            ])
             ->where('tenant_id', $tenantId)->latest()->limit(100)->get();
 
         return response()->json(['data' => $schedules->map(fn (AutomationSchedule $schedule) => $this->view($schedule))->values()], 200, ['Cache-Control' => 'no-store']);
@@ -33,6 +39,7 @@ class AutomationScheduleController
             'name' => 'required|string|max:120',
             'frequency' => ['required', Rule::in(AutomationSchedule::FREQUENCIES)],
             'mode' => ['sometimes', Rule::in(AutomationSchedule::MODES)],
+            'error_rate_threshold' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
         $tenantId = $this->tenant($request, $input['tenant_id'] ?? null);
         $source = SourceConnection::findOrFail($input['source_connection_id']);
@@ -52,6 +59,7 @@ class AutomationScheduleController
             'name' => $input['name'],
             'frequency' => $input['frequency'],
             'mode' => $input['mode'] ?? AutomationSchedule::MODE_FULL,
+            'error_rate_threshold' => $input['error_rate_threshold'] ?? 50,
             'is_active' => true,
             'status' => 'idle',
             'next_run_at' => $service->nextRunAt($input['frequency']),
@@ -69,6 +77,7 @@ class AutomationScheduleController
             'name' => 'sometimes|required|string|max:120',
             'frequency' => ['sometimes', Rule::in(AutomationSchedule::FREQUENCIES)],
             'mode' => ['sometimes', Rule::in(AutomationSchedule::MODES)],
+            'error_rate_threshold' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'is_active' => 'sometimes|boolean',
         ]);
         $frequency = $input['frequency'] ?? $automationSchedule->frequency;
@@ -102,6 +111,7 @@ class AutomationScheduleController
     {
         return [
             ...$schedule->only(['id', 'tenant_id', 'name', 'frequency', 'mode', 'is_active', 'status', 'next_run_at', 'last_started_at', 'last_completed_at', 'last_error', 'last_batch_id', 'created_at', 'updated_at']),
+            'alert' => $this->alert($schedule),
             'source' => $schedule->source?->only(['id', 'name', 'type', 'row_count', 'snapshot_status', 'snapshot_refreshed_at']),
             'profile' => $schedule->profile?->only(['id', 'name', 'channel', 'version']),
         ];
@@ -127,5 +137,22 @@ class AutomationScheduleController
     {
         AuditLog::create(['tenant_id' => $tenantId, 'actor_id' => $request->user()->id, 'event' => $event,
             'subject_type' => AutomationSchedule::class, 'subject_id' => $subjectId, 'metadata' => []]);
+    }
+
+    private function alert(AutomationSchedule $schedule): array
+    {
+        $runCount = (int) ($schedule->getAttribute('alert_run_count') ?? 0);
+        $failedCount = (int) ($schedule->getAttribute('alert_failed_count') ?? 0);
+
+        return [
+            'active' => (bool) $schedule->alert_active,
+            'threshold' => (int) ($schedule->error_rate_threshold ?? 50),
+            'run_count' => $runCount,
+            'failed_count' => $failedCount,
+            'error_rate' => $runCount > 0 ? round(100 * $failedCount / $runCount, 1) : null,
+            'minimum_runs' => AutomationSchedule::ALERT_MIN_RUNS,
+            'window_days' => AutomationSchedule::ALERT_WINDOW_DAYS,
+            'triggered_at' => $schedule->alert_triggered_at,
+        ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AutomationSchedule extends Model
 {
@@ -16,6 +17,10 @@ class AutomationSchedule extends Model
 
     public const MODES = [self::MODE_FULL];
 
+    public const ALERT_WINDOW_DAYS = 7;
+
+    public const ALERT_MIN_RUNS = 3;
+
     protected $guarded = [];
 
     protected $casts = [
@@ -23,6 +28,9 @@ class AutomationSchedule extends Model
         'next_run_at' => 'datetime',
         'last_started_at' => 'datetime',
         'last_completed_at' => 'datetime',
+        'error_rate_threshold' => 'integer',
+        'alert_active' => 'boolean',
+        'alert_triggered_at' => 'datetime',
     ];
 
     public function source(): BelongsTo
@@ -43,5 +51,10 @@ class AutomationSchedule extends Model
     public function lastBatch(): BelongsTo
     {
         return $this->belongsTo(ImportBatch::class, 'last_batch_id');
+    }
+
+    public function runs(): HasMany
+    {
+        return $this->hasMany(AutomationScheduleRun::class);
     }
 }

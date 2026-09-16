@@ -2,6 +2,7 @@
 
 namespace App\Services\Automation;
 
+use App\Models\AuditLog;
 use App\Models\AutomationSchedule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -39,5 +40,57 @@ class AutomationScheduleService
 
             return true;
         });
+    }
+
+    /**
+     * Recalculate the in-app alert from completed runs in the rolling window.
+     * Queue contention is intentionally not a run and therefore cannot inflate the error rate.
+     *
+     * @return array{run_count: int, failed_count: int, error_rate: float|null, active: bool}
+     */
+    public function refreshAlertState(AutomationSchedule $schedule): array
+    {
+        $stats = $schedule->runs()
+            ->whereIn('status', ['success', 'failed'])
+            ->where('completed_at', '>=', now()->subDays(AutomationSchedule::ALERT_WINDOW_DAYS))
+            ->selectRaw('COUNT(*) as run_count')
+            ->selectRaw("SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_count")
+            ->first();
+        $runCount = (int) ($stats?->run_count ?? 0);
+        $failedCount = (int) ($stats?->failed_count ?? 0);
+        $errorRate = $runCount > 0 ? round(100 * $failedCount / $runCount, 1) : null;
+        $active = $runCount >= AutomationSchedule::ALERT_MIN_RUNS
+            && $errorRate !== null
+            && $errorRate >= (int) $schedule->error_rate_threshold;
+        $wasActive = (bool) $schedule->alert_active;
+        $triggeredAt = $active && ! $wasActive ? now() : $schedule->alert_triggered_at;
+
+        $schedule->forceFill([
+            'alert_active' => $active,
+            'alert_triggered_at' => $triggeredAt,
+        ])->save();
+
+        if ($active && ! $wasActive) {
+            AuditLog::query()->create([
+                'tenant_id' => $schedule->tenant_id,
+                'event' => 'automation.schedule_alert_triggered',
+                'subject_type' => AutomationSchedule::class,
+                'subject_id' => $schedule->id,
+                'metadata' => [
+                    'run_count' => $runCount,
+                    'failed_count' => $failedCount,
+                    'error_rate' => $errorRate,
+                    'threshold' => (int) $schedule->error_rate_threshold,
+                    'window_days' => AutomationSchedule::ALERT_WINDOW_DAYS,
+                ],
+            ]);
+        }
+
+        return [
+            'run_count' => $runCount,
+            'failed_count' => $failedCount,
+            'error_rate' => $errorRate,
+            'active' => $active,
+        ];
     }
 }

@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Jobs\RefreshDatabaseSourceSnapshotJob;
 use App\Jobs\RunAutomationScheduleJob;
 use App\Models\AutomationSchedule;
+use App\Models\AutomationScheduleRun;
 use App\Models\MappingProfile;
 use App\Models\SourceConnection;
 use App\Models\User;
+use App\Services\Automation\AutomationScheduleService;
 use App\Services\Mapping\FileMappingService;
 use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,8 +35,10 @@ class AutomationScheduleTest extends TestCase
             'mapping_profile_id' => $schedule->mapping_profile_id,
             'name' => 'Sync mahasiswa harian',
             'frequency' => 'daily',
+            'error_rate_threshold' => 50,
         ])->assertCreated()->assertJsonPath('data.status', 'idle');
         $response->assertJsonPath('data.mode', AutomationSchedule::MODE_FULL);
+        $response->assertJsonPath('data.alert.threshold', 50);
         $id = $response->json('data.id');
 
         $this->withToken($token)->getJson('/api/automation/schedules')->assertOk()->assertJsonPath('data.0.name', 'Sync mahasiswa harian');
@@ -95,7 +99,7 @@ class AutomationScheduleTest extends TestCase
         $schedule = AutomationSchedule::findOrFail($id);
         $schedule->update(['status' => 'queued']);
 
-        (new RunAutomationScheduleJob($schedule->id))->handle(app(FileMappingService::class));
+        (new RunAutomationScheduleJob($schedule->id))->handle(app(FileMappingService::class), app(AutomationScheduleService::class));
 
         $saved = $schedule->refresh();
         $this->assertSame('success', $saved->status);
@@ -139,9 +143,56 @@ class AutomationScheduleTest extends TestCase
             ->andReturn($lock);
 
         $job = (new RunAutomationScheduleJob($id))->withFakeQueueInteractions();
-        $job->handle(app(FileMappingService::class));
+        $job->handle(app(FileMappingService::class), app(AutomationScheduleService::class));
         $job->assertReleased(30);
         $this->assertSame('queued', $schedule->refresh()->status);
+    }
+
+    public function test_schedule_alerts_when_recent_error_rate_reaches_threshold(): void
+    {
+        [$schedule, $token] = $this->schedule();
+        $id = $this->withToken($token)->postJson('/api/automation/schedules', [
+            'source_connection_id' => $schedule->source_connection_id,
+            'mapping_profile_id' => $schedule->mapping_profile_id,
+            'name' => 'Schedule with alert',
+            'frequency' => 'daily',
+            'error_rate_threshold' => 60,
+        ])->assertCreated()->json('data.id');
+        $schedule = AutomationSchedule::findOrFail($id);
+
+        foreach (['success', 'failed', 'failed'] as $status) {
+            AutomationScheduleRun::create([
+                'automation_schedule_id' => $schedule->id,
+                'tenant_id' => $schedule->tenant_id,
+                'status' => $status,
+                'started_at' => now()->subHour(),
+                'completed_at' => now()->subHour(),
+            ]);
+        }
+
+        app(AutomationScheduleService::class)->refreshAlertState($schedule);
+
+        $this->assertTrue($schedule->refresh()->alert_active);
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'automation.schedule_alert_triggered',
+            'subject_id' => $schedule->id,
+        ]);
+        $this->withToken($token)->getJson('/api/automation/schedules')
+            ->assertOk()
+            ->assertJsonPath('data.0.alert.active', true)
+            ->assertJsonPath('data.0.alert.error_rate', 66.7)
+            ->assertJsonPath('data.0.alert.failed_count', 2);
+
+        AutomationScheduleRun::create([
+            'automation_schedule_id' => $schedule->id,
+            'tenant_id' => $schedule->tenant_id,
+            'status' => 'success',
+            'started_at' => now(),
+            'completed_at' => now(),
+        ]);
+        app(AutomationScheduleService::class)->refreshAlertState($schedule->refresh());
+
+        $this->assertFalse($schedule->refresh()->alert_active);
     }
 
     /** @return array{0: AutomationSchedule, 1: string} */

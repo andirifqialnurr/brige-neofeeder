@@ -308,7 +308,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [x] Full refresh mode untuk schedule database; mode incremental ditahan sampai kontrak timestamp/watermark pilot tersedia.
 - [x] Pause/resume schedule melalui toggle aktif/nonaktif dengan guard saat job berjalan.
 - [x] Lock agar tidak ada dua sync tenant/kanal berjalan bersamaan; job yang tertahan kembali ke queue.
-- [ ] Alert jika error rate melewati threshold.
+- [x] Alert in-app jika error rate schedule melewati threshold; notifikasi email/webhook menunggu kanal operasional.
 - [x] Reconciliation report dari catatan lokal per batch; pembacaan balik remote masih menunggu trial.
 
 ## 2.5 Pilot Kampus

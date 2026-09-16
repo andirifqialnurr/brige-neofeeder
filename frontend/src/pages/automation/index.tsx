@@ -100,6 +100,7 @@ function AutomationWorkspace({ tenantId }: { tenantId: string }) {
   const [profileId, setProfileId] = useState('');
   const [name, setName] = useState('');
   const [frequency, setFrequency] = useState<AutomationScheduleFrequency>('daily');
+  const [errorRateThreshold, setErrorRateThreshold] = useState(50);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -188,6 +189,7 @@ function AutomationWorkspace({ tenantId }: { tenantId: string }) {
         name: name.trim(),
         frequency,
         mode: 'full',
+        error_rate_threshold: errorRateThreshold,
       });
       setSchedules((current) => [schedule, ...current]);
       setName('');
@@ -283,6 +285,16 @@ function AutomationWorkspace({ tenantId }: { tenantId: string }) {
               ))}
             </Select>
           </label>
+          <label>
+            Alert error rate (%)
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={errorRateThreshold}
+              onChange={(event) => setErrorRateThreshold(Number(event.target.value))}
+            />
+          </label>
           <AppButton
             icon={Plus}
             type="submit"
@@ -307,6 +319,7 @@ function AutomationWorkspace({ tenantId }: { tenantId: string }) {
             'Profile',
             'Mode',
             'Frekuensi',
+            'Alert',
             'Status',
             'Berikutnya',
             'Aksi',
@@ -319,6 +332,13 @@ function AutomationWorkspace({ tenantId }: { tenantId: string }) {
             schedule.profile?.name ?? '-',
             modeLabels[schedule.mode],
             frequencyLabels[schedule.frequency],
+            schedule.alert.active ? (
+              <StatusBadge key={schedule.id} tone="warning">
+                {`${schedule.alert.error_rate ?? 0}% gagal`}
+              </StatusBadge>
+            ) : (
+              '-'
+            ),
             <StatusBadge key={schedule.id} tone={statusTones[schedule.status]}>
               {statusLabels[schedule.status]}
             </StatusBadge>,

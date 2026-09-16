@@ -3,7 +3,9 @@
 namespace App\Jobs;
 
 use App\Models\AutomationSchedule;
+use App\Models\AutomationScheduleRun;
 use App\Models\User;
+use App\Services\Automation\AutomationScheduleService;
 use App\Services\Mapping\FileMappingService;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -29,7 +31,7 @@ class RunAutomationScheduleJob implements ShouldBeUnique, ShouldQueue
         return $this->scheduleId;
     }
 
-    public function handle(FileMappingService $mapping): void
+    public function handle(FileMappingService $mapping, AutomationScheduleService $automation): void
     {
         $schedule = DB::transaction(function (): ?AutomationSchedule {
             $schedule = AutomationSchedule::query()->lockForUpdate()->findOrFail($this->scheduleId);
@@ -76,6 +78,12 @@ class RunAutomationScheduleJob implements ShouldBeUnique, ShouldQueue
                 throw new RuntimeException('Schedule hanya tersedia untuk sumber database.');
             }
 
+            $run = AutomationScheduleRun::create([
+                'automation_schedule_id' => $schedule->id,
+                'tenant_id' => $schedule->tenant_id,
+                'status' => 'running',
+                'started_at' => now(),
+            ]);
             RefreshDatabaseSourceSnapshotJob::dispatchSync($source->id);
             $source->refresh();
             if ($source->snapshot_status !== 'ready') {
@@ -94,12 +102,26 @@ class RunAutomationScheduleJob implements ShouldBeUnique, ShouldQueue
                 'last_completed_at' => now(),
                 'last_error' => null,
             ])->save();
+            $run->forceFill([
+                'status' => 'success',
+                'completed_at' => now(),
+                'last_batch_id' => $batch->id,
+            ])->save();
+            $automation->refreshAlertState($schedule->fresh());
         } catch (Throwable $exception) {
             $schedule->forceFill([
                 'status' => 'failed',
                 'last_completed_at' => now(),
                 'last_error' => 'Scheduled run gagal. Periksa snapshot, mapping profile, dan log server.',
             ])->save();
+            if (isset($run)) {
+                $run->forceFill([
+                    'status' => 'failed',
+                    'completed_at' => now(),
+                    'error_message' => 'Scheduled run gagal. Periksa snapshot, mapping profile, dan log server.',
+                ])->save();
+                $automation->refreshAlertState($schedule->fresh());
+            }
             throw $exception;
         } finally {
             $executionLock->release();
