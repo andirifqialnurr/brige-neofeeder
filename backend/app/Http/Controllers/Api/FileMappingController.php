@@ -180,10 +180,11 @@ class FileMappingController
         }
         $config = [...$savedConfig, 'table' => $input['table'], 'columns' => $input['columns']];
         $snapshot = $reader->read($config);
+        $newHash = hash('sha256', json_encode([$config['host'], $config['port'], $config['database'], $config['username'], $input['table'], $input['columns'], $snapshot], JSON_THROW_ON_ERROR));
         $sourceConnection->forceFill([
             'name' => $config['database'].'.'.$input['table'],
-            'snapshot_version' => ($sourceConnection->snapshot_version ?? 0) + 1,
-            'sha256' => hash('sha256', json_encode([$config['host'], $config['port'], $config['database'], $config['username'], $input['table'], $input['columns'], $snapshot], JSON_THROW_ON_ERROR)),
+            'snapshot_version' => $newHash !== $sourceConnection->sha256 ? ($sourceConnection->snapshot_version ?? 0) + 1 : ($sourceConnection->snapshot_version ?? 1),
+            'sha256' => $newHash,
             ...$snapshot,
             'snapshot_status' => 'ready',
             'snapshot_refreshed_at' => now(),

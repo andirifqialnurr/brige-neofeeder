@@ -74,6 +74,28 @@ class DatabaseSnapshotRefreshJobTest extends TestCase
         $this->assertStringNotContainsString('private-secret', (string) $source->snapshot_error);
     }
 
+    public function test_job_keeps_snapshot_version_when_data_is_unchanged(): void
+    {
+        [$source] = $this->source();
+        $reader = Mockery::mock(DatabaseSourceReaderContract::class);
+        $reader->shouldReceive('read')->once()->andReturn([
+            'headers' => ['nim'],
+            'snapshot' => [],
+            'row_count' => 0,
+        ]);
+        $source->update(['snapshot_status' => 'queued']);
+        $source->update(['sha256' => hash('sha256', json_encode([
+            '127.0.0.1', 3306, 'siakad', 'readonly', 'mahasiswa', ['nim'], [
+                'headers' => ['nim'], 'snapshot' => [], 'row_count' => 0,
+            ],
+        ], JSON_THROW_ON_ERROR))]);
+        $source->refresh();
+
+        (new RefreshDatabaseSourceSnapshotJob($source->id))->handle($reader);
+
+        $this->assertSame(1, $source->refresh()->snapshot_version);
+    }
+
     /** @return array{0:SourceConnection,1:mixed,2:mixed,3:string} */
     private function source(): array
     {

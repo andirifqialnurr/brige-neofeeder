@@ -7,6 +7,7 @@ use App\Jobs\RunAutomationScheduleJob;
 use App\Models\AutomationSchedule;
 use App\Models\MappingProfile;
 use App\Models\SourceConnection;
+use App\Models\User;
 use App\Services\Mapping\FileMappingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
@@ -59,6 +60,22 @@ class AutomationScheduleTest extends TestCase
         $this->assertTrue($queued->next_run_at->isFuture());
         $this->artisan('bridge:queue-automation-schedules')->expectsOutput('Queued 0 automation schedule(s).')->assertSuccessful();
         Queue::assertPushed(RunAutomationScheduleJob::class, 1);
+    }
+
+    public function test_admin_can_list_schedule_for_selected_tenant(): void
+    {
+        [$schedule, $token] = $this->schedule();
+        User::findOrFail($schedule->created_by)->update(['role' => 'admin', 'tenant_id' => null]);
+
+        $this->withToken($token)->postJson('/api/automation/schedules', [
+            'tenant_id' => $schedule->tenant_id,
+            'source_connection_id' => $schedule->source_connection_id,
+            'mapping_profile_id' => $schedule->mapping_profile_id,
+            'name' => 'Schedule tenant pilihan admin',
+            'frequency' => 'daily',
+        ])->assertCreated();
+        $this->withToken($token)->getJson('/api/automation/schedules?tenant_id='.$schedule->tenant_id)
+            ->assertOk()->assertJsonPath('data.0.name', 'Schedule tenant pilihan admin');
     }
 
     public function test_schedule_job_refreshes_maps_and_stages_without_outbound_request(): void

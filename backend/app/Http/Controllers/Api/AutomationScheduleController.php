@@ -17,7 +17,7 @@ class AutomationScheduleController
 {
     public function index(Request $request): JsonResponse
     {
-        $tenantId = $this->tenant($request);
+        $tenantId = $this->tenant($request, $request->input('tenant_id'));
         $schedules = AutomationSchedule::with(['source:id,name,type,row_count,snapshot_status,snapshot_refreshed_at', 'profile:id,name,channel,version'])
             ->where('tenant_id', $tenantId)->latest()->limit(100)->get();
 
