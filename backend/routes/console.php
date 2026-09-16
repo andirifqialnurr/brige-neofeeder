@@ -13,3 +13,4 @@ Artisan::command('bridge:heartbeat', function (): void {
 
 Schedule::command('bridge:heartbeat')->everyMinute()->withoutOverlapping();
 Schedule::command('bridge:recover-sync')->everyMinute()->withoutOverlapping();
+Schedule::command('bridge:queue-automation-schedules')->everyMinute()->withoutOverlapping();

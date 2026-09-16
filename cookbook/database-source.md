@@ -54,6 +54,13 @@ idempotency key mapping run: stage ulang pada snapshot yang sama mengembalikan
 batch lama, sedangkan snapshot baru dapat membuat batch baru untuk profile yang
 sama.
 
+Schedule Phase 2 menjalankan urutan `refresh snapshot -> preview -> stage`
+melalui queue worker. Endpoint schedule berada di `/api/automation/schedules`;
+pilihan frekuensi MVP adalah `hourly`, `daily`, dan `weekly`. Schedule hanya
+dapat dibuat untuk snapshot database yang sudah siap dan berisi baris. Tahap ini
+belum melakukan POST ke Neo Feeder; outbound baru boleh ditambahkan setelah
+token, approval, dan kontrak kampus pilot tersedia.
+
 Konfigurasi koneksi disimpan terenkripsi pada `source_connections` dan tidak
 dikembalikan pada endpoint workspace. Gunakan akun database khusus baca dengan
 hak minimum. Snapshot tetap terisolasi per tenant dan masuk ke alur mapping,

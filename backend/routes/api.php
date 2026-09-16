@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AutomationScheduleController;
 use App\Http\Controllers\Api\BatchReconciliationController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FileMappingController;
@@ -42,6 +43,10 @@ Route::middleware(['api.token', 'throttle:bridge-tenant'])->group(function (): v
     Route::post('mapping/profiles/{mappingProfile}/preview', [FileMappingController::class, 'preview']);
     Route::get('mapping/profiles/{mappingProfile}/preview-report', [FileMappingController::class, 'previewReport']);
     Route::post('mapping/profiles/{mappingProfile}/stage', [FileMappingController::class, 'stage']);
+    Route::get('automation/schedules', [AutomationScheduleController::class, 'index']);
+    Route::post('automation/schedules', [AutomationScheduleController::class, 'store']);
+    Route::patch('automation/schedules/{automationSchedule}', [AutomationScheduleController::class, 'update']);
+    Route::post('automation/schedules/{automationSchedule}/run', [AutomationScheduleController::class, 'run']);
     Route::get('audit-logs', [AuditLogController::class, 'index']);
     Route::get('audit-logs/export', [AuditLogController::class, 'export']);
     Route::post('import-batches/{importBatch}/rows/{record}/reveal', [ImportBatchInspectionController::class, 'reveal']);

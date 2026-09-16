@@ -303,7 +303,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 ## 2.4 Automation Sync
 
 - [x] Manual run untuk mapping profile berbasis snapshot terbaru.
-- [ ] Scheduled run.
+- [x] Scheduled run berbasis refresh snapshot, mapping, dan staging; outbound Neo Feeder tetap menunggu credential/token.
 - [ ] Incremental strategy berbasis timestamp jika tersedia.
 - [ ] Full refresh mode.
 - [ ] Pause/resume schedule.
