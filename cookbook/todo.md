@@ -313,6 +313,7 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 
 ## 2.5 Pilot Kampus
 
+- [x] Siapkan pilot runbook, evidence register, gate koneksi, dan stop conditions (`pilot-runbook.md`).
 - [ ] Pilih satu kampus pilot.
 - [ ] Ambil sample data terbatas.
 - [ ] Petakan mahasiswa dan riwayat pendidikan dulu.

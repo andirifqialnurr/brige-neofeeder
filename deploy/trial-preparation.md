@@ -1,5 +1,8 @@
 # Menyiapkan paket trial
 
+Runbook gate-by-gate untuk menjalankan paket ini tersedia di
+[`cookbook/pilot-runbook.md`](../cookbook/pilot-runbook.md).
+
 Jalankan tanpa credential Neo Feeder:
 
 ```bash
