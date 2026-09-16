@@ -52,7 +52,7 @@ final class DatabaseSourceReader
     }
 
     /** @param array{host:string,port:int,database:string,username:string,password:string} $config */
-    private function connect(array $config): PDO
+    public function connect(array $config): PDO
     {
         $host = trim($config['host']);
         if ($host === '' || preg_match('/[\r\n]/', $host)) {

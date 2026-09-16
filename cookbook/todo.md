@@ -266,12 +266,12 @@ sehingga alur browser mapping upload/preview/stage belum diverifikasi.
 - [x] Dukung source database read-only untuk snapshot MySQL dengan tabel/kolom terpilih (`database-source.md`).
 - [ ] Dukung source API.
 - [ ] Buat worker schema discovery.
-- [ ] Simpan source tables.
-- [ ] Simpan source fields.
-- [ ] Simpan sample values.
-- [ ] Deteksi tipe data awal.
-- [ ] Deteksi candidate primary key.
-- [ ] Deteksi candidate relation.
+- [x] Simpan source tables.
+- [x] Simpan source fields.
+- [x] Simpan sample values yang sudah dimasking.
+- [x] Deteksi tipe data awal.
+- [x] Deteksi candidate primary key.
+- [x] Deteksi candidate relation dan confidence-nya.
 
 ## 2.2 Mapping Profile
 
